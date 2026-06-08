@@ -1,7 +1,11 @@
 # syntax=docker/dockerfile:1
 
 # Build stage
-FROM --platform=$BUILDPLATFORM dhi.io/node:20-debian13-dev AS builder
+# NOTE: upstream used dhi.io/node:20-debian13-dev (Docker Hardened Images —
+# subscription-gated, returns 401 when building a fork). Swapped to the public
+# Debian 13 (trixie) Node 20 image so anyone can clone and build.
+# See docs/skylite-ux-review.md.
+FROM --platform=$BUILDPLATFORM node:20-trixie AS builder
 
 # Set working directory
 WORKDIR /app
@@ -25,7 +29,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production stage
-FROM dhi.io/node:20-debian13-dev AS production
+FROM node:20-trixie AS production
 
 # Set environment variables
 ENV NODE_ENV=production
