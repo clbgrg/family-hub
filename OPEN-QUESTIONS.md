@@ -16,3 +16,4 @@
 5. **Remote access.** Tailscale in v1 or later? Recommend later; LAN-only is simpler and safer to start.
 6. **Audio.** USB speaker is optional. Chore alerts / dinner announcements in scope, or skip audio for v1? Recommend skip for day-1.
 7. **Multi-family distribution.** Just "clone the GitHub repo," or do you eventually want a one-line installer script / prebuilt Docker image so non-technical families can run it? Affects how much packaging polish we invest in.
+8. **Leaderboard visibility (Phase 5).** The weekly leaderboard is currently social — every member sees everyone's ranking (a kid sees a sibling at the bottom). Intended for now. Do you want a privacy toggle (hide the leaderboard, or per-kid opt-out) later, or keep it always-on? Recommend: keep social for now; revisit if it causes friction.
