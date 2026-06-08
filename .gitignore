@@ -30,3 +30,6 @@ logs
 backups/
 photos/
 *.sql.bak
+
+# Committed-by-upstream coverage artifact — regenerated per run
+coverage/

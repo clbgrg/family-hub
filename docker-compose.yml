@@ -1,0 +1,54 @@
+# Family Hub — canonical compose. Runs identically on a dev machine and on the Pi
+# (that parity is the whole point — see docs/dev-workflow.md).
+#
+# Hardened vs. upstream's example compose (see docs/skylite-ux-review.md §F1):
+#   - The Postgres password is REQUIRED (no baked-in default).
+#   - Postgres is NOT published to the host — only the app reaches it, over the
+#     internal Docker network.
+#   - The app's host bind is configurable: default 0.0.0.0 so phones/tablets on the
+#     home WiFi can reach it (required), or set APP_BIND=127.0.0.1 to harden to
+#     localhost-only (pair with a reverse proxy / Tailscale for remote access).
+
+services:
+  app:
+    build:
+      context: .
+    image: family-hub:local
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://skylite:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/skylite
+      NUXT_PUBLIC_TZ: ${NUXT_PUBLIC_TZ:-America/Los_Angeles}
+      NUXT_PUBLIC_LOG_LEVEL: ${NUXT_PUBLIC_LOG_LEVEL:-warn}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_BIND:-0.0.0.0}:3000:3000"
+    networks:
+      - family-hub
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: skylite
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: skylite
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # Intentionally NOT publishing 5432 to the host (hardening, review §F1).
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skylite"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - family-hub
+
+networks:
+  family-hub:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
