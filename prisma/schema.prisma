@@ -30,6 +30,8 @@ model User {
 
   todoColumn TodoColumn?
   calendarEvents CalendarEventUser[]
+  assignedChores   Chore[]           @relation("ChoreAssignee")
+  choreCompletions ChoreCompletion[] @relation("ChoreCompletionUser")
 
   @@map("users")
 }
@@ -153,4 +155,53 @@ enum Priority {
 enum Role {
   ADMIN
   MEMBER
+}
+
+// A chore template assigned to one family member. Completion is tracked as
+// ChoreCompletion rows (one per day for recurring chores), so "reset" is
+// implicit each new day — no cron — and history is kept for streaks/points.
+model Chore {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  points      Int             @default(0)
+  recurrence  ChoreRecurrence @default(DAILY)
+  daysOfWeek  Int[]           @default([]) // for WEEKLY: 0=Sun .. 6=Sat
+  order       Int             @default(0)
+  active      Boolean         @default(true)
+
+  // Every chore has exactly one owner (the points recipient).
+  assigneeId String
+  assignee   User   @relation("ChoreAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
+
+  completions ChoreCompletion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("chores")
+}
+
+// One completion of a chore on a given local day. userId is the chore's
+// assignee (who earns the points), set server-side — not the session user,
+// so an admin checking off a kid's chore credits the kid. points snapshots
+// the chore's value at completion time.
+model ChoreCompletion {
+  id          String   @id @default(cuid())
+  choreId     String
+  chore       Chore    @relation(fields: [choreId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("ChoreCompletionUser", fields: [userId], references: [id], onDelete: Cascade)
+  localDate   String // client's local date "YYYY-MM-DD"
+  points      Int
+  completedAt DateTime @default(now())
+
+  @@unique([choreId, localDate]) // a chore is completed at most once per day
+  @@map("chore_completions")
+}
+
+enum ChoreRecurrence {
+  ONCE
+  DAILY
+  WEEKLY
 }

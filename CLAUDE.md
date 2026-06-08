@@ -55,7 +55,9 @@ A hard requirement is that another family can clone this and run their own. That
 - Vendor Skylite-UX as our fork; `upstream` remote points at the original for pulling fixes.
 - Custom work in feature branches per phase (see `docs/build-order.md`).
 - DB schema changes go through migrations, never manual edits — and ship seed-free (no family data in migrations).
-- Cron-style recurring logic (chore reset, leaderboard reset, sleep/wake) runs inside Docker / on the Pi — document each job.
+- **Authed data fetching:** server-rendered pages must forward the session cookie on SSR — use `useFetch` or `useRequestFetch()`, never raw `$fetch` inside `useAsyncData` (it 401s on SSR → empty data that never refetches client-side). For per-user / time-sensitive data (e.g. the chores board, where "today" must be the client's local date and the container is UTC), fetch client-only (`useAsyncData(..., { server: false })`) and wrap the rendered list in `<ClientOnly>`.
+- **Completion-records, not reset flags:** recurring state (chores) is tracked as dated completion rows, so "reset" is implicit each new day — no cron — and history is kept for points/streaks/leaderboard.
+- Cron-style recurring logic that *does* need it (leaderboard reset, sleep/wake) runs inside Docker / on the Pi — document each job.
 - Keep everything LAN-safe: never add code that phones home or opens external ports by default.
 
 ## Docs index

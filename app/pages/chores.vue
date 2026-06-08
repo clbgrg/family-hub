@@ -1,0 +1,132 @@
+<script setup lang="ts">
+import type { ChoreBoardItem, CreateChoreInput } from "~/composables/useChores";
+
+const { user } = useUserSession();
+const isAdmin = computed(() => user.value?.role === "ADMIN");
+
+const { chores, pointsByUser, createChore, updateChore, deleteChore, setDone } = useChores();
+
+// useRequestFetch forwards the cookie on SSR (plain $fetch would 401).
+const requestFetch = useRequestFetch();
+const { data: users } = await useAsyncData(
+  "chores-users",
+  () => requestFetch<{ id: string; name: string; avatar: string | null; color: string | null }[]>("/api/users"),
+  { default: () => [], server: false },
+);
+
+// Group today's due chores under each family member.
+const board = computed(() => {
+  const due = (chores.value ?? []).filter(c => c.dueToday);
+  return (users.value ?? []).map(u => ({
+    user: u,
+    points: pointsByUser.value[u.id] ?? 0,
+    chores: due.filter(c => c.assignee?.id === u.id),
+  }));
+});
+
+const dialogOpen = ref(false);
+const editing = ref<ChoreBoardItem | null>(null);
+
+function canToggle(chore: ChoreBoardItem) {
+  return isAdmin.value || user.value?.id === chore.assignee?.id;
+}
+async function toggle(chore: ChoreBoardItem) {
+  if (!canToggle(chore)) return;
+  await setDone(chore.id, !chore.done);
+}
+function addChore() {
+  editing.value = null;
+  dialogOpen.value = true;
+}
+function editChore(chore: ChoreBoardItem) {
+  editing.value = chore;
+  dialogOpen.value = true;
+}
+async function onSave(data: CreateChoreInput) {
+  if (editing.value) await updateChore(editing.value.id, data);
+  else await createChore(data);
+}
+async function onDelete(id: string) {
+  await deleteChore(id);
+}
+</script>
+
+<template>
+  <div class="flex w-full flex-col">
+    <div class="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-default bg-default py-5 sm:px-4">
+      <GlobalDateHeader />
+      <UButton v-if="isAdmin" icon="i-lucide-plus" label="Add chore" @click="addChore" />
+    </div>
+
+    <ClientOnly>
+      <div class="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+        <UCard v-for="group in board" :key="group.user.id">
+        <template #header>
+          <div class="flex items-center gap-3">
+            <UAvatar :src="group.user.avatar || undefined" :alt="group.user.name" size="lg" />
+            <p class="flex-1 text-lg font-semibold">
+              {{ group.user.name }}
+            </p>
+            <UBadge color="primary" variant="subtle" size="lg">
+              {{ group.points }} pts
+            </UBadge>
+          </div>
+        </template>
+
+        <ul class="flex flex-col gap-1">
+          <li
+            v-for="chore in group.chores"
+            :key="chore.id"
+            class="flex items-center gap-3 rounded-lg p-2 hover:bg-elevated"
+            :class="chore.done ? 'opacity-60' : ''"
+          >
+            <UCheckbox
+              :model-value="chore.done"
+              :disabled="!canToggle(chore)"
+              size="xl"
+              @update:model-value="toggle(chore)"
+            />
+            <div class="min-w-0 flex-1">
+              <p class="truncate font-medium" :class="chore.done ? 'line-through' : ''">
+                {{ chore.title }}
+              </p>
+              <p v-if="chore.description" class="truncate text-sm text-muted">
+                {{ chore.description }}
+              </p>
+            </div>
+            <UBadge color="neutral" variant="soft">
+              +{{ chore.points }}
+            </UBadge>
+            <UButton
+              v-if="isAdmin"
+              icon="i-lucide-pencil"
+              size="xs"
+              variant="ghost"
+              color="neutral"
+              aria-label="Edit chore"
+              @click="editChore(chore)"
+            />
+          </li>
+          <li v-if="group.chores.length === 0" class="p-2 text-sm text-muted">
+            No chores today 🎉
+          </li>
+        </ul>
+        </UCard>
+      </div>
+      <template #fallback>
+        <div class="p-4 text-muted">
+          Loading chores…
+        </div>
+      </template>
+    </ClientOnly>
+
+    <ChoreDialog
+      :is-open="dialogOpen"
+      :chore="editing"
+      :users="users ?? []"
+      @close="dialogOpen = false"
+      @save="onSave"
+      @delete="onDelete"
+    />
+  </div>
+</template>

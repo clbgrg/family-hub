@@ -7,8 +7,11 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    // nuxt-auth-utils session. The password comes from NUXT_SESSION_PASSWORD (env).
+    // nuxt-auth-utils session. password is set at runtime from NUXT_SESSION_PASSWORD;
+    // the empty default here satisfies the SessionConfig type at build time.
     session: {
+      name: "nuxt-session",
+      password: "",
       // The Pi serves the app over plain HTTP on the LAN, so the session cookie
       // must NOT be Secure-only or devices/kiosk won't send it back. (A Secure
       // cookie is fine over HTTPS, but breaks the default http deployment.)

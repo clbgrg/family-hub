@@ -1,0 +1,198 @@
+<script setup lang="ts">
+import type { ChoreBoardItem, ChoreRecurrence, CreateChoreInput } from "~/composables/useChores";
+
+const props = defineProps<{
+  isOpen: boolean;
+  chore?: ChoreBoardItem | null;
+  users: { id: string; name: string }[];
+}>();
+
+const emit = defineEmits<{
+  (e: "close"): void;
+  (e: "save", data: CreateChoreInput): void;
+  (e: "delete", id: string): void;
+}>();
+
+const title = ref("");
+const description = ref("");
+const points = ref(5);
+const assigneeId = ref("");
+const recurrence = ref<ChoreRecurrence>("DAILY");
+const daysOfWeek = ref<number[]>([]);
+const error = ref<string | null>(null);
+
+const recurrenceOptions = [
+  { label: "Every day", value: "DAILY" },
+  { label: "Certain days", value: "WEEKLY" },
+  { label: "One time", value: "ONCE" },
+];
+const dayChips = [
+  { label: "Su", value: 0 },
+  { label: "Mo", value: 1 },
+  { label: "Tu", value: 2 },
+  { label: "We", value: 3 },
+  { label: "Th", value: 4 },
+  { label: "Fr", value: 5 },
+  { label: "Sa", value: 6 },
+];
+const userOptions = computed(() => props.users.map(u => ({ label: u.name, value: u.id })));
+
+const watchSource = computed(() => ({ isOpen: props.isOpen, chore: props.chore }));
+watch(
+  watchSource,
+  ({ isOpen, chore }) => {
+    if (!isOpen) return;
+    title.value = chore?.title ?? "";
+    description.value = chore?.description ?? "";
+    points.value = chore?.points ?? 5;
+    assigneeId.value = chore?.assignee?.id ?? (props.users[0]?.id ?? "");
+    recurrence.value = chore?.recurrence ?? "DAILY";
+    daysOfWeek.value = chore?.daysOfWeek ? [...chore.daysOfWeek] : [];
+    error.value = null;
+  },
+  { immediate: true },
+);
+
+function toggleDay(d: number) {
+  daysOfWeek.value = daysOfWeek.value.includes(d)
+    ? daysOfWeek.value.filter(x => x !== d)
+    : [...daysOfWeek.value, d];
+}
+
+function handleSave() {
+  if (!title.value.trim()) {
+    error.value = "Chore name is required";
+    return;
+  }
+  if (!assigneeId.value) {
+    error.value = "Choose who it's for";
+    return;
+  }
+  if (recurrence.value === "WEEKLY" && daysOfWeek.value.length === 0) {
+    error.value = "Pick at least one day";
+    return;
+  }
+  emit("save", {
+    title: title.value.trim(),
+    description: description.value.trim(),
+    points: Math.max(0, Number(points.value) || 0),
+    recurrence: recurrence.value,
+    daysOfWeek: daysOfWeek.value,
+    assigneeId: assigneeId.value,
+  });
+  emit("close");
+}
+</script>
+
+<template>
+  <div
+    v-if="isOpen"
+    class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
+    @click="emit('close')"
+  >
+    <div
+      class="w-[460px] max-h-[90vh] overflow-y-auto rounded-lg border border-default bg-default shadow-lg"
+      @click.stop
+    >
+      <div class="flex items-center justify-between border-b border-default p-4">
+        <h3 class="text-base font-semibold leading-6">
+          {{ chore?.id ? "Edit Chore" : "Add Chore" }}
+        </h3>
+        <UButton
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-x"
+          aria-label="Close dialog"
+          @click="emit('close')"
+        />
+      </div>
+
+      <div class="space-y-4 p-4">
+        <div v-if="error" class="rounded-md bg-error/10 px-3 py-2 text-sm text-error">
+          {{ error }}
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Chore</label>
+          <UInput
+            v-model="title"
+            placeholder="e.g. Make your bed"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+            @keyup.enter="handleSave"
+          />
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Notes (optional)</label>
+          <UInput v-model="description" placeholder="Any details" class="w-full" :ui="{ base: 'w-full' }" />
+        </div>
+
+        <div class="flex gap-4">
+          <div class="w-28 space-y-2">
+            <label class="block text-sm font-medium text-highlighted">Points</label>
+            <UInput v-model.number="points" type="number" :min="0" class="w-full" :ui="{ base: 'w-full' }" />
+          </div>
+          <div class="flex-1 space-y-2">
+            <label class="block text-sm font-medium text-highlighted">For</label>
+            <USelect
+              v-model="assigneeId"
+              :items="userOptions"
+              option-attribute="label"
+              value-attribute="value"
+              class="w-full"
+              :ui="{ base: 'w-full' }"
+            />
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Repeats</label>
+          <USelect
+            v-model="recurrence"
+            :items="recurrenceOptions"
+            option-attribute="label"
+            value-attribute="value"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
+        </div>
+
+        <div v-if="recurrence === 'WEEKLY'" class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">On these days</label>
+          <div class="flex gap-1">
+            <UButton
+              v-for="d in dayChips"
+              :key="d.value"
+              :label="d.label"
+              size="sm"
+              :variant="daysOfWeek.includes(d.value) ? 'solid' : 'outline'"
+              :color="daysOfWeek.includes(d.value) ? 'primary' : 'neutral'"
+              @click="toggleDay(d.value)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between border-t border-default p-4">
+        <UButton
+          v-if="chore?.id"
+          color="error"
+          variant="ghost"
+          icon="i-lucide-trash"
+          @click="emit('delete', chore.id); emit('close')"
+        >
+          Delete
+        </UButton>
+        <div class="flex gap-2" :class="{ 'ml-auto': !chore?.id }">
+          <UButton color="neutral" variant="ghost" @click="emit('close')">
+            Cancel
+          </UButton>
+          <UButton color="primary" @click="handleSave">
+            {{ chore?.id ? "Save" : "Add Chore" }}
+          </UButton>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
