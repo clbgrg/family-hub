@@ -34,6 +34,7 @@ model User {
   choreCompletions ChoreCompletion[] @relation("ChoreCompletionUser")
   badges           UserBadge[]
   mealsCooking     Meal[]            @relation("MealCook")
+  messages         Message[]
 
   @@map("users")
 }
@@ -233,6 +234,20 @@ enum MealSlot {
   BREAKFAST
   LUNCH
   DINNER
+}
+
+// A sticky-note on the family message board. Any member can post; the author
+// or an admin can delete. Auto-expires by filtering on expiresAt (no cron).
+model Message {
+  id        String   @id @default(cuid())
+  body      String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime // createdAt + 7 days (stored so expiry is configurable later)
+
+  @@index([expiresAt])
+  @@map("messages")
 }
 
 // A badge a user has earned. Badge *types* are code-defined (server/utils/badges.ts);
