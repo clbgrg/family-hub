@@ -32,6 +32,7 @@ model User {
   calendarEvents CalendarEventUser[]
   assignedChores   Chore[]           @relation("ChoreAssignee")
   choreCompletions ChoreCompletion[] @relation("ChoreCompletionUser")
+  badges           UserBadge[]
 
   @@map("users")
 }
@@ -204,4 +205,17 @@ enum ChoreRecurrence {
   ONCE
   DAILY
   WEEKLY
+}
+
+// A badge a user has earned. Badge *types* are code-defined (server/utils/badges.ts);
+// this records which user earned which, and when. Permanent once earned.
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeKey String
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, badgeKey])
+  @@map("user_badges")
 }

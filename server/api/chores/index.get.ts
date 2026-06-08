@@ -1,15 +1,9 @@
 import prisma from "~/lib/prisma";
 
-// Weekday (0=Sun..6=Sat) of a calendar date, computed in UTC so it's
-// timezone-independent (the date string already encodes the client's day).
-function weekdayOf(localDate: string): number {
-  return new Date(`${localDate}T00:00:00Z`).getUTCDay();
-}
-
 /**
  * Chore board for a given client-local date. Returns active chores with their
- * assignee and computed `dueToday` / `done` flags. "Done" branches on
- * recurrence: ONCE = completed ever; DAILY/WEEKLY = completed on this date.
+ * assignee and computed `dueToday` / `done` flags (via the shared
+ * choreDayStatus predicate, also used by the completion all-done check).
  */
 export default defineEventHandler(async (event) => {
   await requireUserSession(event);
@@ -18,7 +12,6 @@ export default defineEventHandler(async (event) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     throw createError({ statusCode: 400, statusMessage: "date (YYYY-MM-DD) query param required" });
   }
-  const dow = weekdayOf(date);
 
   const chores = await prisma.chore.findMany({
     where: { active: true },
@@ -31,14 +24,13 @@ export default defineEventHandler(async (event) => {
   });
 
   return chores.map((c) => {
-    const done = c.recurrence === "ONCE"
-      ? c._count.completions > 0
-      : c.completions.length > 0;
-    const dueToday = c.recurrence === "DAILY"
-      ? true
-      : c.recurrence === "WEEKLY"
-        ? c.daysOfWeek.includes(dow)
-        : !done; // ONCE: due until it's ever done
+    const { dueToday, done } = choreDayStatus({
+      recurrence: c.recurrence,
+      daysOfWeek: c.daysOfWeek,
+      doneEver: c._count.completions > 0,
+      doneToday: c.completions.length > 0,
+      localDate: date,
+    });
 
     return {
       id: c.id,

@@ -3,8 +3,10 @@ import prisma from "~/lib/prisma";
 /**
  * Mark a chore done for a client-local date.
  * AuthZ: the chore's assignee, or any admin (a parent can check off a kid's).
- * Points are credited to the ASSIGNEE (not the session user), so admin
- * completions still reward the kid. Idempotent on double-tap.
+ * Points and badges are credited to the ASSIGNEE (not the session user), so
+ * admin completions still reward the kid. Idempotent on double-tap. Returns
+ * any newly-earned badges and whether the assignee is now all-done today, so
+ * the client can fire the celebration.
  */
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event);
@@ -27,25 +29,55 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: "You can only complete your own chores" });
   }
 
-  // ONCE chores are done forever after the first completion.
+  const assigneeId = chore.assigneeId;
+
+  // Record the completion (idempotent).
   if (chore.recurrence === "ONCE") {
     const existing = await prisma.choreCompletion.findFirst({ where: { choreId } });
-    if (existing) return { ok: true, alreadyDone: true };
+    if (!existing) {
+      await prisma.choreCompletion.create({
+        data: { choreId, userId: assigneeId, localDate, points: chore.points },
+      });
+    }
+  }
+  else {
+    try {
+      await prisma.choreCompletion.create({
+        data: { choreId, userId: assigneeId, localDate, points: chore.points },
+      });
+    }
+    catch (error: any) {
+      if (error?.code !== "P2002") throw error; // P2002 = double-tap same day, fine
+    }
   }
 
-  try {
-    const completion = await prisma.choreCompletion.create({
-      data: {
-        choreId,
-        userId: chore.assigneeId, // points go to the assignee
-        localDate,
-        points: chore.points,
-      },
+  // Award any newly-earned badges to the ASSIGNEE (read existing → diff → insert).
+  const stats = await computeUserStats(assigneeId, localDate);
+  const earned = computeEarnedBadgeKeys(stats);
+  const existingBadges = await prisma.userBadge.findMany({
+    where: { userId: assigneeId },
+    select: { badgeKey: true },
+  });
+  const have = new Set(existingBadges.map(b => b.badgeKey));
+  const newKeys = earned.filter(k => !have.has(k));
+  if (newKeys.length) {
+    await prisma.userBadge.createMany({
+      data: newKeys.map(badgeKey => ({ userId: assigneeId, badgeKey })),
+      skipDuplicates: true,
     });
-    return { ok: true, completion };
   }
-  catch (error: any) {
-    if (error?.code === "P2002") return { ok: true, alreadyDone: true }; // double-tap, same day
-    throw error;
-  }
+
+  const allDoneToday = await isAllDoneToday(assigneeId, localDate);
+
+  return {
+    ok: true,
+    assigneeId,
+    newBadges: newKeys.map((key) => {
+      const def = badgeByKey(key);
+      return { key, label: def?.label ?? key, icon: def?.icon ?? "i-lucide-award" };
+    }),
+    allDoneToday,
+    pointsToday: stats.pointsToday,
+    streak: stats.streak,
+  };
 });

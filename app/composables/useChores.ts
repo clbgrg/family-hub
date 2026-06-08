@@ -22,9 +22,28 @@ export interface ChoreBoardItem {
   done: boolean;
 }
 
-export interface ChorePoints {
+export interface NewBadge {
+  key: string;
+  label: string;
+  icon: string;
+}
+
+export interface ChoreStats {
   userId: string;
-  points: number;
+  pointsTotal: number;
+  pointsToday: number;
+  pointsWeek: number;
+  streak: number;
+  badges: NewBadge[];
+}
+
+export interface CompleteResult {
+  ok: boolean;
+  assigneeId: string;
+  newBadges: NewBadge[];
+  allDoneToday: boolean;
+  pointsToday: number;
+  streak: number;
 }
 
 export interface CreateChoreInput {
@@ -62,20 +81,31 @@ export function useChores() {
     { default: () => [], server: false },
   );
 
-  const { data: points, refresh: refreshPoints } = useAsyncData(
-    "chore-points",
-    () => requestFetch<ChorePoints[]>("/api/chores/points"),
+  const { data: stats, refresh: refreshStats } = useAsyncData(
+    "chore-stats",
+    () => requestFetch<ChoreStats[]>("/api/chores/stats", { query: { date: today } }),
     { default: () => [], server: false },
   );
 
-  const pointsByUser = computed(() => {
-    const map: Record<string, number> = {};
-    for (const p of points.value ?? []) map[p.userId] = p.points;
+  const statsByUser = computed(() => {
+    const map: Record<string, ChoreStats> = {};
+    for (const s of stats.value ?? []) map[s.userId] = s;
     return map;
   });
 
+  const pointsByUser = computed(() => {
+    const map: Record<string, number> = {};
+    for (const s of stats.value ?? []) map[s.userId] = s.pointsTotal;
+    return map;
+  });
+
+  // Weekly-points ranking (highest first).
+  const leaderboard = computed(() =>
+    [...(stats.value ?? [])].sort((a, b) => b.pointsWeek - a.pointsWeek),
+  );
+
   async function refreshAll() {
-    await Promise.all([refreshChores(), refreshPoints()]);
+    await Promise.all([refreshChores(), refreshStats()]);
   }
 
   async function createChore(input: CreateChoreInput) {
@@ -116,16 +146,22 @@ export function useChores() {
     }
   }
 
-  // Check a chore off (or undo) for the client's today.
-  async function setDone(id: string, done: boolean) {
+  // Check a chore off (or undo) for the client's today. Completing returns the
+  // celebration payload (new badges, all-done-today, points, streak).
+  async function setDone(id: string, done: boolean): Promise<CompleteResult | null> {
     try {
+      let result: CompleteResult | null = null;
       if (done) {
-        await $fetch(`/api/chores/${id}/complete`, { method: "POST", body: { localDate: today } });
+        result = await $fetch<CompleteResult>(`/api/chores/${id}/complete`, {
+          method: "POST",
+          body: { localDate: today },
+        });
       }
       else {
         await $fetch(`/api/chores/${id}/complete`, { method: "DELETE", query: { localDate: today } });
       }
       await refreshAll();
+      return result;
     }
     catch (err) {
       error.value = "Failed to update chore";
@@ -139,6 +175,8 @@ export function useChores() {
     // page passes board items into helpers typed as ChoreBoardItem.
     chores,
     pointsByUser,
+    statsByUser,
+    leaderboard,
     pending: readonly(pending),
     error: readonly(error),
     today,
