@@ -3,7 +3,7 @@
 ## Resolved (see CLAUDE.md "Decisions made")
 - **Where it runs / dev workflow** — develop on a dev machine, deploy Docker to the Pi. → `docs/dev-workflow.md`
 - **Fork strategy** — vendor Skylite-UX as our fork, single repo. → CLAUDE.md
-- **Calendar** — Apple iCal only, generic add/remove in UI.
+- **Calendar** — iCal (Apple, Google, any `.ics`, read-only) **and** Google Calendar OAuth (read-write) both already ship upstream. Support all; let each family choose. UI is already generic add/remove.
 - **Family data** — fully dynamic, add/remove members; must be copyable to other families with zero code edits.
 - **Hardware** — not bought; Phase 1 is procurement, build proceeds without it.
 - **Day-1 scope** — do the best we can day one, then iterate.

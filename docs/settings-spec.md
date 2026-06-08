@@ -1,12 +1,14 @@
 # Settings Panel Spec
 
+> ⚠️ **Target design, not current state.** Upstream Skylite-UX today implements only **Family Profiles** (partial — name/color/avatar, no roles) and **Calendar Settings** (partial). Everything else below (Chores, Rewards, Display & Sleep, Network & Access, Parental Controls) is to-build per `docs/build-order.md`. Account type (Admin/Member) and PIN/password are **Priority 0 auth work** (`docs/features-to-build.md`), not standalone settings — the rest of Family Profiles and all Parental Controls depend on them.
+
 The settings tab gives parents full control over all features. Recommended structure:
 
 ## Family Profiles
 - Add or remove family members
 - Assign display name, avatar color, and profile photo
-- Set account type: Admin (parent) or Member (child)
-- Set PIN or password for each account
+- Set account type: Admin (parent) or Member (child) — *requires Priority-0 auth*
+- Set PIN or password for each account — *built as part of Priority-0 auth*
 
 ## Calendar Settings
 - Add iCal URL(s) for Apple Calendar or Google Calendar

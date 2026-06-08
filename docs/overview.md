@@ -4,7 +4,7 @@ A wall-mountable and carry-around family dashboard running on a Raspberry Pi 5 w
 
 ## What it includes
 
-- Full family calendar with Apple Calendar sync (read-only iCal pull)
+- Full family calendar with Apple/Google calendar sync (read-only iCal pull from any `.ics`, plus optional read-write Google Calendar OAuth)
 - Chore tracking with points, streaks, badges, and a celebration screen
 - Grocery list and meal planner
 - Family message board / sticky notes
@@ -20,9 +20,9 @@ A wall-mountable and carry-around family dashboard running on a Raspberry Pi 5 w
 | Framework | Nuxt.js + TailwindCSS (frontend), Node.js (backend), PostgreSQL (database) |
 | Deployment | Docker Compose — one command to start everything |
 | Hardware | Raspberry Pi 5 (4GB) + portable HDMI touchscreen |
-| Calendar sync | iCal URL pull from Apple Calendar — read-only, no Apple ID on Pi |
+| Calendar sync | iCal URL pull (Apple, Google, any `.ics`) — read-only, no Apple ID on Pi. Google Calendar OAuth also available — read-write, refresh token stored in DB. |
 | Network access | LAN only by default. Tailscale VPN for optional remote access. |
 
 ## What Skylite-UX already provides
 
-Full family calendar with month/week views; iCal URL sync (Apple, Google, any .ics); per-person user accounts with separate logins; shopping/grocery list; per-person todo lists; dark mode, font preferences, settings panel; Docker Compose deployment. Color-coded events partially implemented.
+Full family calendar with month/week views; iCal URL sync (Apple, Google, any .ics) plus Google Calendar OAuth; per-person **profiles** (name/color/avatar — but **no login/auth yet**, that's Priority 0 to build); shopping/grocery list; per-person todo lists; dark mode, font preferences, settings panel; Docker Compose deployment. Color-coded events partially implemented.

@@ -15,7 +15,7 @@ Assumes a fresh Raspberry Pi 5 with Pi OS Lite (64-bit) on a microSD card. Whole
 | 7. Open in browser | On any WiFi device, go to `http://[pi-ip]:3000` — Skylite-UX setup screen. |
 | 8. Set static IP | In router admin, find the Pi's MAC and assign a fixed local IP. Note it for the family. |
 | 9. Chromium kiosk | On the Pi: install Chromium, add a startup script to open `http://localhost:3000` fullscreen kiosk at boot. |
-| 10. Configure sleep | Two cron jobs: `vcgencmd display_power 0` at bedtime, `display_power 1` in the morning. |
+| 10. Configure sleep | **Pi-specific (skip on dev machines).** Two cron jobs: `vcgencmd display_power 0` at bedtime, `display_power 1` in the morning. `vcgencmd` exists only on Pi OS — these won't run on a Mac/PC/other-SBC dev box; validate on a real Pi. |
 
 ## Kiosk mode — fullscreen at boot
 

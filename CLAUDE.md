@@ -69,6 +69,7 @@ A hard requirement is that another family can clone this and run their own. That
 - `docs/build-order.md` — phased build plan (start here for sequencing)
 - `docs/dev-workflow.md` — where to develop, how to deploy to the Pi, multi-family packaging
 - `docs/source-handoff.md` — original handoff doc, verbatim, as source of truth
+- `docs/skylite-ux-review.md` — pre-fork code review + security audit of upstream Skylite-UX (`ffcd435`), with a remediation sequence for the fork
 
 ## Status
 
