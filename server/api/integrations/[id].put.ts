@@ -10,6 +10,8 @@ import { sanitizeIntegration } from "../../utils/sanitizeIntegration";
 const prisma = new PrismaClient();
 
 export default defineEventHandler(async (event) => {
+  await requireAdmin(event);
+
   try {
     const id = event.context.params?.id;
     if (!id) {

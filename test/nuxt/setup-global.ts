@@ -24,12 +24,19 @@ const setResponseHeadersMock = vi.fn((event: H3Event, headers: Record<string, st
   }
 });
 
+// Auth gate is exercised end-to-end against the running stack; in unit tests we
+// stub it to a passing admin so handler logic is tested in isolation.
+const requireAdminMock = vi.fn(async () => ({
+  user: { id: "test-admin", name: "Test Admin", role: "ADMIN" },
+}));
+
 vi.stubGlobal("defineEventHandler", defineEventHandlerMock);
 vi.stubGlobal("readBody", readBodyMock);
 vi.stubGlobal("getRouterParams", getRouterParamsMock);
 vi.stubGlobal("getRouterParam", getRouterParamMock);
 vi.stubGlobal("getQuery", getQueryMock);
 vi.stubGlobal("setResponseHeaders", setResponseHeadersMock);
+vi.stubGlobal("requireAdmin", requireAdminMock);
 
 class EventSourceMock {
   static readonly CONNECTING = 0;

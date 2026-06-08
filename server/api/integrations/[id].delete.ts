@@ -5,6 +5,8 @@ import prisma from "~/lib/prisma";
 import { syncManager } from "../../plugins/02.syncManager";
 
 export default defineEventHandler(async (event) => {
+  await requireAdmin(event);
+
   try {
     const integrationId = getRouterParam(event, "id");
 

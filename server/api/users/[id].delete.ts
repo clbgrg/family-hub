@@ -1,6 +1,8 @@
 import prisma from "~/lib/prisma";
 
 export default defineEventHandler(async (event) => {
+  await requireAdmin(event);
+
   try {
     const userId = getRouterParam(event, "id");
 
