@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="4in"
+   height="4in"
+   viewBox="0 0 101.6 101.6"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
+   sodipodi:docname="skylite.svg"
+   inkscape:export-filename="D:\Projects\SKYlite\skylite_favicon.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     units="in"
+     inkscape:zoom="1.4467452"
+     inkscape:cx="130.29247"
+     inkscape:cy="208.39883"
+     inkscape:window-width="1920"
+     inkscape:window-height="1001"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer2"
+     showguides="true"
+     inkscape:guide-bbox="true">
+    <sodipodi:guide
+       position="50.045657,63.580819"
+       orientation="1,0"
+       id="guide7504" />
+    <sodipodi:guide
+       position="57.804673,51.68366"
+       orientation="0,-1"
+       id="guide7506" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient1916">
+      <stop
+         style="stop-color:#00fffc;stop-opacity:1"
+         offset="0"
+         id="stop1912" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:0;"
+         offset="1"
+         id="stop1914" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1916"
+       id="linearGradient1918"
+       x1="142.76201"
+       y1="166.66019"
+       x2="276.14838"
+       y2="166.66019"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.26458333,0,0,0.26458333,-0.89493022,5.2646141)" />
+    <filter
+       inkscape:label="Cubes"
+       inkscape:menu="Scatter"
+       inkscape:menu-tooltip="Scattered cubes; adjust the Morphology primitive to vary size"
+       style="color-interpolation-filters:sRGB;"
+       id="filter8000"
+       x="0"
+       y="0"
+       width="1"
+       height="1">
+      <feTurbulence
+         baseFrequency="0.14"
+         numOctaves="1"
+         type="fractalNoise"
+         id="feTurbulence7984" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 6 -3.5 "
+         result="result5"
+         id="feColorMatrix7986" />
+      <feComposite
+         in2="result5"
+         operator="in"
+         in="SourceGraphic"
+         result="result6"
+         id="feComposite7988" />
+      <feMorphology
+         result="result3"
+         radius="5"
+         operator="dilate"
+         in="result6"
+         id="feMorphology7990" />
+      <feDisplacementMap
+         result="result4"
+         scale="0"
+         yChannelSelector="A"
+         xChannelSelector="R"
+         in="result3"
+         in2="result3"
+         id="feDisplacementMap7992" />
+      <feComposite
+         in2="result4"
+         operator="arithmetic"
+         result="result2"
+         k1="1"
+         k3="1"
+         id="feComposite7994" />
+      <feBlend
+         mode="darken"
+         in="result2"
+         in2="result2"
+         id="feBlend7996" />
+      <feConvolveMatrix
+         order="3 3"
+         kernelMatrix="2 0 0 0 1 0 0 0 -1 "
+         targetX="1"
+         targetY="1"
+         divisor="2"
+         edgeMode="duplicate"
+         id="feConvolveMatrix7998" />
+    </filter>
+  </defs>
+  <g
+     inkscape:groupmode="layer"
+     id="layer4"
+     inkscape:label="background"
+     style="display:none">
+    <rect
+       style="fill:#cccccc;fill-opacity:1;stroke:none;stroke-width:1.535;stroke-linecap:round;stroke-linejoin:round;stop-color:#000000"
+       id="rect9731"
+       width="104.24261"
+       height="104.24261"
+       x="-0.73152709"
+       y="-1.2801725"
+       ry="1.1638517"
+       inkscape:export-filename="C:\Users\jacob\Desktop\skylite_transparent_back.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="background 1"
+     style="display:none">
+    <rect
+       style="display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.535;stroke-linecap:round;stroke-linejoin:round;stop-color:#000000"
+       id="rect9731-6"
+       width="104.24261"
+       height="104.24261"
+       x="-0.73152709"
+       y="-1.2801725"
+       ry="1.1638517"
+       inkscape:export-filename="C:\Users\jacob\Desktop\skylite_transparent_back.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+  </g>
+  <g
+     inkscape:label="cloud"
+     inkscape:groupmode="layer"
+     id="layer1"
+     style="display:inline">
+    <path
+       id="path884"
+       style="fill:url(#linearGradient1918);fill-opacity:1;stroke-width:1.535;stroke-linecap:round;stroke-linejoin:round;stop-color:#000000"
+       d="M 40.098434,26.601814 A 19.009592,19.009592 0 0 0 24.41877,34.866426 19.009592,19.009592 0 0 0 22.317607,34.74912 19.009592,19.009592 0 0 0 3.3079141,53.758294 19.009592,19.009592 0 0 0 22.004964,72.756102 c 0.05215,0.0071 0.105004,0.01189 0.159164,0.01189 h 0.153479 54.410114 c 0.08134,0 0.160644,-0.008 0.237196,-0.02377 a 19.009592,19.009592 0 0 0 0.635619,0.02377 19.009592,19.009592 0 0 0 19.009693,-19.009694 19.009592,19.009592 0 0 0 -19.009693,-19.009174 19.009592,19.009592 0 0 0 -6.207373,1.055748 19.009592,19.009592 0 0 0 -13.70769,-5.840469 19.009592,19.009592 0 0 0 -5.644615,0.858862 19.009592,19.009592 0 0 0 -11.942424,-4.221447 z" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="text"
+     style="display:none">
+    <text
+       xml:space="preserve"
+       style="font-size:24.1348px;line-height:1.25;font-family:Acens;-inkscape-font-specification:Acens;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="11.395863"
+       y="61.451092"
+       id="text3382"><tspan
+         sodipodi:role="line"
+         id="tspan3380"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Bahnschrift;-inkscape-font-specification:Bahnschrift;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.264583"
+         x="11.395863"
+         y="61.451092">SKYlite</tspan></text>
+  </g>
+</svg>

@@ -1,0 +1,159 @@
+import { PrismaClient } from "@prisma/client";
+import { consola } from "consola";
+import { createError, defineEventHandler, readBody } from "h3";
+
+import { createIntegrationService, integrationRegistry } from "~/types/integrations";
+
+import { normalizeWebcalUrl } from "../../utils/icalUrl";
+import { sanitizeIntegration } from "../../utils/sanitizeIntegration";
+
+const prisma = new PrismaClient();
+
+export default defineEventHandler(async (event) => {
+  try {
+    const id = event.context.params?.id;
+    if (!id) {
+      throw createError({
+        statusCode: 400,
+        message: "Integration ID is required",
+      });
+    }
+
+    const body = await readBody(event);
+    const { name, type, service, apiKey, icon, enabled, settings } = body;
+    let baseUrl = body.baseUrl;
+    if (baseUrl && typeof baseUrl === "string") {
+      baseUrl = normalizeWebcalUrl(baseUrl);
+    }
+    let preservedSettings = settings;
+
+    if (apiKey || baseUrl || settings) {
+      const currentIntegration = await prisma.integration.findUnique({
+        where: { id },
+      });
+
+      if (!currentIntegration) {
+        throw createError({
+          statusCode: 404,
+          message: "Integration not found",
+        });
+      }
+
+      const updatedData = {
+        ...currentIntegration,
+        ...(name && { name }),
+        ...(type && { type }),
+        ...(service && { service }),
+        ...(apiKey && { apiKey }),
+        ...(baseUrl && { baseUrl }),
+        ...(icon !== undefined && { icon }),
+        ...(enabled !== undefined && { enabled }),
+        ...(settings && { settings }),
+      };
+
+      if (settings && typeof settings === "object") {
+        const currentSettings = currentIntegration.settings as Record<string, unknown> | null;
+        const newSettings = settings as Record<string, unknown>;
+
+        if (!newSettings.clientSecret && currentSettings?.clientSecret) {
+          preservedSettings = {
+            ...newSettings,
+            clientSecret: currentSettings.clientSecret,
+          };
+          updatedData.settings = preservedSettings;
+        }
+      }
+
+      const integrationKey = `${updatedData.type}:${updatedData.service}`;
+      const integrationConfig = integrationRegistry.get(integrationKey);
+
+      if (integrationConfig) {
+        if (type || service) {
+          const missingFields = integrationConfig.settingsFields
+            .filter(field => field.required)
+            .filter((field) => {
+              if (field.key === "apiKey")
+                return !updatedData.apiKey;
+              if (field.key === "baseUrl")
+                return !updatedData.baseUrl;
+              if (field.key === "name")
+                return !updatedData.name;
+              if (field.key === "type")
+                return !updatedData.type;
+              if (field.key === "service")
+                return !updatedData.service;
+              return false;
+            })
+            .map(field => field.label);
+
+          if (missingFields.length > 0) {
+            throw createError({
+              statusCode: 400,
+              message: `Missing required fields: ${missingFields.join(", ")}`,
+            });
+          }
+        }
+
+        const hasOAuth = integrationConfig.capabilities.includes("oauth");
+
+        if (!hasOAuth) {
+          const tempIntegration = {
+            id: "temp",
+            type: updatedData.type,
+            service: updatedData.service,
+            apiKey: updatedData.apiKey,
+            baseUrl: updatedData.baseUrl,
+            enabled: true,
+            name: updatedData.name || "Temp",
+            icon: updatedData.icon || null,
+            settings: updatedData.settings || {},
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+          const integrationService = await createIntegrationService(tempIntegration);
+          if (!integrationService) {
+            throw createError({
+              statusCode: 400,
+              message: `Unsupported integration type: ${updatedData.type}:${updatedData.service}`,
+            });
+          }
+
+          const connectionSuccess = await integrationService.testConnection?.();
+          if (!connectionSuccess) {
+            const status = await integrationService.getStatus();
+            throw createError({
+              statusCode: 400,
+              message: `Connection test failed: ${status.error || "Unknown error"}`,
+            });
+          }
+        }
+      }
+    }
+
+    const integration = await prisma.integration.update({
+      where: { id },
+      data: {
+        ...(name && { name }),
+        ...(type && { type }),
+        ...(service && { service }),
+        ...(apiKey && { apiKey }),
+        ...(baseUrl && { baseUrl }),
+        ...(icon !== undefined && { icon }),
+        ...(enabled !== undefined && { enabled }),
+        ...(preservedSettings && { settings: preservedSettings }),
+      },
+    });
+
+    return sanitizeIntegration(integration);
+  }
+  catch (error: unknown) {
+    consola.error("Integrations id put: Error updating integration:", error);
+    const statusCode = error && typeof error === "object" && "statusCode" in error ? Number(error.statusCode) : 500;
+    const message = error && typeof error === "object" && "message" in error ? String(error.message) : "Failed to update integration";
+    throw createError({
+      statusCode,
+      message,
+    });
+  }
+});
