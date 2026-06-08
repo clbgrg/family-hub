@@ -33,6 +33,12 @@ export default defineNuxtPlugin(async () => {
   const config = useRuntimeConfig();
   const browserTimezone = config.public.tz;
 
+  // Forward the request cookie when prefetching our own /api/* on SSR. Since P0
+  // added the auth guard, raw $fetch on the server is unauthenticated (401) and
+  // every data page would render empty on hard-load. useRequestFetch fixes all
+  // of them at once. (See CLAUDE.md "Authed data fetching".)
+  const requestFetch = useRequestFetch();
+
   try {
     const apiUrl = `https://tz.add-to-calendar-technology.com/api/${browserTimezone}.ics`;
     const { data: vtimezoneBlock, error } = await useFetch(apiUrl, {
@@ -91,7 +97,7 @@ export default defineNuxtPlugin(async () => {
   try {
     const [_usersResult, _currentUserResult, integrationsResult]
       = await Promise.all([
-        useAsyncData("users", () => $fetch<User[]>("/api/users"), {
+        useAsyncData("users", () => requestFetch<User[]>("/api/users"), {
           server: true,
           lazy: false,
         }),
@@ -103,7 +109,7 @@ export default defineNuxtPlugin(async () => {
 
         useAsyncData(
           "integrations",
-          () => $fetch<Integration[]>("/api/integrations"),
+          () => requestFetch<Integration[]>("/api/integrations"),
           {
             server: true,
             lazy: false,
@@ -121,21 +127,21 @@ export default defineNuxtPlugin(async () => {
     ] = await Promise.all([
       useAsyncData(
         "calendar-events",
-        () => $fetch<CalendarEvent[]>("/api/calendar-events"),
+        () => requestFetch<CalendarEvent[]>("/api/calendar-events"),
         {
           server: true,
           lazy: false,
         },
       ),
 
-      useAsyncData("todos", () => $fetch<TodoWithUser[]>("/api/todos"), {
+      useAsyncData("todos", () => requestFetch<TodoWithUser[]>("/api/todos"), {
         server: true,
         lazy: false,
       }),
 
       useAsyncData(
         "native-shopping-lists",
-        () => $fetch<ShoppingListWithItemsAndCount[]>("/api/shopping-lists"),
+        () => requestFetch<ShoppingListWithItemsAndCount[]>("/api/shopping-lists"),
         {
           server: true,
           lazy: false,
@@ -144,7 +150,7 @@ export default defineNuxtPlugin(async () => {
 
       useAsyncData(
         "todo-columns",
-        () => $fetch<TodoColumn[]>("/api/todo-columns"),
+        () => requestFetch<TodoColumn[]>("/api/todo-columns"),
         {
           server: true,
           lazy: false,

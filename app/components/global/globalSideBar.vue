@@ -42,8 +42,8 @@ function isActivePath(path: string) {
       aria-label="Shopping Lists"
     />
     <UButton
-      :class="isActivePath('/mealplanner') ? 'text-primary' : 'text-default'"
-      to="/mealplanner"
+      :class="isActivePath('/mealPlanner') ? 'text-primary' : 'text-default'"
+      to="/mealPlanner"
       variant="ghost"
       icon="i-lucide-utensils"
       size="xl"
