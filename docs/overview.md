@@ -16,7 +16,7 @@ A wall-mountable and carry-around family dashboard running on a Raspberry Pi 5 w
 
 | Component | Details |
 |---|---|
-| Base software | Skylite-UX — open source, self-hosted, MIT license (github.com/Wetzel402/Skylite-UX) |
+| Base software | Skylite-UX — open source, self-hosted, AGPL-3.0 license (github.com/Wetzel402/Skylite-UX) |
 | Framework | Nuxt.js + TailwindCSS (frontend), Node.js (backend), PostgreSQL (database) |
 | Deployment | Docker Compose — one command to start everything |
 | Hardware | Raspberry Pi 5 (4GB) + portable HDMI touchscreen |

@@ -10,7 +10,7 @@ Think "DIY Skylight." Full feature/hardware/build detail lives in `docs/`.
 
 ## Architecture / stack
 
-- **Base app:** Skylite-UX (MIT) — https://github.com/Wetzel402/Skylite-UX. Fork it; don't rebuild from scratch.
+- **Base app:** Skylite-UX (**AGPL-3.0**, copyleft — upstream relicensed from MIT) — https://github.com/Wetzel402/Skylite-UX. Fork it; don't rebuild from scratch. Our fork inherits AGPL-3.0: it must stay open-source, network users are owed source (AGPL §13), and a closed-source/proprietary-SaaS version is not an option. The copy-and-run model is fully compatible.
 - **Frontend:** Nuxt.js + TailwindCSS
 - **Backend:** Node.js
 - **Database:** PostgreSQL
