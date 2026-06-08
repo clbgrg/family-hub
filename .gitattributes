@@ -1,0 +1,14 @@
+# Normalize line endings: repo stores LF, Docker/Linux on the Pi expects LF.
+# Devs on Windows can keep CRLF in their working copy via core.autocrlf,
+# but what's committed stays LF so diffs and the Pi build stay clean.
+* text=auto eol=lf
+
+# Binary assets — never normalize.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.docx binary

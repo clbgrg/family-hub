@@ -21,7 +21,9 @@ Think "DIY Skylight." Full feature/hardware/build detail lives in `docs/`.
 
 ## What Skylite-UX already gives us (don't rebuild)
 
-Calendar with month/week views, iCal sync, per-person accounts/logins, grocery list, per-person todos, dark mode + settings panel, Docker Compose deploy. Partial color-coded events.
+Calendar with month/week views, iCal sync **and full Google Calendar OAuth** (not just Apple), grocery list ("Shopping Lists"), per-person todos (with recurrence fields `rrule`/`recurringGroupId` already on the model), dark mode + settings panel, Docker Compose deploy. Partial color-coded events. Recipe-app integrations (Mealie/Tandoor) are wired in.
+
+⚠️ **NOT what it sounds like — there is NO authentication.** Upstream has *User Management* (profiles with name/color/avatar) but **no logins, passwords, sessions, or auth middleware** — `index.vue` itself carries a `// TODO: Authenticate user or route to login page`. Anyone on the LAN currently acts as anyone. **Auth is unbuilt and is a prerequisite for parental controls, per-kid chore check-off, reward approval, and per-person points.** See `docs/features-to-build.md`. (Audited against upstream commit `ffcd435`, 2026-04-02.)
 
 ## What we are building on top (the actual work)
 
@@ -35,7 +37,7 @@ Organized by phase in `docs/build-order.md`. Summary:
 
 - **Where it runs:** the *app* runs on the Pi via Docker. **Development happens on a dev machine (Mac/PC), not on the Pi.** The Pi is headless Pi OS Lite with 4GB shared across Docker + Postgres + Node — fine for running the built stack, sluggish for a live dev loop. Because the whole thing is Docker Compose, it runs identically on a laptop and on the Pi, so we build and test locally and deploy to the Pi with `git pull && docker compose up -d`. **No Pi hardware is needed to start building** — see `docs/dev-workflow.md`.
 - **Fork strategy:** vendor Skylite-UX into this repo as a fork we own (single repo, single `docker-compose.yml`). One repo to hand off and one repo another family can clone. The upstream stays a remote so we can pull fixes.
-- **Calendar:** Apple iCal only for now (read-only URL pull). UI still lets you add/remove sources generically.
+- **Calendar:** Apple iCal is our target (read-only URL pull). Note: upstream *already ships* a working Google Calendar OAuth integration too, so Google is available for free if wanted. UI lets you add/remove sources generically.
 - **Hardware:** not bought yet. Phase 1 is procurement; development proceeds in parallel without it.
 
 ## Design principle: build it to be copied

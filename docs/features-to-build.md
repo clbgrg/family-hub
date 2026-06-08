@@ -1,14 +1,26 @@
 # Features to Build on Top of Skylite-UX
 
+> **Audited against upstream commit `ffcd435` (2026-04-02).** Findings folded into the tables below. The one structural surprise: **Skylite-UX has no authentication** — see Priority 0.
+
+## Priority 0 — Authentication (prerequisite, not optional)
+
+Upstream ships *User Management* (profiles) but **no login/auth**: no password or PIN on the `User` model, no sessions, no auth middleware, no login page (`index.vue` has a literal `// TODO: Authenticate user or route to login page`). Everything below that says "per-person," "own chores," "parent approves," or "admin vs member" depends on identity that doesn't exist yet.
+
+| Feature | How to build | Effort |
+|---|---|---|
+| User auth + sessions | Add password/PIN to `User`, session handling, a login page, and route middleware. PIN-on-a-shared-touchscreen UX (not email/password) likely fits the Pi kiosk best. | **Large — build first** |
+
+> This reclassifies **Parental Controls** (below): it was rated "Medium" assuming roles exist; in reality it's auth + a `role` field + enforcement, and is gated on this Priority 0 work.
+
 ## Priority 1 — Core family features
 
 | Feature | How to build | Effort |
 |---|---|---|
 | Points + chore tracking | Add points column to chores table. Track completions per user. Show running totals on dashboard. | Medium |
 | Rewards store | New DB table `rewards` (name, cost_pts, image). Parent creates; kids redeem; parent approves via notification. | Medium |
-| Recurring chores | Add recurrence field (daily/weekly/custom). Cron job inside Docker resets completions at midnight. | Medium |
+| Recurring chores | Add recurrence field (daily/weekly/custom). Cron job inside Docker resets completions at midnight. **Reuse:** `Todo` already has `rrule` (JSON) + `recurringGroupId` — mirror that pattern for chores. | Medium |
 | Family message board | Sticky-note posts per user, color-coded by member. Auto-expire after 7 days or manual delete. | Easy |
-| Meal planner | 7-day grid UI. Drag recipes into slots. Auto-generate grocery list from ingredients. | Medium |
+| Meal planner | 7-day grid UI. Drag recipes into slots. Auto-generate grocery list from ingredients. **Note:** a stub page already exists (`app/pages/mealPlanner.vue`, ~32 lines of placeholder) and Mealie/Tandoor recipe integrations are wired in — build on those, don't start from zero. | Medium |
 | Dinner schedule | Subset of meal planner — dinner slot with who is cooking and what time. | Easy |
 
 ## Priority 2 — Gamification
