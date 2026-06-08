@@ -7,6 +7,18 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    // nuxt-auth-utils session. The password comes from NUXT_SESSION_PASSWORD (env).
+    session: {
+      // The Pi serves the app over plain HTTP on the LAN, so the session cookie
+      // must NOT be Secure-only or devices/kiosk won't send it back. (A Secure
+      // cookie is fine over HTTPS, but breaks the default http deployment.)
+      cookie: {
+        secure: false,
+        sameSite: "lax",
+      },
+      maxAge: 60 * 60 * 24 * 30, // 30 days — the kiosk stays signed in
+    },
+
     public: {
       skyliteVersion: pkg.version,
       nuxtVersion: pkg.devDependencies.nuxt,
@@ -23,6 +35,7 @@ export default defineNuxtConfig({
     "@nuxt/eslint",
     "@nuxtjs/html-validator",
     "@nuxt/test-utils/module",
+    "nuxt-auth-utils",
   ],
 
   fonts: {

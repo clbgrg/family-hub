@@ -129,9 +129,11 @@ export type CreateIntegrationInput = Omit<
 >;
 export type UpdateIntegrationInput = Partial<CreateIntegrationInput>;
 
+// role and pinHash are auth-managed server-side (role defaults to MEMBER; the
+// PIN is set via the auth flow), not supplied when creating a user profile.
 export type CreateUserInput = Omit<
   User,
-  "id" | "createdAt" | "updatedAt" | "avatar" | "color"
+  "id" | "createdAt" | "updatedAt" | "avatar" | "color" | "role" | "pinHash"
 >;
 export type CreateTodoInput = Omit<Todo, "id" | "createdAt" | "updatedAt">;
 export type CreateShoppingListInput = Omit<

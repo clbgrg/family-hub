@@ -20,6 +20,8 @@ describe("dELETE /api/users/[id]", () => {
     avatar: null,
     color: null,
     todoOrder: 0,
+    role: "MEMBER" as const,
+    pinHash: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     todoColumn: null,

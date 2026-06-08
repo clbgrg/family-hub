@@ -72,6 +72,8 @@ describe("useUsers", () => {
       avatar: null,
       color: null,
       todoOrder: 1,
+      role: "MEMBER",
+      pinHash: null,
       createdAt: testDate,
       updatedAt: testDate,
     },
@@ -84,6 +86,8 @@ describe("useUsers", () => {
     avatar: null,
     color: null,
     todoOrder: 1,
+    role: "MEMBER",
+    pinHash: null,
     createdAt: testDate,
     updatedAt: testDate,
   };

@@ -20,6 +20,8 @@ describe("gET /api/users", () => {
     avatar: null,
     color: null,
     todoOrder: 0,
+    role: "MEMBER" as const,
+    pinHash: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     todoColumn: null,

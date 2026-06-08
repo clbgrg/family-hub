@@ -17,6 +17,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://skylite:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/skylite
+      NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD:?set NUXT_SESSION_PASSWORD in .env (min 32 chars)}
       NUXT_PUBLIC_TZ: ${NUXT_PUBLIC_TZ:-America/Los_Angeles}
       NUXT_PUBLIC_LOG_LEVEL: ${NUXT_PUBLIC_LOG_LEVEL:-warn}
     depends_on:

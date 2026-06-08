@@ -21,6 +21,10 @@ model User {
   avatar    String?
   color     String?
   todoOrder Int      @default(0)
+  // Family Hub auth (single-tenant: one family per deployment).
+  // role gates admin-only actions; pinHash is null until an admin sets a PIN.
+  role      Role     @default(MEMBER)
+  pinHash   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -144,4 +148,9 @@ enum Priority {
   MEDIUM
   HIGH
   URGENT
+}
+
+enum Role {
+  ADMIN
+  MEMBER
 }

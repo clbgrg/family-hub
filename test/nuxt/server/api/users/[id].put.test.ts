@@ -82,6 +82,8 @@ describe("pUT /api/users/[id]", () => {
         avatar: requestBody.avatar || null,
         color: requestBody.color || null,
         todoOrder: requestBody.todoOrder ?? 0,
+        role: "MEMBER" as const,
+        pinHash: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
