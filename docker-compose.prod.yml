@@ -24,7 +24,7 @@ services:
     ports:
       - "${APP_BIND:-0.0.0.0}:3000:3000"
     volumes:
-      - ./photos:/app/photos:ro
+      - ./photos:/app/photos
     labels:
       # Watchtower only updates containers carrying this label (so it won't
       # touch Postgres or itself). The app applies `prisma migrate deploy` on

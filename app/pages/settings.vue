@@ -96,6 +96,40 @@ const screensaverIdleMinutes = computed({
   },
 });
 
+// Screensaver photos (admin upload/remove).
+const photosFetch = useRequestFetch();
+const { data: screensaverPhotos, refresh: refreshScreensaverPhotos } = await useAsyncData(
+  "settings-screensaver-photos",
+  () => photosFetch<{ name: string; url: string }[]>("/api/photos"),
+  { default: () => [], server: false },
+);
+const photoUploading = ref(false);
+const photoMsg = ref("");
+async function onPhotoUpload(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  photoUploading.value = true;
+  photoMsg.value = "";
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    await $fetch("/api/photos", { method: "POST", body: fd });
+    await refreshScreensaverPhotos();
+  }
+  catch (err: any) {
+    photoMsg.value = err?.statusMessage || err?.data?.statusMessage || "Upload failed";
+  }
+  finally {
+    photoUploading.value = false;
+    input.value = "";
+  }
+}
+async function removeScreensaverPhoto(name: string) {
+  await $fetch(`/api/photos/${encodeURIComponent(name)}`, { method: "DELETE" });
+  await refreshScreensaverPhotos();
+}
+
 const selectedUser = ref<User | null>(null);
 const isUserDialogOpen = ref(false);
 const selectedIntegration = ref<Integration | null>(null);
@@ -1030,6 +1064,50 @@ onMounted(async () => {
                 :min="1"
                 class="w-24"
               />
+            </div>
+            <div v-if="isAdmin && screensaverEnabled" class="border-t border-default pt-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="font-medium text-highlighted">
+                    Screensaver photos
+                  </p>
+                  <p class="text-sm text-muted">
+                    Images shown in the slideshow
+                  </p>
+                </div>
+                <label class="cursor-pointer">
+                  <span class="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-inverted">
+                    <UIcon name="i-lucide-upload" class="size-4" />
+                    {{ photoUploading ? "Uploading…" : "Upload" }}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    class="hidden"
+                    :disabled="photoUploading"
+                    @change="onPhotoUpload"
+                  >
+                </label>
+              </div>
+              <p v-if="photoMsg" class="mt-1 text-sm text-error">
+                {{ photoMsg }}
+              </p>
+              <div v-if="screensaverPhotos.length" class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                <div v-for="ph in screensaverPhotos" :key="ph.name" class="group relative">
+                  <img :src="ph.url" :alt="ph.name" class="aspect-square w-full rounded-md object-cover">
+                  <button
+                    type="button"
+                    class="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white opacity-80 hover:opacity-100"
+                    aria-label="Remove photo"
+                    @click="removeScreensaverPhoto(ph.name)"
+                  >
+                    <UIcon name="i-lucide-x" class="size-4" />
+                  </button>
+                </div>
+              </div>
+              <p v-else class="mt-2 text-sm text-muted">
+                No photos yet — upload some, or drop files in the photos folder.
+              </p>
             </div>
             <div class="flex items-center justify-between">
               <div>

@@ -28,7 +28,7 @@ services:
     volumes:
       # Screensaver photos — drop images here (gitignored). On the Pi this can
       # point at a USB drive's photo folder.
-      - ./photos:/app/photos:ro
+      - ./photos:/app/photos
     networks:
       - family-hub
 
