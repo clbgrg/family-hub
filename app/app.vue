@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import GlobalAppLoading from "~/components/global/globalAppLoading.vue";
 import GlobalDock from "~/components/global/globalDock.vue";
+import GlobalScreensaver from "~/components/global/globalScreensaver.vue";
 import GlobalSideBar from "~/components/global/globalSideBar.vue";
 
 const dock = false;
@@ -36,6 +37,10 @@ onNuxtReady(() => {
         <GlobalDock />
       </div>
     </div>
+
+    <ClientOnly>
+      <GlobalScreensaver />
+    </ClientOnly>
   </UApp>
 </template>
 

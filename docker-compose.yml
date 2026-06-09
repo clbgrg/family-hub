@@ -25,6 +25,10 @@ services:
         condition: service_healthy
     ports:
       - "${APP_BIND:-0.0.0.0}:3000:3000"
+    volumes:
+      # Screensaver photos — drop images here (gitignored). On the Pi this can
+      # point at a USB drive's photo folder.
+      - ./photos:/app/photos:ro
     networks:
       - family-hub
 

@@ -120,13 +120,17 @@ export type ClientPreferences = {
   todoSortBy?: TodoSortMode;
   defaultView?: string;
   calendarView?: CalendarView;
+  // Screensaver is a property of this physical display, so it lives in
+  // per-device client preferences (not a shared server setting).
+  screensaverEnabled?: boolean;
+  screensaverIdleMinutes?: number;
 };
 
 export const MAIN_VIEW_OPTIONS: { path: string; label: string }[] = [
   { path: "/calendar", label: "Calendar" },
   { path: "/toDoLists", label: "Todo Lists" },
   { path: "/shoppingLists", label: "Shopping Lists" },
-  { path: "/mealplanner", label: "Meal Planner" },
+  { path: "/mealPlanner", label: "Meal Planner" },
 ];
 
 export const defaultClientPreferences: ClientPreferences = {
@@ -136,6 +140,8 @@ export const defaultClientPreferences: ClientPreferences = {
   todoSortBy: "date",
   defaultView: "/calendar",
   calendarView: "week",
+  screensaverEnabled: true,
+  screensaverIdleMinutes: 5,
 };
 
 export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [

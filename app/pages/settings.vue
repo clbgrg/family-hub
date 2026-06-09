@@ -82,6 +82,20 @@ const selectedDefaultView = computed({
   },
 });
 
+const screensaverEnabled = computed({
+  get: () => preferences.value?.screensaverEnabled !== false,
+  set(value: boolean) {
+    updatePreferences({ screensaverEnabled: value });
+  },
+});
+
+const screensaverIdleMinutes = computed({
+  get: () => preferences.value?.screensaverIdleMinutes ?? 5,
+  set(value: number) {
+    updatePreferences({ screensaverIdleMinutes: Math.max(1, Number(value) || 5) });
+  },
+});
+
 const selectedUser = ref<User | null>(null);
 const isUserDialogOpen = ref(false);
 const selectedIntegration = ref<Integration | null>(null);
@@ -647,6 +661,20 @@ async function changeMyPin() {
     myPinError.value = "Couldn't update PIN.";
   }
 }
+
+// --- Network & Access: QR to open the app on a phone ---
+const appUrl = ref("");
+const qrDataUrl = ref("");
+onMounted(async () => {
+  appUrl.value = window.location.origin;
+  try {
+    const QRCode = (await import("qrcode")).default;
+    qrDataUrl.value = await QRCode.toDataURL(appUrl.value, { width: 200, margin: 1 });
+  }
+  catch {
+    qrDataUrl.value = "";
+  }
+});
 </script>
 
 <template>
@@ -972,6 +1000,40 @@ async function changeMyPin() {
             <div class="flex items-center justify-between">
               <div>
                 <p class="font-medium text-highlighted">
+                  Screensaver
+                </p>
+                <p class="text-sm text-muted">
+                  Show a photo slideshow when the screen is idle
+                </p>
+              </div>
+              <USwitch
+                v-model="screensaverEnabled"
+                color="primary"
+                checked-icon="i-lucide-image"
+                unchecked-icon="i-lucide-image-off"
+                size="xl"
+                aria-label="Toggle screensaver"
+              />
+            </div>
+            <div v-if="screensaverEnabled" class="flex items-center justify-between">
+              <div>
+                <p class="font-medium text-highlighted">
+                  Idle timeout
+                </p>
+                <p class="text-sm text-muted">
+                  Minutes of inactivity before the screensaver starts
+                </p>
+              </div>
+              <UInput
+                v-model.number="screensaverIdleMinutes"
+                type="number"
+                :min="1"
+                class="w-24"
+              />
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-medium text-highlighted">
                   Font
                 </p>
                 <p class="text-sm text-muted">
@@ -1023,6 +1085,39 @@ async function changeMyPin() {
                   {{ MAIN_VIEW_OPTIONS.find(o => o.path === selectedDefaultView)?.label ?? "Calendar" }}
                 </template>
               </USelect>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6">
+          <h2 class="text-lg font-semibold text-highlighted mb-4">
+            Network &amp; Access
+          </h2>
+          <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <ClientOnly>
+              <img
+                v-if="qrDataUrl"
+                :src="qrDataUrl"
+                alt="QR code to open Family Hub"
+                width="160"
+                height="160"
+                class="rounded-lg border border-default bg-white p-1"
+              >
+            </ClientOnly>
+            <div>
+              <p class="font-medium text-highlighted">
+                Open on a phone
+              </p>
+              <p class="text-sm text-muted">
+                Scan this code from a device on the same WiFi to open Family Hub.
+              </p>
+              <p class="mt-1 break-all font-mono text-sm">
+                {{ appUrl }}
+              </p>
+              <p class="mt-1 text-xs text-muted">
+                Shows the address you're currently using — on the Pi kiosk that's localhost,
+                so scan it from a phone or browse to the Pi's LAN IP instead.
+              </p>
             </div>
           </div>
         </div>
