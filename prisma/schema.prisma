@@ -35,6 +35,7 @@ model User {
   badges           UserBadge[]
   mealsCooking     Meal[]            @relation("MealCook")
   messages         Message[]
+  redemptions      Redemption[]
 
   @@map("users")
 }
@@ -234,6 +235,48 @@ enum MealSlot {
   BREAKFAST
   LUNCH
   DINNER
+}
+
+// A reward in the store (admin-curated catalog). Kids spend chore points to
+// redeem one; a parent approves or rejects the request.
+model Reward {
+  id         String   @id @default(cuid())
+  name       String
+  pointsCost Int
+  imageUrl   String?
+  active     Boolean  @default(true)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  redemptions Redemption[]
+
+  @@map("rewards")
+}
+
+// A redemption request. pointsCost/rewardName are snapshots so the record (and
+// the points it spends) survive the reward being renamed or deleted. Balance is
+// always DERIVED (earned - approved - pending), never a stored counter.
+model Redemption {
+  id          String           @id @default(cuid())
+  rewardId    String?
+  reward      Reward?          @relation(fields: [rewardId], references: [id], onDelete: SetNull)
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rewardName  String
+  pointsCost  Int
+  status      RedemptionStatus @default(PENDING)
+  requestedAt DateTime         @default(now())
+  decidedAt   DateTime?
+
+  @@index([userId, status])
+  @@map("redemptions")
+}
+
+enum RedemptionStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 // A sticky-note on the family message board. Any member can post; the author

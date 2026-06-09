@@ -34,6 +34,14 @@ function isActivePath(path: string) {
       aria-label="Chores"
     />
     <UButton
+      :class="isActivePath('/rewards') ? 'text-primary' : 'text-default'"
+      to="/rewards"
+      variant="ghost"
+      icon="i-lucide-gift"
+      size="xl"
+      aria-label="Rewards"
+    />
+    <UButton
       :class="isActivePath('/messages') ? 'text-primary' : 'text-default'"
       to="/messages"
       variant="ghost"
