@@ -25,4 +25,6 @@ This repo vendors [Skylite-UX](https://github.com/Wetzel402/Skylite-UX) (**AGPL-
 
 ## Status
 
-Planning complete. Skylite-UX fork vendored into this repo. Building from here per `docs/build-order.md` (next: hardened Docker compose + first-run setup, then Priority-0 auth).
+**Feature-complete and running in Docker.** Built and verified: first-run setup + PIN auth, calendar, per-person chores with points, gamification (streaks/badges/celebration/leaderboard), meal planner + grocery generation, family message board, rewards store, a Today dashboard, a parent-controlled settings panel (roles/PINs), and a photo screensaver with QR access. Badges and rewards are admin-editable. Ops: a GHCR auto-update pipeline (release tag → image → Watchtower) and a scheduled DB backup with a verified restore.
+
+What remains is not code: buy the Raspberry Pi 5 and deploy (`git pull && docker compose -f docker-compose.prod.yml up -d`), and flip the GHCR package public to enable auto-updates. The arm64 image has not been runtime-tested yet (no Pi). See `docs/deployment.md`.

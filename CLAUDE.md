@@ -77,11 +77,13 @@ A hard requirement is that another family can clone this and run their own. That
 
 ## Status
 
-Greenfield. Nothing built yet. Skylite-UX fork not yet cloned into this folder. Core decisions are locked (above); remaining open items in OPEN-QUESTIONS.md are feature-design details, not blockers.
+**Feature-complete and running in Docker.** Built and verified (API + browser, both admin/member personas): first-run setup + PIN-based auth (admin/member roles), calendar, per-person chores + points, gamification (streaks, badges, celebration, leaderboard), meal planner + auto grocery list, family message board, rewards store, a Today dashboard, a parent-controlled settings panel (roles, PINs, account), and a photo screensaver with QR access. **Badges and rewards are admin-editable.** Ops: a GHCR multi-arch auto-update pipeline (release tags → image → Watchtower) and a scheduled `pg_dump` backup sidecar with a verified restore.
 
-## Suggested first task for Claude Code
+What remains is **not code**: hardware procurement + Pi deployment, and making the GHCR package public to turn auto-updates on. ⚠️ The **arm64 image has not been runtime-tested** (no Pi yet). Parked: a per-kid weekly school grid (design decided, in project memory). Remaining open feature-design items are in `OPEN-QUESTIONS.md`.
 
-1. Audit the live Skylite-UX repo and confirm the "already has" vs "to build" split in `docs/features-to-build.md` against reality.
-2. Vendor the fork into this folder, get `docker compose up -d` running locally (no Pi needed).
-3. Stand up the first-run setup wizard so the app boots family-data-free.
-Then proceed by phase per `docs/build-order.md`.
+## Where to pick up
+
+Development now is feature tweaks + deployment, not bootstrapping. Useful entry points:
+- **Deploy to a Pi:** `docs/deployment.md` (prebuilt image + Watchtower) or `docs/installation.md`.
+- **Add/adjust a feature:** it will mirror an existing one — chores (`server/api/chores/*` + `app/pages/chores.vue`), rewards, meals, badges, message board. Follow the repo conventions above (migrations; authed SSR fetch via `useRequestFetch`; completion-records, no cron; client-local dates).
+- **Parked work + open questions:** the school grid and `OPEN-QUESTIONS.md`.
