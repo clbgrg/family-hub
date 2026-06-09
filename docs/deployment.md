@@ -27,9 +27,27 @@ docker compose -f docker-compose.prod.yml up -d
 - **Pin a version** instead of auto-updating: set `FH_IMAGE_TAG=2026.6.0` in
   `.env`. Watchtower then has nothing newer to pull.
 - ⚠️ **Auto-updates apply migrations, which are forward-only (no rollback).**
-  Pair this with the nightly `pg_dump` backup before trusting unattended
-  updates. Restore = stop the app, restore the dump, pin `FH_IMAGE_TAG` to the
-  previous release.
+  The `backup` sidecar (below) is the safety net — keep it running before you
+  trust unattended updates.
+
+## Backups & restore
+
+Both compose files include a `backup` sidecar that runs `pg_dump` on start and
+then every `BACKUP_INTERVAL_SECONDS` (default daily), writing gzipped dumps to
+`./backups/` and keeping the newest `BACKUP_KEEP` (default 7). On the Pi, point
+`./backups` at a USB drive. Dumps are `--clean`, so restoring one overwrites
+whatever's currently in the database.
+
+**Restore** (e.g. after a bad auto-update):
+
+```bash
+docker compose stop app                         # prod: add -f docker-compose.prod.yml
+scripts/restore.sh backups/family-hub-YYYYMMDD-HHMMSS.sql.gz
+docker compose up -d                            # prod: add -f docker-compose.prod.yml
+```
+
+If a release itself is bad, also pin `FH_IMAGE_TAG` to the previous version so
+Watchtower doesn't immediately re-pull the broken one.
 
 ## Cutting a release (maintainer)
 

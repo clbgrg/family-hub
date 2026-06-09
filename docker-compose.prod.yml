@@ -60,6 +60,29 @@ services:
     networks:
       - family-hub
 
+  # Scheduled pg_dump -> ./backups (gzipped, pruned). The safety net under
+  # auto-updates: a release applies migrations forward-only, so keep backups.
+  # Restore with scripts/restore.sh.
+  backup:
+    image: postgres:16
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: skylite
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      PGDATABASE: skylite
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_KEEP: ${BACKUP_KEEP:-7}
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    entrypoint: ["sh", "/backup.sh"]
+    networks:
+      - family-hub
+
 networks:
   family-hub:
     driver: bridge
