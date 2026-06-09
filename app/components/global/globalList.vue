@@ -182,8 +182,8 @@ function hasIntegrationProperties(
                         class="w-5 h-5 rounded-sm flex items-center justify-center flex-shrink-0"
                       >
                         <img
-                          src="/favicon.ico"
-                          alt="SkyLite"
+                          src="/family-hub.svg"
+                          alt="Family Hub"
                           class="h-5 w-5"
                           style="object-fit: contain"
                           @error="

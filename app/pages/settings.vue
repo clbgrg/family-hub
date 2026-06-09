@@ -1212,22 +1212,22 @@ onMounted(async () => {
             >
               <img
                 v-if="logoLoaded"
-                src="/skylite.svg"
-                alt="SkyLite UX Logo"
+                src="/family-hub.svg"
+                alt="Family Hub Logo"
                 class="w-8 h-8"
                 style="object-fit: contain"
                 @error="logoLoaded = false"
               >
               <UIcon
                 v-else
-                name="i-lucide-sun"
+                name="i-lucide-house"
                 class="w-6 h-6 text-primary"
               />
             </div>
             <div class="flex-1">
               <div class="flex items-center justify-between mb-1">
                 <h3 class="text-lg font-semibold text-highlighted">
-                  SkyLite UX
+                  Family Hub
                 </h3>
                 <span
                   class="text-xs font-mono text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-md"

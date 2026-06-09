@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Family Hub">
+  <rect width="64" height="64" rx="14" fill="#4f46e5"/>
+  <g transform="translate(14 15) scale(1.5)" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 10.5 L12 3 L21 10.5"/>
+    <path d="M5 9.5 V20 a1 1 0 0 0 1 1 H18 a1 1 0 0 0 1 -1 V9.5"/>
+    <path d="M9 21 V15 H15 V21"/>
+  </g>
+</svg>

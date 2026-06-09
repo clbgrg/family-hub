@@ -11,9 +11,9 @@ defineProps<{
       <div class="loadingContent">
         <div class="loadingLogo">
           <img
-            src="/skylite.svg"
-            alt="SkyLite Logo"
-            class="skyliteLogo animate-pulse"
+            src="/family-hub.svg"
+            alt="Family Hub"
+            class="appLogo animate-pulse"
           >
         </div>
         <p class="loadingText">
@@ -51,16 +51,16 @@ defineProps<{
   justify-content: center;
 }
 
-.skyliteLogo {
-  width: 16rem;
-  height: 16rem;
+.appLogo {
+  width: 12rem;
+  height: 12rem;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
 }
 
 .loadingText {
   font-size: 1.125rem;
   color: var(--ui-text-muted);
-  margin: -4rem 0 0 -2rem;
+  margin: 0.5rem 0 0 0;
 }
 
 .fade-enter-active,

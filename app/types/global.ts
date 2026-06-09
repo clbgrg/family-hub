@@ -8,7 +8,7 @@ type GlobalThis = {
 export const DEFAULT_LOCAL_EVENT_COLOR = "#06b6d4";
 
 export function getSlogan(): string | undefined {
-  return ((globalThis as GlobalThis).__SKYLITE_SLOGAN__ = "Life, Organized.");
+  return ((globalThis as GlobalThis).__SKYLITE_SLOGAN__ = "Your whole family, in one place.");
 }
 
 export function getBrowserTimezone(): string | undefined {

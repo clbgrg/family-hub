@@ -98,7 +98,10 @@ export default defineNuxtConfig({
       htmlAttrs: {
         lang: "en",
       },
-      title: "Skylite UX",
+      title: "Family Hub",
+      link: [
+        { rel: "icon", type: "image/svg+xml", href: "/family-hub.svg" },
+      ],
     },
   },
 
