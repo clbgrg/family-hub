@@ -2,7 +2,6 @@
 import type { Message } from "~/composables/useMessages";
 
 const { user } = useUserSession();
-const isAdmin = computed(() => user.value?.role === "ADMIN");
 const { messages, postMessage, deleteMessage } = useMessages();
 
 const requestFetch = useRequestFetch();
@@ -23,10 +22,6 @@ watchEffect(() => {
   if (!fromId.value && user.value?.id) fromId.value = user.value.id;
 });
 
-function canDelete(m: Message) {
-  return isAdmin.value || user.value?.id === m.author.id;
-}
-
 async function submit() {
   const body = draft.value.trim();
   if (!body || posting.value) return;
@@ -45,7 +40,6 @@ async function submit() {
 }
 
 async function remove(m: Message) {
-  if (!canDelete(m)) return;
   await deleteMessage(m.id);
 }
 
@@ -111,12 +105,11 @@ function timeAgo(iso: string): string {
             :style="noteStyle(m)"
           >
             <UButton
-              v-if="canDelete(m)"
               icon="i-lucide-x"
-              size="xs"
-              variant="ghost"
+              size="sm"
+              variant="soft"
               color="neutral"
-              class="absolute right-1 top-1 opacity-70 hover:opacity-100"
+              class="absolute right-1.5 top-1.5"
               aria-label="Delete note"
               @click="remove(m)"
             />

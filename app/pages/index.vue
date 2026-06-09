@@ -35,13 +35,24 @@ const { data: users } = await useAsyncData(
   () => requestFetch<DashUser[]>("/api/users"),
   { default: () => [], server: false },
 );
+const { data: schoolNotes } = await useAsyncData(
+  "dash-school",
+  () => requestFetch<{ userId: string; date: string; text: string }[]>("/api/school-notes", { query: { start: today, end: today } }),
+  { default: () => [], server: false },
+);
 
-// Per-member chores due today (only members who have any).
+const schoolByUser = computed(() => {
+  const map: Record<string, string> = {};
+  for (const n of schoolNotes.value ?? []) map[n.userId] = n.text;
+  return map;
+});
+
+// Per-member chores due today + today's school note (members with either).
 const board = computed(() => {
   const due = (chores.value ?? []).filter(c => c.dueToday);
   return (users.value ?? [])
-    .map(u => ({ user: u, chores: due.filter(c => c.assignee?.id === u.id) }))
-    .filter(g => g.chores.length > 0);
+    .map(u => ({ user: u, chores: due.filter(c => c.assignee?.id === u.id), school: schoolByUser.value[u.id] ?? "" }))
+    .filter(g => g.chores.length > 0 || g.school);
 });
 
 // Events overlapping today, earliest first.
@@ -98,7 +109,7 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-list-checks" class="size-5 text-primary" />
               <h2 class="text-lg font-semibold">
-                Today's chores
+                Today's chores &amp; school
               </h2>
             </div>
           </template>
@@ -120,6 +131,10 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
                   <span class="ml-auto shrink-0 text-xs text-muted">+{{ chore.points }}</span>
                 </li>
               </ul>
+              <p v-if="group.school" class="mt-1 flex items-start gap-1.5 text-sm">
+                <UIcon name="i-lucide-graduation-cap" class="mt-0.5 size-4 shrink-0 text-primary" />
+                <span class="whitespace-pre-wrap">{{ group.school }}</span>
+              </p>
             </div>
           </div>
           <p v-else class="py-6 text-center text-muted">
