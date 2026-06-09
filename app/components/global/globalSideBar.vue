@@ -34,6 +34,14 @@ function isActivePath(path: string) {
       aria-label="Todo Lists"
     />
     <UButton
+      :class="isActivePath('/school') ? 'text-primary' : 'text-default'"
+      to="/school"
+      variant="ghost"
+      icon="i-lucide-graduation-cap"
+      size="xl"
+      aria-label="School"
+    />
+    <UButton
       :class="isActivePath('/chores') ? 'text-primary' : 'text-default'"
       to="/chores"
       variant="ghost"

@@ -22,6 +22,12 @@ export function weekStartSunday(date: string): string {
   return addDaysIso(date, -dow);
 }
 
+/** The Monday that starts the (ISO) week containing `date`. */
+export function weekStartMonday(date: string): string {
+  const dow = new Date(`${date}T00:00:00Z`).getUTCDay(); // 0=Sun..6=Sat
+  return addDaysIso(date, dow === 0 ? -6 : 1 - dow);
+}
+
 /** Short label like "Mon 6/8" for a YYYY-MM-DD date. */
 export function dayLabel(date: string): string {
   return new Date(`${date}T00:00:00Z`).toLocaleDateString(undefined, {

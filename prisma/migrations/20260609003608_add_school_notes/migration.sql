@@ -1,0 +1,18 @@
+-- CreateTable
+CREATE TABLE "school_notes" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "text" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "school_notes_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "school_notes_userId_date_key" ON "school_notes"("userId", "date");
+
+-- AddForeignKey
+ALTER TABLE "school_notes" ADD CONSTRAINT "school_notes_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

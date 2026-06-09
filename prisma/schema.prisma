@@ -36,6 +36,7 @@ model User {
   mealsCooking     Meal[]            @relation("MealCook")
   messages         Message[]
   redemptions      Redemption[]
+  schoolNotes      SchoolNote[]
 
   @@map("users")
 }
@@ -328,4 +329,19 @@ enum BadgeRuleType {
   TOTAL_POINTS
   TOTAL_COMPLETIONS
   POINTS_IN_DAY
+}
+
+// A free-text school note for one member on one day (the weekly school grid:
+// rows = members, columns = weekdays). One note per (member, date).
+model SchoolNote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String // client-local "YYYY-MM-DD"
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@map("school_notes")
 }
