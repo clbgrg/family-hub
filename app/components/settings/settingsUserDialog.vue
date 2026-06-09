@@ -10,7 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "save", user: CreateUserInput): void;
+  (e: "save", user: CreateUserInput & { role: "ADMIN" | "MEMBER"; pin?: string }): void;
   (e: "delete", userId: string): void;
 }>();
 
@@ -18,7 +18,15 @@ const name = ref("");
 const email = ref("");
 const color = ref("#3b82f6");
 const avatar = ref("");
+const role = ref<"ADMIN" | "MEMBER">("MEMBER");
+const pin = ref("");
 const error = ref<string | null>(null);
+
+const hasPin = computed(() => Boolean(props.user?.pinHash));
+const roleOptions = [
+  { label: "Parent (admin)", value: "ADMIN" },
+  { label: "Kid (member)", value: "MEMBER" },
+];
 
 const chip = computed(() => ({ backgroundColor: color.value }));
 
@@ -47,6 +55,8 @@ watch(
           && !newUser.avatar.startsWith("https://ui-avatars.com/api/")
           ? newUser.avatar
           : "";
+      role.value = newUser.role === "ADMIN" ? "ADMIN" : "MEMBER";
+      pin.value = "";
       error.value = null;
     }
     else {
@@ -70,6 +80,8 @@ function resetForm() {
   email.value = "";
   color.value = "#06b6d4";
   avatar.value = "";
+  role.value = "MEMBER";
+  pin.value = "";
   error.value = null;
 }
 
@@ -83,13 +95,20 @@ function handleSave() {
     return;
   }
 
+  if (pin.value && !/^\d{4,8}$/.test(pin.value)) {
+    error.value = "PIN must be 4-8 digits";
+    return;
+  }
+
   emit("save", {
     name: name.value.trim(),
     email: email.value?.trim() || "",
     color: color.value,
     avatar: avatar.value || getDefaultAvatarUrl(),
     todoOrder: 0,
-  } as CreateUserInput);
+    role: role.value,
+    pin: pin.value || undefined,
+  } as CreateUserInput & { role: "ADMIN" | "MEMBER"; pin?: string });
 }
 
 function handleDelete() {
@@ -187,6 +206,34 @@ function handleDelete() {
               :ui="{ base: 'w-full' }"
             />
           </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Account type</label>
+          <USelect
+            v-model="role"
+            :items="roleOptions"
+            option-attribute="label"
+            value-attribute="value"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">
+            Login PIN
+            <span class="font-normal text-muted">({{ hasPin ? "set — enter a new one to change" : "not set — needed to sign in" }})</span>
+          </label>
+          <UInput
+            v-model="pin"
+            type="password"
+            inputmode="numeric"
+            autocomplete="off"
+            :placeholder="hasPin ? 'Leave blank to keep current PIN' : 'Set a 4-8 digit PIN'"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
         </div>
       </div>
 

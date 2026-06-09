@@ -1,18 +1,29 @@
+import { Role } from "@prisma/client";
+
 import prisma from "~/lib/prisma";
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event);
 
-  try {
-    const userId = getRouterParam(event, "id");
+  const userId = getRouterParam(event, "id");
+  if (!userId) {
+    throw createError({ statusCode: 400, statusMessage: "User ID is required" });
+  }
 
-    if (!userId) {
-      throw createError({
-        statusCode: 400,
-        message: "User ID is required",
-      });
+  // Guard against deleting the last admin (lockout). Before the try so the
+  // 409/404 isn't swallowed by the catch-all below.
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  if (!target) {
+    throw createError({ statusCode: 404, statusMessage: "User not found" });
+  }
+  if (target.role === Role.ADMIN) {
+    const adminCount = await prisma.user.count({ where: { role: Role.ADMIN } });
+    if (adminCount <= 1) {
+      throw createError({ statusCode: 409, statusMessage: "Can't delete the last admin" });
     }
+  }
 
+  try {
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
       include: {

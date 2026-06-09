@@ -1,15 +1,19 @@
 import prisma from "~/lib/prisma";
 
 /**
- * Admin sets or resets a user's login PIN — used to onboard family members
- * (e.g. give a kid a PIN) and to reset a forgotten one. Admin-only.
+ * Set or reset a user's login PIN. An admin can set anyone's (onboard a kid,
+ * reset a forgotten PIN); a member can set only their OWN. Same 4-8 digit
+ * format as setup/login, so a self-changed PIN can log in afterward.
  */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event);
+  const session = await requireUserSession(event);
 
   const id = getRouterParam(event, "id");
   if (!id) {
     throw createError({ statusCode: 400, statusMessage: "User ID is required" });
+  }
+  if (session.user.role !== "ADMIN" && session.user.id !== id) {
+    throw createError({ statusCode: 403, statusMessage: "You can only change your own PIN" });
   }
 
   const body = await readBody(event);

@@ -134,48 +134,31 @@ const filteredIntegrations = computed(() => {
   );
 });
 
-async function handleUserSave(userData: CreateUserInput) {
+async function handleUserSave(
+  userData: CreateUserInput & { role?: "ADMIN" | "MEMBER"; pin?: string },
+) {
+  // PIN goes to the dedicated /pin endpoint, not the user record.
+  const { pin, ...userFields } = userData;
   try {
-    if (selectedUser.value?.id) {
-      const { data: cachedUsers } = useNuxtData("users");
-      const previousUsers = cachedUsers.value ? [...cachedUsers.value] : [];
-
-      if (cachedUsers.value && Array.isArray(cachedUsers.value)) {
-        const userIndex = cachedUsers.value.findIndex(
-          (u: User) => u.id === selectedUser.value!.id,
-        );
-        if (userIndex !== -1) {
-          cachedUsers.value[userIndex] = {
-            ...cachedUsers.value[userIndex],
-            ...userData,
-          };
-        }
-      }
-
-      try {
-        await updateUser(selectedUser.value.id, userData);
-        consola.debug("Settings: User updated successfully");
-      }
-      catch (error) {
-        if (cachedUsers.value && previousUsers.length > 0) {
-          cachedUsers.value.splice(
-            0,
-            cachedUsers.value.length,
-            ...previousUsers,
-          );
-        }
-        throw error;
-      }
+    let userId = selectedUser.value?.id ?? null;
+    if (userId) {
+      await updateUser(userId, userFields);
     }
     else {
-      await createUser(userData);
-      consola.debug("Settings: User created successfully");
+      const created = await createUser(userFields);
+      userId = created?.id ?? null;
+    }
+
+    if (pin && userId) {
+      await $fetch(`/api/users/${userId}/pin`, { method: "PUT", body: { pin } });
     }
 
     isUserDialogOpen.value = false;
     selectedUser.value = null;
   }
   catch (error) {
+    // Keep the dialog open so the admin notices it didn't save (e.g. the
+    // last-admin guard returns 409).
     consola.error("Settings: Failed to save user:", error);
   }
 }
@@ -634,6 +617,36 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
     | undefined;
   return Boolean(settings?.needsReauth);
 }
+
+// --- Account (all users) + admin gating ---
+const { user: sessionUser, clear: clearSession } = useUserSession();
+const isAdmin = computed(() => sessionUser.value?.role === "ADMIN");
+
+async function signOut() {
+  await clearSession();
+  await navigateTo("/login");
+}
+
+const myPin = ref("");
+const myPinMsg = ref("");
+const myPinError = ref("");
+async function changeMyPin() {
+  myPinMsg.value = "";
+  myPinError.value = "";
+  if (!/^\d{4,8}$/.test(myPin.value)) {
+    myPinError.value = "PIN must be 4-8 digits";
+    return;
+  }
+  if (!sessionUser.value?.id) return;
+  try {
+    await $fetch(`/api/users/${sessionUser.value.id}/pin`, { method: "PUT", body: { pin: myPin.value } });
+    myPin.value = "";
+    myPinMsg.value = "PIN updated.";
+  }
+  catch {
+    myPinError.value = "Couldn't update PIN.";
+  }
+}
 </script>
 
 <template>
@@ -646,7 +659,41 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
 
     <div class="flex-1 bg-default p-6">
       <div class="max-w-4xl mx-auto">
+        <!-- Your Account (every member) -->
+        <div class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6">
+          <h2 class="text-lg font-semibold text-highlighted mb-4">
+            Your Account
+          </h2>
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-medium text-highlighted">
+                  Signed in as {{ sessionUser?.name }}
+                </p>
+                <p class="text-sm text-muted">
+                  {{ isAdmin ? "Parent (admin)" : "Kid (member)" }}
+                </p>
+              </div>
+              <UButton icon="i-lucide-log-out" color="neutral" variant="soft" label="Sign out" @click="signOut" />
+            </div>
+            <div class="flex flex-col gap-2 border-t border-default pt-4">
+              <label class="text-sm font-medium text-highlighted">Change my PIN</label>
+              <div class="flex items-center gap-2">
+                <UInput v-model="myPin" type="password" inputmode="numeric" autocomplete="off" placeholder="New 4-8 digit PIN" class="max-w-xs" />
+                <UButton label="Update PIN" :disabled="!myPin" @click="changeMyPin" />
+              </div>
+              <p v-if="myPinError" class="text-sm text-error">
+                {{ myPinError }}
+              </p>
+              <p v-else-if="myPinMsg" class="text-sm text-primary">
+                {{ myPinMsg }}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div
+          v-if="isAdmin"
           class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
         >
           <div class="flex items-center justify-between mb-6">
@@ -729,6 +776,7 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
         </div>
 
         <div
+          v-if="isAdmin"
           class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
         >
           <div class="flex items-center justify-between mb-6">

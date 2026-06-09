@@ -1,3 +1,5 @@
+import { Role } from "@prisma/client";
+
 import prisma from "~/lib/prisma";
 
 export default defineEventHandler(async (event) => {
@@ -9,6 +11,24 @@ export default defineEventHandler(async (event) => {
   }
   const body = await readBody(event);
 
+  // Validate role and guard against removing the last admin (lockout).
+  let roleUpdate: Role | undefined;
+  if (body.role !== undefined) {
+    if (!Object.values(Role).includes(body.role)) {
+      throw createError({ statusCode: 400, statusMessage: "role must be ADMIN or MEMBER" });
+    }
+    roleUpdate = body.role as Role;
+    if (roleUpdate === Role.MEMBER) {
+      const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+      if (target?.role === Role.ADMIN) {
+        const adminCount = await prisma.user.count({ where: { role: Role.ADMIN } });
+        if (adminCount <= 1) {
+          throw createError({ statusCode: 409, statusMessage: "Can't remove the last admin" });
+        }
+      }
+    }
+  }
+
   try {
     const [updatedUser] = await prisma.$transaction([
       prisma.user.update({
@@ -19,6 +39,7 @@ export default defineEventHandler(async (event) => {
           avatar: body.avatar || null,
           color: body.color || null,
           todoOrder: body.todoOrder ?? undefined,
+          ...(roleUpdate ? { role: roleUpdate } : {}),
         },
       }),
       ...(body.name

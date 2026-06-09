@@ -1,3 +1,5 @@
+import { Role } from "@prisma/client";
+
 import prisma from "~/lib/prisma";
 
 export default defineEventHandler(async (event) => {
@@ -5,6 +7,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     const body = await readBody(event);
+    const role = Object.values(Role).includes(body.role) ? (body.role as Role) : Role.MEMBER;
 
     const maxOrder = await prisma.todoColumn.aggregate({
       _max: {
@@ -19,6 +22,7 @@ export default defineEventHandler(async (event) => {
           email: body.email && body.email.trim() ? body.email.trim() : null,
           avatar: body.avatar || null,
           color: body.color || null,
+          role,
         },
       });
 
