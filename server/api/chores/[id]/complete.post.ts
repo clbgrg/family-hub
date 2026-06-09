@@ -53,16 +53,16 @@ export default defineEventHandler(async (event) => {
 
   // Award any newly-earned badges to the ASSIGNEE (read existing → diff → insert).
   const stats = await computeUserStats(assigneeId, localDate);
-  const earned = computeEarnedBadgeKeys(stats);
+  const earnedBadges = await evaluateEarnedBadges(stats);
   const existingBadges = await prisma.userBadge.findMany({
     where: { userId: assigneeId },
     select: { badgeKey: true },
   });
   const have = new Set(existingBadges.map(b => b.badgeKey));
-  const newKeys = earned.filter(k => !have.has(k));
-  if (newKeys.length) {
+  const newBadges = earnedBadges.filter(b => !have.has(b.key));
+  if (newBadges.length) {
     await prisma.userBadge.createMany({
-      data: newKeys.map(badgeKey => ({ userId: assigneeId, badgeKey })),
+      data: newBadges.map(b => ({ userId: assigneeId, badgeKey: b.key })),
       skipDuplicates: true,
     });
   }
@@ -72,10 +72,7 @@ export default defineEventHandler(async (event) => {
   return {
     ok: true,
     assigneeId,
-    newBadges: newKeys.map((key) => {
-      const def = badgeByKey(key);
-      return { key, label: def?.label ?? key, icon: def?.icon ?? "i-lucide-award" };
-    }),
+    newBadges: newBadges.map(b => ({ key: b.key, label: b.name, icon: b.icon })),
     allDoneToday,
     pointsToday: stats.pointsToday,
     streak: stats.streak,

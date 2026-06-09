@@ -293,8 +293,8 @@ model Message {
   @@map("messages")
 }
 
-// A badge a user has earned. Badge *types* are code-defined (server/utils/badges.ts);
-// this records which user earned which, and when. Permanent once earned.
+// A badge a user has earned, keyed by the badge's slug. Permanent once earned —
+// kept even if the badge definition is later deleted (display just degrades).
 model UserBadge {
   id       String   @id @default(cuid())
   userId   String
@@ -304,4 +304,28 @@ model UserBadge {
 
   @@unique([userId, badgeKey])
   @@map("user_badges")
+}
+
+// An admin-editable badge definition. Earned when a user's stats meet the rule
+// (ruleType value >= threshold). Seeded with defaults on first use.
+model Badge {
+  id          String        @id @default(cuid())
+  key         String        @unique
+  name        String
+  icon        String
+  description String?
+  ruleType    BadgeRuleType
+  threshold   Int
+  order       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("badges")
+}
+
+enum BadgeRuleType {
+  STREAK
+  TOTAL_POINTS
+  TOTAL_COMPLETIONS
+  POINTS_IN_DAY
 }

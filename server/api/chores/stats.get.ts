@@ -14,10 +14,11 @@ export default defineEventHandler(async (event) => {
   }
 
   const users = await prisma.user.findMany({ select: { id: true } });
-  const allBadges = await prisma.userBadge.findMany({ select: { userId: true, badgeKey: true } });
+  const allUserBadges = await prisma.userBadge.findMany({ select: { userId: true, badgeKey: true } });
+  const definitions = new Map((await getBadges()).map(b => [b.key, b]));
 
   const badgesByUser = new Map<string, string[]>();
-  for (const b of allBadges) {
+  for (const b of allUserBadges) {
     const arr = badgesByUser.get(b.userId) ?? [];
     arr.push(b.badgeKey);
     badgesByUser.set(b.userId, arr);
@@ -27,8 +28,8 @@ export default defineEventHandler(async (event) => {
   for (const u of users) {
     const stats = await computeUserStats(u.id, date);
     const badges = (badgesByUser.get(u.id) ?? []).map((key) => {
-      const def = badgeByKey(key);
-      return { key, label: def?.label ?? key, icon: def?.icon ?? "i-lucide-award" };
+      const def = definitions.get(key);
+      return { key, label: def?.name ?? key, icon: def?.icon ?? "i-lucide-award" };
     });
     result.push({ userId: u.id, ...stats, badges });
   }

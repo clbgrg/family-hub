@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import type { BadgeDef, CreateBadgeInput } from "~/composables/useBadges";
 import type { CreateRewardInput, Redemption, Reward } from "~/composables/useRewards";
+
+import { BADGE_RULE_LABELS } from "~/composables/useBadges";
 
 const { user } = useUserSession();
 const isAdmin = computed(() => user.value?.role === "ADMIN");
 const { rewards, balanceByUser, redemptions, redeem, createReward, updateReward, deleteReward, approve, reject } = useRewards();
+const { badges, createBadge, updateBadge, deleteBadge } = useBadges();
 
 const myAvailable = computed(() => balanceByUser.value[user.value?.id ?? ""]?.available ?? 0);
 const pendingQueue = computed(() => (redemptions.value ?? []).filter(r => r.status === "PENDING"));
@@ -56,6 +60,25 @@ async function onReject(id: string) {
 
 function statusBadge(s: Redemption["status"]) {
   return s === "APPROVED" ? "success" : s === "REJECTED" ? "error" : "warning";
+}
+
+// --- Badges (admin) ---
+const badgeDialogOpen = ref(false);
+const editingBadge = ref<BadgeDef | null>(null);
+function addBadge() {
+  editingBadge.value = null;
+  badgeDialogOpen.value = true;
+}
+function editBadge(b: BadgeDef) {
+  editingBadge.value = b;
+  badgeDialogOpen.value = true;
+}
+async function onBadgeSave(data: CreateBadgeInput) {
+  if (editingBadge.value) await updateBadge(editingBadge.value.id, data);
+  else await createBadge(data);
+}
+async function onBadgeDelete(id: string) {
+  await deleteBadge(id);
 }
 </script>
 
@@ -167,6 +190,34 @@ function statusBadge(s: Redemption["status"]) {
             </li>
           </ul>
         </div>
+
+        <!-- Admin: badges -->
+        <div v-if="isAdmin" class="mt-8">
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="text-lg font-semibold">
+              Badges
+            </h2>
+            <UButton icon="i-lucide-plus" label="Add badge" size="sm" @click="addBadge" />
+          </div>
+          <ul class="flex flex-col gap-2">
+            <li
+              v-for="b in badges"
+              :key="b.id"
+              class="flex items-center gap-3 rounded-lg border border-default p-3"
+            >
+              <UIcon :name="b.icon || 'i-lucide-award'" class="size-6 text-primary" />
+              <div class="min-w-0 flex-1">
+                <p class="truncate font-medium">
+                  {{ b.name }}
+                </p>
+                <p class="text-sm text-muted">
+                  {{ BADGE_RULE_LABELS[b.ruleType] }} {{ b.threshold }}
+                </p>
+              </div>
+              <UButton icon="i-lucide-pencil" size="xs" variant="ghost" color="neutral" aria-label="Edit badge" @click="editBadge(b)" />
+            </li>
+          </ul>
+        </div>
       </div>
       <template #fallback>
         <div class="p-4 text-muted">
@@ -181,6 +232,14 @@ function statusBadge(s: Redemption["status"]) {
       @close="dialogOpen = false"
       @save="onSave"
       @delete="onDelete"
+    />
+
+    <BadgeDialog
+      :is-open="badgeDialogOpen"
+      :badge="editingBadge"
+      @close="badgeDialogOpen = false"
+      @save="onBadgeSave"
+      @delete="onBadgeDelete"
     />
   </div>
 </template>
