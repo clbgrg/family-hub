@@ -5,9 +5,23 @@ const { user } = useUserSession();
 const isAdmin = computed(() => user.value?.role === "ADMIN");
 const { messages, postMessage, deleteMessage } = useMessages();
 
+const requestFetch = useRequestFetch();
+const { data: users } = await useAsyncData(
+  "messages-users",
+  () => requestFetch<{ id: string; name: string }[]>("/api/users"),
+  { default: () => [], server: false },
+);
+const fromOptions = computed(() => (users.value ?? []).map(u => ({ label: u.name, value: u.id })));
+
 const draft = ref("");
+const fromId = ref("");
 const posting = ref(false);
 const postError = ref("");
+
+// Default the "From" picker to the current user once the session resolves.
+watchEffect(() => {
+  if (!fromId.value && user.value?.id) fromId.value = user.value.id;
+});
 
 function canDelete(m: Message) {
   return isAdmin.value || user.value?.id === m.author.id;
@@ -19,7 +33,7 @@ async function submit() {
   posting.value = true;
   postError.value = "";
   try {
-    await postMessage(body);
+    await postMessage(body, fromId.value || undefined);
     draft.value = "";
   }
   catch (e: any) {
@@ -74,7 +88,17 @@ function timeAgo(iso: string): string {
         />
         <div class="flex items-center justify-between gap-3">
           <span class="text-sm text-error">{{ postError }}</span>
-          <UButton label="Post" icon="i-lucide-send" :loading="posting" :disabled="!draft.trim()" @click="submit" />
+          <div class="ml-auto flex items-center gap-2">
+            <span class="text-sm text-muted">From</span>
+            <USelect
+              v-model="fromId"
+              :items="fromOptions"
+              option-attribute="label"
+              value-attribute="value"
+              class="w-32"
+            />
+            <UButton label="Post" icon="i-lucide-send" :loading="posting" :disabled="!draft.trim()" @click="submit" />
+          </div>
         </div>
       </div>
 

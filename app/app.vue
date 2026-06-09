@@ -23,8 +23,11 @@ onNuxtReady(() => {
 
     <div v-if="!dock" class="flex min-h-screen">
       <GlobalSideBar />
-      <div class="flex flex-col flex-1">
-        <div class="flex-1">
+      <!-- min-w-0 lets the content area stay within the viewport so inner
+           horizontal scrollers (e.g. the todo columns) actually scroll
+           instead of pushing content off-screen. -->
+      <div class="flex flex-col flex-1 min-w-0">
+        <div class="flex-1 min-w-0">
           <NuxtPage />
         </div>
       </div>

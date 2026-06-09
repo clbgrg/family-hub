@@ -26,8 +26,10 @@ export function useMessages() {
   );
 
   // Throws on validation errors (400) so the page can surface the message.
-  async function postMessage(body: string) {
-    await $fetch("/api/messages", { method: "POST", body: { body } });
+  // authorId defaults to the session user server-side; pass it to post "from"
+  // another family member on the shared board.
+  async function postMessage(body: string, authorId?: string) {
+    await $fetch("/api/messages", { method: "POST", body: { body, authorId } });
     await refresh();
   }
 
