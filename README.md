@@ -5,6 +5,7 @@ DIY self-hosted family calendar + chore system. Raspberry Pi 5 + portable touchs
 ## Quick orientation
 
 - **New here?** Read `CLAUDE.md`, then `docs/build-order.md`.
+- **Deploying / auto-updates?** `docs/deployment.md` (prebuilt image + Watchtower).
 - **Building hardware?** `docs/hardware.md` + `docs/installation.md`.
 - **Writing features?** `docs/features-to-build.md` + `docs/settings-spec.md`.
 - **What we inherit from upstream?** `docs/skylite-ux-review.md`.

@@ -1,0 +1,69 @@
+# Production / Raspberry Pi deployment. Pulls the prebuilt multi-arch image from
+# GHCR (no on-device build) and auto-updates via Watchtower when a new release
+# image is published.
+#
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Same .env as the dev compose (POSTGRES_PASSWORD, NUXT_SESSION_PASSWORD, …).
+# Pin to a specific release by setting FH_IMAGE_TAG=2026.6.0 in .env (then
+# Watchtower won't move it); leave it as `latest` for auto-updates on release.
+
+services:
+  app:
+    image: ghcr.io/clbgrg/family-hub:${FH_IMAGE_TAG:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://skylite:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/skylite
+      NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD:?set NUXT_SESSION_PASSWORD in .env (min 32 chars)}
+      NUXT_PUBLIC_TZ: ${NUXT_PUBLIC_TZ:-America/Los_Angeles}
+      NUXT_PUBLIC_LOG_LEVEL: ${NUXT_PUBLIC_LOG_LEVEL:-warn}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_BIND:-0.0.0.0}:3000:3000"
+    volumes:
+      - ./photos:/app/photos:ro
+    labels:
+      # Watchtower only updates containers carrying this label (so it won't
+      # touch Postgres or itself). The app applies `prisma migrate deploy` on
+      # start, so a schema change ships automatically when the image updates.
+      - com.centurylinklabs.watchtower.enable=true
+    networks:
+      - family-hub
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: skylite
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: skylite
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skylite"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - family-hub
+
+  watchtower:
+    image: containrrr/watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Check hourly; only label-enabled containers (the app); clean old images.
+    command: --cleanup --label-enable --interval 3600
+    networks:
+      - family-hub
+
+networks:
+  family-hub:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local

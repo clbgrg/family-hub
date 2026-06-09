@@ -73,6 +73,7 @@ A hard requirement is that another family can clone this and run their own. That
 - `docs/source-handoff.md` — original handoff doc, verbatim, as source of truth
 - `docs/skylite-ux-review.md` — pre-fork code review + security audit of upstream Skylite-UX (`ffcd435`), with a remediation sequence for the fork
 - `docs/pi-hardware.md` — Pi-only sleep/motion-wake add-ons (UNTESTED, requires Pi hardware)
+- `docs/deployment.md` — prebuilt-image deploy + Watchtower auto-updates + how to cut a release
 
 ## Status
 
