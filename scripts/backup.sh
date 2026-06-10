@@ -12,17 +12,20 @@ mkdir -p "$DIR"
 
 backup_once() {
   ts=$(date +%Y%m%d-%H%M%S)
-  tmp="$DIR/.family-hub-$ts.sql.gz.tmp"
+  tmp="$DIR/.family-hub-$ts.sql.tmp"
   out="$DIR/family-hub-$ts.sql.gz"
 
   # --clean --if-exists makes the dump self-contained: restoring it drops and
   # recreates everything, so a restore overwrites whatever's currently there.
-  if pg_dump --clean --if-exists --no-owner --no-privileges | gzip >"$tmp"; then
-    mv "$tmp" "$out"
+  # Dump to a file first, then compress: in `pg_dump | gzip` the pipeline's
+  # exit status is gzip's, so a failed dump would be kept as a "good" backup
+  # (and pruning would eventually delete real backups in favor of empty ones).
+  if pg_dump --clean --if-exists --no-owner --no-privileges >"$tmp" && gzip -c "$tmp" >"$out"; then
+    rm -f "$tmp"
     echo "[backup] wrote $out ($(du -h "$out" | cut -f1))"
   else
     echo "[backup] dump FAILED" >&2
-    rm -f "$tmp"
+    rm -f "$tmp" "$out"
     return 1
   fi
 
