@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import ical from "ical.js";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from "vitest";
 
 import type { CalendarEvent } from "~/types/calendar";
 import { useCalendar } from "../../../../app/composables/useCalendar";
@@ -273,20 +274,56 @@ describe("useCalendar", () => {
       expect(isSelectedDate(d, sel)).toBe(true);
     });
 
-    it("should return false when date and selectedDate differ in local day in isSelectedDate", () => {
-      const { isSelectedDate } = useCalendar();
-      const d = new Date("2025-01-16T05:59:59Z");
-      const sel = new Date("2025-01-16T06:00:00Z");
+    describe("isSelectedDate with a registered IANA timezone", () => {
+      // isSameLocalDay only does real local-day math once the app has
+      // registered a timezone (normally fetched over the network at app
+      // init); otherwise it falls back to UTC-day comparison and these
+      // boundary cases are wrong. Register a static CST (UTC-6) fixture so
+      // they are deterministic on any machine, online or not.
+      const TZID = "America/Chicago";
+      const tzGlobals = globalThis as Record<string, unknown>;
 
-      expect(isSelectedDate(d, sel)).toBe(false);
-    });
+      beforeAll(() => {
+        const vcal = new ical.Component(ical.parse([
+          "BEGIN:VCALENDAR",
+          "BEGIN:VTIMEZONE",
+          `TZID:${TZID}`,
+          "BEGIN:STANDARD",
+          "TZOFFSETFROM:-0600",
+          "TZOFFSETTO:-0600",
+          "TZNAME:CST",
+          "DTSTART:19700101T000000",
+          "END:STANDARD",
+          "END:VTIMEZONE",
+          "END:VCALENDAR",
+        ].join("\r\n")));
+        const vtimezone = vcal.getFirstSubcomponent("vtimezone")!;
+        ical.TimezoneService.register(new ical.Timezone(vtimezone)); // tzid read from the component
+        tzGlobals.__TIMEZONE_REGISTERED__ = true;
+        tzGlobals.__BROWSER_TIMEZONE__ = TZID;
+      });
 
-    it("should return true for same local day across UTC midnight in isSelectedDate", () => {
-      const { isSelectedDate } = useCalendar();
-      const d = new Date("2025-01-15T23:59:59Z");
-      const sel = new Date("2025-01-16T00:00:00Z");
+      afterAll(() => {
+        ical.TimezoneService.remove(TZID);
+        tzGlobals.__TIMEZONE_REGISTERED__ = false;
+        delete tzGlobals.__BROWSER_TIMEZONE__;
+      });
 
-      expect(isSelectedDate(d, sel)).toBe(true);
+      it("should return false when date and selectedDate differ in local day in isSelectedDate", () => {
+        const { isSelectedDate } = useCalendar();
+        const d = new Date("2025-01-16T05:59:59Z"); // 23:59:59 CST Jan 15
+        const sel = new Date("2025-01-16T06:00:00Z"); // 00:00:00 CST Jan 16
+
+        expect(isSelectedDate(d, sel)).toBe(false);
+      });
+
+      it("should return true for same local day across UTC midnight in isSelectedDate", () => {
+        const { isSelectedDate } = useCalendar();
+        const d = new Date("2025-01-15T23:59:59Z"); // 17:59:59 CST Jan 15
+        const sel = new Date("2025-01-16T00:00:00Z"); // 18:00:00 CST Jan 15
+
+        expect(isSelectedDate(d, sel)).toBe(true);
+      });
     });
 
     it("should sort events by start time without mutating input", () => {

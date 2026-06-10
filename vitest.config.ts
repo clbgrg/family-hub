@@ -1,6 +1,12 @@
 import { defineVitestProject } from "@nuxt/test-utils/config";
 import { defineConfig } from "vitest/config";
 
+// Pin the suite to UTC: the rrule/recurrence/time-picker tests assert concrete
+// wall-clock values and silently depend on the machine timezone otherwise
+// (44 rrule cases fail on a US-Pacific machine, pass on UTC CI runners).
+// eslint-disable-next-line node/no-process-env -- set before workers fork so every project inherits it
+process.env.TZ = "UTC";
+
 export default defineConfig({
   test: {
     coverage: {
