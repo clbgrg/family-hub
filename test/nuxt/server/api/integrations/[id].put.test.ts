@@ -23,6 +23,11 @@ import handler from "~~/server/api/integrations/[id].put";
 import { createIntegrationService } from "~/types/integrations";
 
 vi.mock("~/lib/prisma");
+// SSRF guard does DNS lookups — stub it out so endpoint tests stay offline.
+vi.mock("~~/server/utils/publicUrl", () => ({
+  assertPublicHttpUrl: vi.fn(async (raw: string) => new URL(raw)),
+  fetchPublicText: vi.fn(async () => ""),
+}));
 vi.mock("~/types/integrations", async (importOriginal) => {
   const actual = await importOriginal<typeof import("~/types/integrations")>();
   return {

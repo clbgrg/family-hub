@@ -1,6 +1,6 @@
 # Settings Panel Spec
 
-> ⚠️ **Target design, not current state.** Upstream Skylite-UX today implements only **Family Profiles** (partial — name/color/avatar, no roles) and **Calendar Settings** (partial). Everything else below (Chores, Rewards, Display & Sleep, Network & Access, Parental Controls) is to-build per `docs/build-order.md`. Account type (Admin/Member) and PIN/password are **Priority 0 auth work** (`docs/features-to-build.md`), not standalone settings — the rest of Family Profiles and all Parental Controls depend on them.
+> ℹ️ **Status:** this was the target design; most of it is now **built** (Phase 8 + Phase 9): Family Profiles with admin/member roles + PINs, Your Account (sign out / change PIN), Calendar/Integrations (admin-gated), screensaver photo upload, and Network & Access (QR code). Deliberately not built: per-feature toggles beyond roles, display/sleep scheduling in-UI (Pi cron instead — `docs/pi-hardware.md`), and parental controls beyond admin/member gating.
 
 The settings tab gives parents full control over all features. Recommended structure:
 

@@ -41,9 +41,12 @@ whatever's currently in the database.
 **Restore** (e.g. after a bad auto-update):
 
 ```bash
-docker compose stop app                         # prod: add -f docker-compose.prod.yml
+export COMPOSE_FILE=docker-compose.prod.yml     # prod only — without this, every
+                                                # command below (including the
+                                                # script) targets the dev stack
+docker compose stop app
 scripts/restore.sh backups/family-hub-YYYYMMDD-HHMMSS.sql.gz
-docker compose up -d                            # prod: add -f docker-compose.prod.yml
+docker compose up -d
 ```
 
 If a release itself is bad, also pin `FH_IMAGE_TAG` to the previous version so

@@ -25,4 +25,4 @@ A wall-mountable and carry-around family dashboard running on a Raspberry Pi 5 w
 
 ## What Skylite-UX already provides
 
-Full family calendar with month/week views; iCal URL sync (Apple, Google, any .ics) plus Google Calendar OAuth; per-person **profiles** (name/color/avatar — but **no login/auth yet**, that's Priority 0 to build); shopping/grocery list; per-person todo lists; dark mode, font preferences, settings panel; Docker Compose deployment. Color-coded events partially implemented.
+Full family calendar with month/week views; iCal URL sync (Apple, Google, any .ics) plus Google Calendar OAuth; per-person **profiles** (name/color/avatar — **upstream has no login/auth**; our fork added PIN-based auth with admin/member roles as Priority 0); shopping/grocery list; per-person todo lists; dark mode, font preferences, settings panel; Docker Compose deployment. Color-coded events partially implemented.

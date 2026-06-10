@@ -20,6 +20,7 @@ services:
       NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD:?set NUXT_SESSION_PASSWORD in .env (min 32 chars)}
       NUXT_PUBLIC_TZ: ${NUXT_PUBLIC_TZ:-America/Los_Angeles}
       NUXT_PUBLIC_LOG_LEVEL: ${NUXT_PUBLIC_LOG_LEVEL:-warn}
+      FH_ALLOW_PRIVATE_URLS: ${FH_ALLOW_PRIVATE_URLS:-false}
     depends_on:
       db:
         condition: service_healthy
