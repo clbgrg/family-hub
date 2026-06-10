@@ -5,6 +5,7 @@ import { createError, defineEventHandler, readBody } from "h3";
 import { createIntegrationService, integrationRegistry } from "~/types/integrations";
 
 import { normalizeWebcalUrl } from "../../utils/icalUrl";
+import { assertPublicHttpUrl } from "../../utils/publicUrl";
 import { sanitizeIntegration } from "../../utils/sanitizeIntegration";
 
 const prisma = new PrismaClient();
@@ -39,6 +40,14 @@ export default defineEventHandler(async (event) => {
           statusCode: 404,
           message: "Integration not found",
         });
+      }
+
+      // Same source-side SSRF guard as creation: iCal URLs get fetched
+      // unattended by the sync manager. Body may omit `service` on a partial
+      // update, so fall back to the stored one.
+      const effectiveService = String(service || currentIntegration.service || "");
+      if (effectiveService.toLowerCase() === "ical" && baseUrl) {
+        await assertPublicHttpUrl(baseUrl);
       }
 
       const updatedData = {

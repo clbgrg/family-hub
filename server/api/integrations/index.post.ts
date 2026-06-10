@@ -5,6 +5,7 @@ import { createError, defineEventHandler, readBody } from "h3";
 import { createIntegrationService, integrationRegistry } from "~/types/integrations";
 
 import { normalizeWebcalUrl } from "../../utils/icalUrl";
+import { assertPublicHttpUrl } from "../../utils/publicUrl";
 import { sanitizeIntegration } from "../../utils/sanitizeIntegration";
 
 const prisma = new PrismaClient();
@@ -18,6 +19,14 @@ export default defineEventHandler(async (event) => {
     let baseUrl = body.baseUrl;
     if (baseUrl && typeof baseUrl === "string") {
       baseUrl = normalizeWebcalUrl(baseUrl);
+    }
+
+    // iCal URLs are fetched unattended by the sync manager, so refuse private
+    // targets at the source (Mealie/Tandoor baseUrls are legitimately on the
+    // LAN and stay exempt). FH_ALLOW_PRIVATE_URLS=true relaxes this for
+    // families hosting their own calendar feeds.
+    if (typeof service === "string" && service.toLowerCase() === "ical" && baseUrl) {
+      await assertPublicHttpUrl(baseUrl);
     }
 
     const integrationKey = `${type}:${service}`;

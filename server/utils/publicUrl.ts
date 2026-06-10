@@ -89,6 +89,13 @@ export async function assertPublicHttpUrl(raw: string): Promise<URL> {
     throw createError({ statusCode: 400, message: "URL must use http or https" });
   }
 
+  // Escape hatch for families that host calendar feeds on their own LAN
+  // (e.g. a Home Assistant .ics). Protocol checks above still apply.
+  // eslint-disable-next-line node/no-process-env -- deploy-time switch; read here (not via useRuntimeConfig) so the util works outside Nitro (unit tests)
+  if (process.env.FH_ALLOW_PRIVATE_URLS === "true") {
+    return url;
+  }
+
   const hostname = url.hostname.replace(/^\[|\]$/g, "");
   if (
     hostname === "localhost"
@@ -118,4 +125,39 @@ export async function assertPublicHttpUrl(raw: string): Promise<URL> {
   }
 
   return url;
+}
+
+/**
+ * Fetch a user-supplied URL server-side and return the response body as text,
+ * validating EVERY hop with assertPublicHttpUrl — `redirect: "manual"` plus a
+ * bounded loop closes the "public URL redirects to a private one" SSRF bypass
+ * that a plain fetch (which follows redirects blindly) leaves open.
+ */
+export async function fetchPublicText(raw: string): Promise<string> {
+  const maxHops = 5;
+  let current = raw;
+
+  for (let hop = 0; hop < maxHops; hop++) {
+    const url = await assertPublicHttpUrl(current);
+    const response = await fetch(url, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get("location");
+      if (!location) {
+        throw createError({ statusCode: 400, message: "Redirect without a Location header" });
+      }
+      current = new URL(location, url).toString();
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Fetch failed: HTTP ${response.status}`);
+    }
+    return await response.text();
+  }
+
+  throw createError({ statusCode: 400, message: "Too many redirects" });
 }

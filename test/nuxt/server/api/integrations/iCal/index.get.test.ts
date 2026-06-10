@@ -32,10 +32,11 @@ vi.mock("h3", async () => {
 
 vi.mock("~~/server/utils/publicUrl", () => ({
   assertPublicHttpUrl: vi.fn(async (raw: string) => new URL(raw)),
+  fetchPublicText: vi.fn(async () => "BEGIN:VCALENDAR\nEND:VCALENDAR"),
 }));
 
 import handler from "~~/server/api/integrations/iCal/index.get";
-import { assertPublicHttpUrl } from "~~/server/utils/publicUrl";
+import { fetchPublicText } from "~~/server/utils/publicUrl";
 
 vi.mock("~/lib/prisma");
 vi.mock("~~/server/integrations/iCal/client");
@@ -78,7 +79,7 @@ describe("gET /api/integrations/iCal", () => {
 
       prisma.integration.findFirst.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findFirst>>);
       vi.mocked(ICalServerService).mockImplementation(() => ({
-        fetchEventsFromUrl: vi.fn().mockResolvedValue(mockEvents),
+        parseEvents: vi.fn().mockReturnValue(mockEvents),
       }) as unknown as ICalServerService);
 
       const event = createMockH3Event({
@@ -88,6 +89,7 @@ describe("gET /api/integrations/iCal", () => {
 
       const response = await handler(event);
 
+      expect(fetchPublicText).toHaveBeenCalledWith("https://example.com/calendar.ics");
       expect(prisma.integration.findFirst).toHaveBeenCalledWith({
         where: {
           id: "integration-1",
@@ -115,7 +117,7 @@ describe("gET /api/integrations/iCal", () => {
       ];
 
       vi.mocked(ICalServerService).mockImplementation(() => ({
-        fetchEventsFromUrl: vi.fn().mockResolvedValue(mockEvents),
+        parseEvents: vi.fn().mockReturnValue(mockEvents),
       }) as unknown as ICalServerService);
 
       const event = createMockH3Event({
@@ -192,12 +194,14 @@ describe("gET /api/integrations/iCal", () => {
       await expect(handler(event)).rejects.toThrow();
     });
 
-    it("handles service fetch errors", async () => {
+    it("handles parse errors", async () => {
       const mockIntegration = createBaseIntegration();
 
       prisma.integration.findFirst.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findFirst>>);
       vi.mocked(ICalServerService).mockImplementation(() => ({
-        fetchEventsFromUrl: vi.fn().mockRejectedValue(new Error("Failed to fetch calendar")),
+        parseEvents: vi.fn(() => {
+          throw new Error("invalid ical data");
+        }),
       }) as unknown as ICalServerService);
 
       const event = createMockH3Event({
@@ -208,13 +212,13 @@ describe("gET /api/integrations/iCal", () => {
       await expect(handler(event)).rejects.toThrow();
     });
 
-    it("rejects temp URLs that fail the SSRF guard before fetching", async () => {
-      vi.mocked(assertPublicHttpUrl).mockRejectedValueOnce(
+    it("rejects temp URLs that fail the SSRF guard before parsing", async () => {
+      vi.mocked(fetchPublicText).mockRejectedValueOnce(
         Object.assign(new Error("URL must not point at a private address"), { statusCode: 400 }),
       );
-      const fetchEventsFromUrl = vi.fn();
+      const parseEvents = vi.fn();
       vi.mocked(ICalServerService).mockImplementation(() => ({
-        fetchEventsFromUrl,
+        parseEvents,
       }) as unknown as ICalServerService);
 
       const event = createMockH3Event({
@@ -222,16 +226,20 @@ describe("gET /api/integrations/iCal", () => {
         query: { integrationId: "temp", baseUrl: "http://192.168.1.1/cal.ics" },
       });
 
-      await expect(handler(event)).rejects.toMatchObject({ statusCode: 400 });
-      expect(fetchEventsFromUrl).not.toHaveBeenCalled();
+      await expect(handler(event)).rejects.toMatchObject({
+        statusCode: 400,
+        message: "URL must not point at a private address",
+      });
+      expect(parseEvents).not.toHaveBeenCalled();
     });
 
     it("does not echo upstream error details to the caller", async () => {
       const mockIntegration = createBaseIntegration();
 
       prisma.integration.findFirst.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findFirst>>);
+      vi.mocked(fetchPublicText).mockRejectedValueOnce(new Error("connect ECONNREFUSED 10.0.0.5:445"));
       vi.mocked(ICalServerService).mockImplementation(() => ({
-        fetchEventsFromUrl: vi.fn().mockRejectedValue(new Error("connect ECONNREFUSED 10.0.0.5:445")),
+        parseEvents: vi.fn(),
       }) as unknown as ICalServerService);
 
       const event = createMockH3Event({

@@ -4,7 +4,7 @@ import { createError, defineEventHandler, getQuery } from "h3";
 
 import { ICalServerService } from "../../../integrations/iCal/client";
 import { normalizeWebcalUrl } from "../../../utils/icalUrl";
-import { assertPublicHttpUrl } from "../../../utils/publicUrl";
+import { fetchPublicText } from "../../../utils/publicUrl";
 
 const prisma = new PrismaClient();
 
@@ -58,19 +58,24 @@ export default defineEventHandler(async (event) => {
     icalUrl = integration.baseUrl;
   }
 
-  // SSRF guard: the temp mode takes a caller-supplied URL, so refuse anything
-  // private before fetching (and re-check stored URLs for defense in depth).
-  await assertPublicHttpUrl(icalUrl);
-
   const service = new ICalServerService(integrationId, icalUrl);
   try {
-    const events = await service.fetchEventsFromUrl(icalUrl);
+    // SSRF guard: the temp mode takes a caller-supplied URL. fetchPublicText
+    // validates every hop (including redirects) against private addresses,
+    // for stored URLs too as defense in depth.
+    const icalData = await fetchPublicText(icalUrl);
+    const events = service.parseEvents(icalData);
     return { events };
   }
   catch (error) {
     consola.error("Integrations iCal Index: Failed to fetch iCal events:", error);
-    // Don't echo raw error messages — they describe the upstream host's
-    // response and would turn this endpoint into a network probe.
+    // Our own guard errors (private address, too many redirects) carry a
+    // statusCode and a safe message — pass those through. Everything else
+    // (network/parse failures) is genericized: raw messages describe the
+    // upstream host's response and would turn this endpoint into a probe.
+    if (error && typeof error === "object" && "statusCode" in error) {
+      throw error;
+    }
     throw createError({
       statusCode: 400,
       message: "Failed to fetch iCal events from the URL",

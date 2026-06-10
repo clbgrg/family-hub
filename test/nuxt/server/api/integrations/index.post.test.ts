@@ -22,6 +22,11 @@ vi.mock("~/types/integrations", () => ({
   createIntegrationService: vi.fn(),
   integrationRegistry: new Map(),
 }));
+// SSRF guard does DNS lookups — stub it out so endpoint tests stay offline.
+vi.mock("~~/server/utils/publicUrl", () => ({
+  assertPublicHttpUrl: vi.fn(async (raw: string) => new URL(raw)),
+  fetchPublicText: vi.fn(async () => ""),
+}));
 
 describe("pOST /api/integrations", () => {
   beforeEach(() => {

@@ -14,7 +14,11 @@ export class ICalServerService {
     if (!response.ok) {
       throw new Error(`iCal fetch failed: HTTP ${response.status}`);
     }
-    const icalData = await response.text();
+    return this.parseEvents(await response.text());
+  }
+
+  /** Parse raw iCal text into events (no fetching — callers control transport). */
+  parseEvents(icalData: string): ICalEvent[] {
     const jcalData = ical.parse(icalData);
     const vcalendar = new ical.Component(jcalData);
     const vevents = vcalendar.getAllSubcomponents("vevent");

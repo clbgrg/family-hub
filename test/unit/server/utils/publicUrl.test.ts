@@ -6,7 +6,7 @@ vi.mock("node:dns/promises", () => ({
   lookup: (...args: unknown[]) => lookupMock(...args),
 }));
 
-import { assertPublicHttpUrl } from "../../../../server/utils/publicUrl";
+import { assertPublicHttpUrl, fetchPublicText } from "../../../../server/utils/publicUrl";
 
 describe("assertPublicHttpUrl", () => {
   beforeEach(() => {
@@ -91,5 +91,97 @@ describe("assertPublicHttpUrl", () => {
     lookupMock.mockRejectedValue(new Error("ENOTFOUND"));
     await expect(assertPublicHttpUrl("https://nope.example.com/cal.ics"))
       .rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it("FH_ALLOW_PRIVATE_URLS=true skips the private-address check but not the protocol check", async () => {
+    vi.stubEnv("FH_ALLOW_PRIVATE_URLS", "true");
+    try {
+      const url = await assertPublicHttpUrl("http://192.168.1.50/cal.ics");
+      expect(url.hostname).toBe("192.168.1.50");
+      await expect(assertPublicHttpUrl("file:///etc/passwd")).rejects.toMatchObject({ statusCode: 400 });
+    }
+    finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});
+
+describe("fetchPublicText", () => {
+  beforeEach(() => {
+    lookupMock.mockReset();
+    lookupMock.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+  });
+
+  const response = (overrides: Partial<{ status: number; ok: boolean; body: string; location: string | null }> = {}) => {
+    const { status = 200, ok = status >= 200 && status < 300, body = "", location = null } = overrides;
+    return {
+      status,
+      ok,
+      text: () => Promise.resolve(body),
+      headers: { get: (name: string) => (name.toLowerCase() === "location" ? location : null) },
+    };
+  };
+
+  it("returns the body for a public 200", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response({ body: "BEGIN:VCALENDAR" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchPublicText("https://calendar.example.com/cal.ics")).resolves.toBe("BEGIN:VCALENDAR");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.objectContaining({ href: "https://calendar.example.com/cal.ics" }),
+      expect.objectContaining({ redirect: "manual" }),
+    );
+  });
+
+  it("follows a redirect to another public host", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response({ status: 302, location: "https://cdn.example.com/cal.ics" }))
+      .mockResolvedValueOnce(response({ body: "OK" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchPublicText("https://calendar.example.com/cal.ics")).resolves.toBe("OK");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects when a redirect points at a private address", async () => {
+    lookupMock
+      .mockResolvedValueOnce([{ address: "93.184.216.34", family: 4 }]) // original host
+      .mockResolvedValueOnce([{ address: "10.0.0.5", family: 4 }]); // redirect target
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response({ status: 302, location: "https://internal.example.com/secrets" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchPublicText("https://calendar.example.com/cal.ics"))
+      .rejects.toMatchObject({ statusCode: 400 });
+    expect(fetchMock).toHaveBeenCalledTimes(1); // never fetched the private hop
+  });
+
+  it("rejects a redirect to a private IP literal", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response({ status: 301, location: "http://169.254.169.254/latest/meta-data/" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchPublicText("https://calendar.example.com/cal.ics"))
+      .rejects.toMatchObject({ statusCode: 400 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws on a non-OK response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response({ status: 500 })));
+
+    await expect(fetchPublicText("https://calendar.example.com/cal.ics"))
+      .rejects.toThrow("Fetch failed: HTTP 500");
+  });
+
+  it("gives up after too many redirects", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      response({ status: 302, location: "https://calendar.example.com/loop" }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchPublicText("https://calendar.example.com/cal.ics"))
+      .rejects.toMatchObject({ statusCode: 400, message: "Too many redirects" });
+    expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 });
