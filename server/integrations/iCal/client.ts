@@ -9,7 +9,11 @@ export class ICalServerService {
   constructor(private integrationId: string, private url: string) {}
 
   async fetchEventsFromUrl(url: string): Promise<ICalEvent[]> {
-    const response = await fetch(url);
+    // Timeout so a stalled remote can't hang the request indefinitely.
+    const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!response.ok) {
+      throw new Error(`iCal fetch failed: HTTP ${response.status}`);
+    }
     const icalData = await response.text();
     const jcalData = ical.parse(icalData);
     const vcalendar = new ical.Component(jcalData);

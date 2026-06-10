@@ -30,7 +30,12 @@ vi.mock("h3", async () => {
   };
 });
 
+vi.mock("~~/server/utils/publicUrl", () => ({
+  assertPublicHttpUrl: vi.fn(async (raw: string) => new URL(raw)),
+}));
+
 import handler from "~~/server/api/integrations/iCal/index.get";
+import { assertPublicHttpUrl } from "~~/server/utils/publicUrl";
 
 vi.mock("~/lib/prisma");
 vi.mock("~~/server/integrations/iCal/client");
@@ -201,6 +206,43 @@ describe("gET /api/integrations/iCal", () => {
       });
 
       await expect(handler(event)).rejects.toThrow();
+    });
+
+    it("rejects temp URLs that fail the SSRF guard before fetching", async () => {
+      vi.mocked(assertPublicHttpUrl).mockRejectedValueOnce(
+        Object.assign(new Error("URL must not point at a private address"), { statusCode: 400 }),
+      );
+      const fetchEventsFromUrl = vi.fn();
+      vi.mocked(ICalServerService).mockImplementation(() => ({
+        fetchEventsFromUrl,
+      }) as unknown as ICalServerService);
+
+      const event = createMockH3Event({
+        method: "GET",
+        query: { integrationId: "temp", baseUrl: "http://192.168.1.1/cal.ics" },
+      });
+
+      await expect(handler(event)).rejects.toMatchObject({ statusCode: 400 });
+      expect(fetchEventsFromUrl).not.toHaveBeenCalled();
+    });
+
+    it("does not echo upstream error details to the caller", async () => {
+      const mockIntegration = createBaseIntegration();
+
+      prisma.integration.findFirst.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findFirst>>);
+      vi.mocked(ICalServerService).mockImplementation(() => ({
+        fetchEventsFromUrl: vi.fn().mockRejectedValue(new Error("connect ECONNREFUSED 10.0.0.5:445")),
+      }) as unknown as ICalServerService);
+
+      const event = createMockH3Event({
+        method: "GET",
+        query: { integrationId: "integration-1" },
+      });
+
+      await expect(handler(event)).rejects.toMatchObject({
+        statusCode: 400,
+        message: expect.not.stringContaining("ECONNREFUSED"),
+      });
     });
   });
 });

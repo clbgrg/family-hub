@@ -294,7 +294,10 @@ describe("ICalServerService", () => {
 
       const events = await service.fetchEventsFromUrl("https://example.com/cal.ics");
 
-      expect(fetchMock).toHaveBeenCalledWith("https://example.com/cal.ics");
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://example.com/cal.ics",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
       expect(events).toHaveLength(1);
       const [e] = events;
       expect(e?.uid).toBe("event-1");
@@ -313,7 +316,10 @@ describe("ICalServerService", () => {
 
       const events = await service.fetchEventsFromUrl("https://example.com/cal.ics");
 
-      expect(fetchMock).toHaveBeenCalledWith("https://example.com/cal.ics");
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://example.com/cal.ics",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
       expect(events.length).toBeGreaterThan(1);
       expect(events.every(e => e.type === "VEVENT")).toBe(true);
       expect(events.every(e => e.summary === "Daily Event")).toBe(true);
@@ -365,6 +371,18 @@ describe("ICalServerService", () => {
       finally {
         ical.design.strict = prevStrict;
       }
+    });
+
+    it("throws on a non-OK HTTP response", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        text: () => Promise.resolve(""),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(service.fetchEventsFromUrl("https://example.com/cal.ics"))
+        .rejects.toThrow("iCal fetch failed: HTTP 403");
     });
   });
 });

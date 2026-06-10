@@ -3,6 +3,8 @@ import { consola } from "consola";
 import { createError, defineEventHandler, getQuery } from "h3";
 
 import { ICalServerService } from "../../../integrations/iCal/client";
+import { normalizeWebcalUrl } from "../../../utils/icalUrl";
+import { assertPublicHttpUrl } from "../../../utils/publicUrl";
 
 const prisma = new PrismaClient();
 
@@ -27,7 +29,7 @@ export default defineEventHandler(async (event) => {
         message: "baseUrl is required for temporary integration testing",
       });
     }
-    icalUrl = baseUrl;
+    icalUrl = normalizeWebcalUrl(baseUrl);
   }
   else {
     integration = await prisma.integration.findFirst({
@@ -56,6 +58,10 @@ export default defineEventHandler(async (event) => {
     icalUrl = integration.baseUrl;
   }
 
+  // SSRF guard: the temp mode takes a caller-supplied URL, so refuse anything
+  // private before fetching (and re-check stored URLs for defense in depth).
+  await assertPublicHttpUrl(icalUrl);
+
   const service = new ICalServerService(integrationId, icalUrl);
   try {
     const events = await service.fetchEventsFromUrl(icalUrl);
@@ -63,9 +69,11 @@ export default defineEventHandler(async (event) => {
   }
   catch (error) {
     consola.error("Integrations iCal Index: Failed to fetch iCal events:", error);
+    // Don't echo raw error messages — they describe the upstream host's
+    // response and would turn this endpoint into a network probe.
     throw createError({
       statusCode: 400,
-      message: error instanceof Error ? error.message : "Failed to fetch iCal events",
+      message: "Failed to fetch iCal events from the URL",
     });
   }
 });
