@@ -126,6 +126,25 @@ describe("gET /api/sync/events", () => {
       await new Promise(resolve => setTimeout(resolve, 10));
     }, 10000); // Increase timeout to 10s
 
+    it("does not set CORS headers (same-origin only)", async () => {
+      const { event, setHeaderMock, triggerClose } = createMockEventWithStream();
+
+      vi.mocked(syncManager.getActiveSyncIntervals).mockReturnValue([]);
+      vi.mocked(syncManager.getConnectedClientsCount).mockReturnValue(0);
+      vi.mocked(syncManager.getSyncIntervals).mockReturnValue(new Map());
+
+      handler(event).catch(() => {});
+      await new Promise(resolve => setTimeout(resolve, 20));
+
+      const headerNames = setHeaderMock.mock.calls.map(call => String(call[0]).toLowerCase());
+      expect(headerNames).not.toContain("access-control-allow-origin");
+      expect(headerNames).not.toContain("access-control-allow-headers");
+      expect(headerNames).toContain("content-type");
+
+      triggerClose();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
     it("sends sync status event", async () => {
       const { event, writeMock, triggerClose } = createMockEventWithStream();
 

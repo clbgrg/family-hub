@@ -5,12 +5,13 @@ import { sendCachedSyncData, syncManager } from "../../plugins/02.syncManager";
 
 export default defineEventHandler(async (event) => {
   try {
+    // No CORS headers: the SSE stream is same-origin only. A wildcard
+    // Access-Control-Allow-Origin here would let any website the user visits
+    // read the full calendar/todo/shopping stream.
     setResponseHeaders(event, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       "Connection": "keep-alive",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Cache-Control",
     });
 
     const query = getQuery(event);
