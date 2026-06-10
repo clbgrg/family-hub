@@ -7,7 +7,7 @@ Skylite-UX runs entirely on the Raspberry Pi. No Skylite company server, no clou
 - The PostgreSQL database lives on the Pi's SD card (or attached USB drive for backups).
 - The app is only reachable inside the home WiFi by default — nobody outside can access it.
 - Apple iCal sync is one-way: the Pi fetches the iCal URL on a schedule. Apple ID and password never touch the Pi. (Optional Google Calendar OAuth is read-write and stores a refresh token in the DB — no Google password on the Pi, but unlike iCal it is a stored credential.)
-- **Planned (not yet built):** each family member gets their own login with a hashed PIN/password. Upstream Skylite-UX ships profiles only, no auth — this is Priority 0 work (see `docs/features-to-build.md`).
+- **Built (our fork; upstream ships none):** each family member logs in with a PIN (hashed, never stored in plain text). Every API route requires a session; user/integration management requires an admin role. iCal calendar URLs are SSRF-guarded — the server refuses to fetch private/LAN addresses unless `FH_ALLOW_PRIVATE_URLS=true` is set in `.env`.
 
 ## Network setup
 
