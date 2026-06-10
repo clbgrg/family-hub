@@ -77,13 +77,14 @@ A hard requirement is that another family can clone this and run their own. That
 
 ## Status
 
-**Feature-complete and running in Docker.** Built and verified (API + browser, both admin/member personas): first-run setup + PIN-based auth (admin/member roles), calendar, per-person chores + points, gamification (streaks, badges, celebration, leaderboard), meal planner + auto grocery list, family message board, rewards store, a Today dashboard, a parent-controlled settings panel (roles, PINs, account), and a photo screensaver with QR access. **Badges and rewards are admin-editable.** Ops: a GHCR multi-arch auto-update pipeline (release tags → image → Watchtower) and a scheduled `pg_dump` backup sidecar with a verified restore.
+**Feature-complete, rebranded "Family Hub", and published to GHCR.** Built and verified (API + browser, both admin/member personas): first-run setup + PIN-based auth (admin/member roles), calendar, a **Today dashboard** (per-person chores + today's calendar + today's school note), per-person chores + points, gamification (streaks, **admin-editable badges**, celebration, leaderboard), meal planner + auto grocery list (**quantities summed across days**), family message board (post-as-anyone + any-member delete), **rewards store** (admin-editable), a **per-kid weekly school grid** (free-text, own-or-admin edit), a parent-controlled settings panel (roles, PINs, account, screensaver photo upload), and a photo screensaver with QR access. The visible UI was rebranded from the upstream "SkyLite UX" to **"Family Hub"** (the AGPL `LICENSE` + upstream attribution are deliberately kept). Ops: a GHCR multi-arch auto-update pipeline (release tags → image → Watchtower) and a scheduled `pg_dump` backup sidecar with a verified restore. **Latest published release: `v2026.6.4`.**
 
-What remains is **not code**: hardware procurement + Pi deployment, and making the GHCR package public to turn auto-updates on. ⚠️ The **arm64 image has not been runtime-tested** (no Pi yet). Parked: a per-kid weekly school grid (design decided, in project memory). Remaining open feature-design items are in `OPEN-QUESTIONS.md`.
+What remains is **not code**: hardware procurement + Pi deployment, and making the GHCR package **public** to turn pulls/auto-updates on. ⚠️ The **arm64 image has not been runtime-tested** (no Pi yet). Remaining open feature-design items are in `OPEN-QUESTIONS.md`.
 
 ## Where to pick up
 
 Development now is feature tweaks + deployment, not bootstrapping. Useful entry points:
-- **Deploy to a Pi:** `docs/deployment.md` (prebuilt image + Watchtower) or `docs/installation.md`.
-- **Add/adjust a feature:** it will mirror an existing one — chores (`server/api/chores/*` + `app/pages/chores.vue`), rewards, meals, badges, message board. Follow the repo conventions above (migrations; authed SSR fetch via `useRequestFetch`; completion-records, no cron; client-local dates).
-- **Parked work + open questions:** the school grid and `OPEN-QUESTIONS.md`.
+- **Deploy to a Pi:** `docs/deployment.md` (prebuilt image + Watchtower) or `docs/installation.md`. First flip the GHCR package public so the Pi can pull.
+- **Cut a release:** push a `vX.Y.Z` tag → CI builds + publishes the multi-arch image (bump `package.json` + lockfile to match first). See `docs/deployment.md`.
+- **Add/adjust a feature:** it will mirror an existing one — chores (`server/api/chores/*` + `app/pages/chores.vue`), rewards, meals, badges, school, message board, dashboard. Follow the repo conventions above (migrations; authed SSR fetch via `useRequestFetch`; completion-records, no cron; client-local dates).
+- **Open questions:** `OPEN-QUESTIONS.md`.
