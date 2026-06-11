@@ -1,30 +1,30 @@
 export type RedemptionStatus = "PENDING" | "APPROVED" | "REJECTED";
 
-export interface Reward {
+export type Reward = {
   id: string;
   name: string;
   pointsCost: number;
   imageUrl: string | null;
   active: boolean;
   order: number;
-}
+};
 
-export interface RewardBalance {
+export type RewardBalance = {
   userId: string;
   earned: number;
   approvedSpent: number;
   pendingSpent: number;
   available: number;
-}
+};
 
-export interface RedemptionUser {
+export type RedemptionUser = {
   id: string;
   name: string;
   avatar: string | null;
   color: string | null;
-}
+};
 
-export interface Redemption {
+export type Redemption = {
   id: string;
   rewardId: string | null;
   userId: string;
@@ -34,13 +34,13 @@ export interface Redemption {
   requestedAt: string;
   decidedAt: string | null;
   user: RedemptionUser;
-}
+};
 
-export interface CreateRewardInput {
+export type CreateRewardInput = {
   name: string;
   pointsCost: number;
   imageUrl?: string;
-}
+};
 
 export function useRewards() {
   const requestFetch = useRequestFetch();

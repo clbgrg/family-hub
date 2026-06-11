@@ -19,19 +19,22 @@ const postError = ref("");
 
 // Default the "From" picker to the current user once the session resolves.
 watchEffect(() => {
-  if (!fromId.value && user.value?.id) fromId.value = user.value.id;
+  if (!fromId.value && user.value?.id)
+    fromId.value = user.value.id;
 });
 
 async function submit() {
   const body = draft.value.trim();
-  if (!body || posting.value) return;
+  if (!body || posting.value)
+    return;
   posting.value = true;
   postError.value = "";
   try {
     await postMessage(body, fromId.value || undefined);
     draft.value = "";
   }
-  catch (e: any) {
+  catch (err) {
+    const e = err as { statusMessage?: string; data?: { statusMessage?: string } };
     postError.value = e?.statusMessage || e?.data?.statusMessage || "Couldn't post your note.";
   }
   finally {
@@ -51,10 +54,13 @@ function noteStyle(m: Message) {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
+  if (min < 1)
+    return "just now";
+  if (min < 60)
+    return `${min}m ago`;
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
+  if (hr < 24)
+    return `${hr}h ago`;
   return `${Math.floor(hr / 24)}d ago`;
 }
 </script>
@@ -91,7 +97,13 @@ function timeAgo(iso: string): string {
               value-attribute="value"
               class="w-32"
             />
-            <UButton label="Post" icon="i-lucide-send" :loading="posting" :disabled="!draft.trim()" @click="submit" />
+            <UButton
+              label="Post"
+              icon="i-lucide-send"
+              :loading="posting"
+              :disabled="!draft.trim()"
+              @click="submit"
+            />
           </div>
         </div>
       </div>

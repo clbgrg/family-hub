@@ -1,19 +1,19 @@
 import { consola } from "consola";
 
-export interface MessageAuthor {
+export type MessageAuthor = {
   id: string;
   name: string;
   avatar: string | null;
   color: string | null;
-}
+};
 
-export interface Message {
+export type Message = {
   id: string;
   body: string;
   createdAt: string;
   expiresAt: string;
   author: MessageAuthor;
-}
+};
 
 export function useMessages() {
   const error = ref<string | null>(null);

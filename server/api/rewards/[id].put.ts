@@ -11,16 +11,20 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event);
   const data: Record<string, unknown> = {};
-  if (typeof body?.name === "string") data.name = body.name.trim();
-  if (body?.pointsCost !== undefined) data.pointsCost = Math.max(0, Number.parseInt(String(body.pointsCost), 10) || 0);
-  if ("imageUrl" in body) data.imageUrl = String(body.imageUrl ?? "").trim() || null;
-  if (typeof body?.active === "boolean") data.active = body.active;
+  if (typeof body?.name === "string")
+    data.name = body.name.trim();
+  if (body?.pointsCost !== undefined)
+    data.pointsCost = Math.max(0, Number.parseInt(String(body.pointsCost), 10) || 0);
+  if ("imageUrl" in body)
+    data.imageUrl = String(body.imageUrl ?? "").trim() || null;
+  if (typeof body?.active === "boolean")
+    data.active = body.active;
 
   try {
     return await prisma.reward.update({ where: { id }, data });
   }
-  catch (error: any) {
-    if (error?.code === "P2025") {
+  catch (error) {
+    if ((error as { code?: string })?.code === "P2025") {
       throw createError({ statusCode: 404, statusMessage: "Reward not found" });
     }
     throw error;

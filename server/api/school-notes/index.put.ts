@@ -38,8 +38,8 @@ export default defineEventHandler(async (event) => {
       update: { text: capped },
     });
   }
-  catch (error: any) {
-    if (error?.code === "P2003") {
+  catch (error) {
+    if ((error as { code?: string })?.code === "P2003") {
       throw createError({ statusCode: 400, statusMessage: "user does not exist" });
     }
     throw error;

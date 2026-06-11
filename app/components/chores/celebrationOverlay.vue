@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NewBadge } from "~/composables/useChores";
 
-const props = defineProps<{
+defineProps<{
   name: string;
   pointsToday: number;
   streak: number;
@@ -20,7 +20,8 @@ onMounted(async () => {
     const frame = () => {
       confetti({ particleCount: 5, angle: 60, spread: 70, origin: { x: 0 } });
       confetti({ particleCount: 5, angle: 120, spread: 70, origin: { x: 1 } });
-      if (Date.now() < end) requestAnimationFrame(frame);
+      if (Date.now() < end)
+        requestAnimationFrame(frame);
     };
     frame();
   }
@@ -31,7 +32,8 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  if (timer) clearTimeout(timer);
+  if (timer)
+    clearTimeout(timer);
 });
 </script>
 
@@ -60,7 +62,11 @@ onBeforeUnmount(() => {
         New badge{{ newBadges.length > 1 ? "s" : "" }} unlocked!
       </p>
       <div class="flex gap-4">
-        <div v-for="b in newBadges" :key="b.key" class="flex flex-col items-center gap-1">
+        <div
+          v-for="b in newBadges"
+          :key="b.key"
+          class="flex flex-col items-center gap-1"
+        >
           <UIcon :name="b.icon" class="size-10 text-yellow-300" />
           <span class="text-sm">{{ b.label }}</span>
         </div>

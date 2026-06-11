@@ -33,7 +33,8 @@ const watchSource = computed(() => ({ isOpen: props.isOpen, meal: props.meal }))
 watch(
   watchSource,
   ({ isOpen, meal }) => {
-    if (!isOpen) return;
+    if (!isOpen)
+      return;
     title.value = meal?.title ?? "";
     notes.value = meal?.notes ?? "";
     ingredients.value = meal?.ingredients ?? "";
@@ -76,7 +77,13 @@ function handleSave() {
         <h3 class="text-base font-semibold leading-6">
           {{ slotLabel }} — {{ dayLabel(date) }}
         </h3>
-        <UButton color="neutral" variant="ghost" icon="i-lucide-x" aria-label="Close dialog" @click="emit('close')" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-x"
+          aria-label="Close dialog"
+          @click="emit('close')"
+        />
       </div>
 
       <div class="space-y-4 p-4">
@@ -86,12 +93,23 @@ function handleSave() {
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-highlighted">Meal</label>
-          <UInput v-model="title" placeholder="e.g. Spaghetti night" class="w-full" :ui="{ base: 'w-full' }" @keyup.enter="handleSave" />
+          <UInput
+            v-model="title"
+            placeholder="e.g. Spaghetti night"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+            @keyup.enter="handleSave"
+          />
         </div>
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-highlighted">Notes (optional)</label>
-          <UInput v-model="notes" placeholder="Recipe link, reminders…" class="w-full" :ui="{ base: 'w-full' }" />
+          <UInput
+            v-model="notes"
+            placeholder="Recipe link, reminders…"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
         </div>
 
         <div class="space-y-2">
@@ -122,7 +140,12 @@ function handleSave() {
           </div>
           <div class="w-32 space-y-2">
             <label class="block text-sm font-medium text-highlighted">Time (optional)</label>
-            <UInput v-model="time" type="time" class="w-full" :ui="{ base: 'w-full' }" />
+            <UInput
+              v-model="time"
+              type="time"
+              class="w-full"
+              :ui="{ base: 'w-full' }"
+            />
           </div>
         </div>
       </div>
@@ -138,7 +161,11 @@ function handleSave() {
           Clear
         </UButton>
         <div class="flex gap-2" :class="{ 'ml-auto': !meal?.id }">
-          <UButton color="neutral" variant="ghost" @click="emit('close')">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            @click="emit('close')"
+          >
             Cancel
           </UButton>
           <UButton color="primary" @click="handleSave">

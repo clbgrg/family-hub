@@ -39,7 +39,8 @@ async function finish() {
     stage.value = "pin";
     return;
   }
-  if (loading.value) return;
+  if (loading.value)
+    return;
   loading.value = true;
   error.value = "";
   try {
@@ -50,7 +51,8 @@ async function finish() {
     await refreshSession();
     await navigateTo("/");
   }
-  catch (e: any) {
+  catch (err) {
+    const e = err as { statusMessage?: string };
     error.value = e?.statusMessage || "Setup failed. Please try again.";
     loading.value = false;
   }
@@ -78,7 +80,12 @@ async function finish() {
         autofocus
         @keyup.enter="toPin"
       />
-      <UButton size="xl" label="Next" block @click="toPin" />
+      <UButton
+        size="xl"
+        label="Next"
+        block
+        @click="toPin"
+      />
     </div>
 
     <!-- Step 2: choose PIN -->
@@ -87,7 +94,12 @@ async function finish() {
         Choose a PIN (4–8 digits)
       </p>
       <AuthPinPad v-model="pin" @submit="toConfirm" />
-      <UButton variant="link" color="neutral" label="← Back" @click="stage = 'name'" />
+      <UButton
+        variant="link"
+        color="neutral"
+        label="← Back"
+        @click="stage = 'name'"
+      />
     </div>
 
     <!-- Step 3: confirm PIN -->

@@ -40,8 +40,8 @@ export default defineEventHandler(async (event) => {
       update: data,
     });
   }
-  catch (error: any) {
-    if (error?.code === "P2003") {
+  catch (error) {
+    if ((error as { code?: string })?.code === "P2003") {
       throw createError({ statusCode: 400, statusMessage: "cook does not exist" });
     }
     throw error;

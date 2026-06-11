@@ -4,14 +4,14 @@ import { consola } from "consola";
 
 export type MealSlot = "BREAKFAST" | "LUNCH" | "DINNER";
 
-export interface MealCook {
+export type MealCook = {
   id: string;
   name: string;
   avatar: string | null;
   color: string | null;
-}
+};
 
-export interface Meal {
+export type Meal = {
   id: string;
   date: string;
   slot: MealSlot;
@@ -21,9 +21,9 @@ export interface Meal {
   time: string | null;
   cookId: string | null;
   cook: MealCook | null;
-}
+};
 
-export interface UpsertMealInput {
+export type UpsertMealInput = {
   date: string;
   slot: MealSlot;
   title: string;
@@ -31,7 +31,7 @@ export interface UpsertMealInput {
   ingredients?: string;
   time?: string;
   cookId?: string | null;
-}
+};
 
 /** Meals for the given (navigable) week. `weekStart` is a YYYY-MM-DD Sunday. */
 export function useMeals(weekStart: Ref<string>) {

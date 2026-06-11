@@ -23,11 +23,12 @@ Think "DIY Skylight." Full feature/hardware/build detail lives in `docs/`.
 
 Calendar with month/week views, iCal sync **and full Google Calendar OAuth** (not just Apple), grocery list ("Shopping Lists"), per-person todos (with recurrence fields `rrule`/`recurringGroupId` already on the model), dark mode + settings panel, Docker Compose deploy. Partial color-coded events. Recipe-app integrations (Mealie/Tandoor) are wired in.
 
-⚠️ **NOT what it sounds like — there is NO authentication.** Upstream has *User Management* (profiles with name/color/avatar) but **no logins, passwords, sessions, or auth middleware** — `index.vue` itself carries a `// TODO: Authenticate user or route to login page`. Anyone on the LAN currently acts as anyone. **Auth is unbuilt and is a prerequisite for parental controls, per-kid chore check-off, reward approval, and per-person points.** See `docs/features-to-build.md`. (Audited against upstream commit `ffcd435`, 2026-04-02.)
+⚠️ **NOT what it sounds like — there is NO authentication.** Upstream has _User Management_ (profiles with name/color/avatar) but **no logins, passwords, sessions, or auth middleware** — `index.vue` itself carries a `// TODO: Authenticate user or route to login page`. Anyone on the LAN currently acts as anyone. **Auth is unbuilt and is a prerequisite for parental controls, per-kid chore check-off, reward approval, and per-person points.** See `docs/features-to-build.md`. (Audited against upstream commit `ffcd435`, 2026-04-02.)
 
 ## What we are building on top (the actual work)
 
 Organized by phase in `docs/build-order.md`. Summary:
+
 - **P1 Core:** points + chore tracking, rewards store, recurring chores, family message board, meal planner, dinner schedule
 - **P2 Gamification:** streaks, badges, celebration screen, leaderboard
 - **P3 Display/automation:** photo screensaver, sleep mode, motion wake, color-coded events, parental controls
@@ -35,9 +36,9 @@ Organized by phase in `docs/build-order.md`. Summary:
 
 ## Decisions made (locked)
 
-- **Where it runs:** the *app* runs on the Pi via Docker. **Development happens on a dev machine (Mac/PC), not on the Pi.** The Pi is headless Pi OS Lite with 4GB shared across Docker + Postgres + Node — fine for running the built stack, sluggish for a live dev loop. Because the whole thing is Docker Compose, it runs identically on a laptop and on the Pi, so we build and test locally and deploy to the Pi with `git pull && docker compose up -d`. **No Pi hardware is needed to start building** — see `docs/dev-workflow.md`.
+- **Where it runs:** the _app_ runs on the Pi via Docker. **Development happens on a dev machine (Mac/PC), not on the Pi.** The Pi is headless Pi OS Lite with 4GB shared across Docker + Postgres + Node — fine for running the built stack, sluggish for a live dev loop. Because the whole thing is Docker Compose, it runs identically on a laptop and on the Pi, so we build and test locally and deploy to the Pi with `git pull && docker compose up -d`. **No Pi hardware is needed to start building** — see `docs/dev-workflow.md`.
 - **Fork strategy:** vendor Skylite-UX into this repo as a fork we own (single repo, single `docker-compose.yml`). One repo to hand off and one repo another family can clone. The upstream stays a remote so we can pull fixes.
-- **Calendar:** Apple iCal is our target (read-only URL pull). Note: upstream *already ships* a working Google Calendar OAuth integration too, so Google is available for free if wanted. UI lets you add/remove sources generically.
+- **Calendar:** Apple iCal is our target (read-only URL pull). Note: upstream _already ships_ a working Google Calendar OAuth integration too, so Google is available for free if wanted. UI lets you add/remove sources generically.
 - **Hardware:** not bought yet. Phase 1 is procurement; development proceeds in parallel without it.
 
 ## Design principle: build it to be copied
@@ -57,7 +58,7 @@ A hard requirement is that another family can clone this and run their own. That
 - DB schema changes go through migrations, never manual edits — and ship seed-free (no family data in migrations).
 - **Authed data fetching:** server-rendered pages must forward the session cookie on SSR — use `useFetch` or `useRequestFetch()`, never raw `$fetch` inside `useAsyncData` (it 401s on SSR → empty data that never refetches client-side). For per-user / time-sensitive data (e.g. the chores board, where "today" must be the client's local date and the container is UTC), fetch client-only (`useAsyncData(..., { server: false })`) and wrap the rendered list in `<ClientOnly>`.
 - **Completion-records, not reset flags:** recurring state (chores) is tracked as dated completion rows, so "reset" is implicit each new day — no cron — and history is kept for points/streaks/leaderboard.
-- Cron-style recurring logic that *does* need it (leaderboard reset, sleep/wake) runs inside Docker / on the Pi — document each job.
+- Cron-style recurring logic that _does_ need it (leaderboard reset, sleep/wake) runs inside Docker / on the Pi — document each job.
 - Keep everything LAN-safe: never add code that phones home or opens external ports by default.
 - **Parent unlock (elevation):** the kiosk stays signed in as an ADMIN, so role checks alone can't tell a parent from a kid at the shared screen. Management mutations (chore/badge/reward/user/integration CRUD, approvals, point adjustments, school-item CRUD) require a fresh admin PIN: server-side `requireElevatedAdmin` (403 `ELEVATION_REQUIRED` → client retry contract), client-side `useAdminGate().gate(fn)` + the shared PIN modal in `app.vue`. Kid flows (completing own chores/school items, messages, redeeming, own-PIN change) stay ungated. New admin mutations MUST use this pattern.
 - **One points pool:** chore completions, school-item completions, and manual adjustments all derive the displayed totals and the rewards balance (`server/utils/points.ts` is the union point). Adjustments affect POINTS ONLY — badges/streaks/completion counts are computed from completion events exclusively (`pointsTotalRaw` feeds badge evaluation, never the net).
@@ -88,6 +89,7 @@ A hard requirement is that another family can clone this and run their own. That
 ## Where to pick up
 
 Development now is feature tweaks + deployment, not bootstrapping. Useful entry points:
+
 - **Deploy to a Pi:** `docs/deployment.md` (prebuilt image + Watchtower) or `docs/installation.md`. First flip the GHCR package public so the Pi can pull.
 - **Cut a release:** push a `vX.Y.Z` tag → CI builds + publishes the multi-arch image (bump `package.json` + lockfile to match first). See `docs/deployment.md`.
 - **Add/adjust a feature:** it will mirror an existing one — chores (`server/api/chores/*` + `app/pages/chores.vue`), rewards, meals, badges, school, message board, dashboard. Follow the repo conventions above (migrations; authed SSR fetch via `useRequestFetch`; completion-records, no cron; client-local dates).

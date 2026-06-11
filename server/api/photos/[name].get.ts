@@ -9,10 +9,6 @@ const CONTENT_TYPE: Record<string, string> = {
   ".webp": "image/webp",
 };
 
-function photosDir(): string {
-  return process.env.PHOTOS_DIR || resolve(process.cwd(), "photos");
-}
-
 /**
  * Serve one screensaver photo. The filename is attacker-controllable, so this
  * is the security-critical bit: accept a bare basename only (no separators,

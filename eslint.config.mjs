@@ -13,7 +13,7 @@ export default withNuxt(antfu({
     semi: true,
     quotes: "double",
   },
-  ignores: [".pnpm-store/**", "**/migrations/*", ".gitignore", ".devcontainer/**", ".github/**", "docker-compose-example.yaml", "docker-compose-dev.yaml", "./docs/**", "test/**"],
+  ignores: [".pnpm-store/**", "**/migrations/*", ".gitignore", ".devcontainer/**", ".github/**", ".claude/**", "docker-compose-example.yaml", "docker-compose-dev.yaml", "./docs/**", "test/**"],
 }, {
   rules: {
     "vue/max-attributes-per-line": ["error", {
@@ -37,9 +37,10 @@ export default withNuxt(antfu({
     "unicorn/filename-case": ["error", {
       case: "camelCase",
       ignore: [
-        "README.md",
-        /docker-compose\.yml$/i,
-        /-docker-compose\.yml$/i,
+        // Root docs follow the UPPERCASE convention, compose files the
+        // docker-compose.* convention — both intentional, not lint debt.
+        /^[A-Z][A-Z-]*\.md$/,
+        /docker-compose.*\.ya?ml$/i,
         /clear-completed\.post\.ts$/i,
       ],
     }],

@@ -3,10 +3,6 @@ import { basename, extname, resolve, sep } from "node:path";
 
 const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp"]);
 
-function photosDir(): string {
-  return process.env.PHOTOS_DIR || resolve(process.cwd(), "photos");
-}
-
 /** Delete a screensaver photo. Admin only. Same strict filename guard as serve. */
 export default defineEventHandler(async (event) => {
   await requireAdmin(event);

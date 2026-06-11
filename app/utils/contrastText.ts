@@ -3,9 +3,11 @@
  * standard perceived-luminance formula (same as settingsUserDialog/useCalendar).
  */
 export function contrastText(hex: string | null | undefined): string {
-  if (!hex) return "#111827";
+  if (!hex)
+    return "#111827";
   const h = hex.replace("#", "");
-  if (h.length < 6) return "#111827";
+  if (h.length < 6)
+    return "#111827";
   const r = Number.parseInt(h.slice(0, 2), 16);
   const g = Number.parseInt(h.slice(2, 4), 16);
   const b = Number.parseInt(h.slice(4, 6), 16);

@@ -28,17 +28,22 @@ d5bf402 deploy: fix backup failure-masking and prod restore targeting the dev st
 ## Phase 1 — the five parked findings
 
 ### `6880a7f` — wildcard CORS on the SSE stream
+
 **Verified at** `server/api/sync/events.get.ts:12-13`; removed both `Access-Control-*` headers (stream is same-origin only). Regression test asserts no CORS headers are set.
 
 ### `d1e7022` + `11e2589` — OAuth refresh-token exposure
+
 `exchangeToken.post.ts:41` returned `tokens.refresh_token` to the browser. Both it and `authCallback.post.ts` are dead code (grep: nothing in `app/` references either; the live flow is `callback.get.ts`, which keeps the token server-side). Both deleted with their tests.
 
 ### `ecd00d5` — `pinHash` in `/api/users` responses
+
 `users/index.get.ts` returned raw `findMany` rows (hash included) to any logged-in member. Fixed with a Prisma client-level `omit: { user: { pinHash: true } }` in `app/lib/prisma.ts` — covers every query incl. future `include: { user: ... }` joins. Login opts back in via `omit: { pinHash: false }`; the login picker already used an explicit select + `hasPin` boolean.
 
 ### `cc0dd6a` + `541c8de` — iCal SSRF (now closed end-to-end)
+
 Original hole: temp mode fetched any caller-supplied URL and echoed the raw error (non-blind LAN/metadata probe), no timeout.
-- `server/utils/publicUrl.ts` → `assertPublicHttpUrl()`: http(s) only; rejects `localhost`/`*.local`/`*.internal`; blocks literal and DNS-resolved private/reserved IPv4+IPv6 (RFC1918, loopback, link-local/metadata 169.254, CGNAT, multicast/reserved, `fc00::/7`, `fe80::/10`, IPv4-mapped IPv6 in dotted *and* URL-normalized hex form); fails closed on unparseable addresses.
+
+- `server/utils/publicUrl.ts` → `assertPublicHttpUrl()`: http(s) only; rejects `localhost`/`*.local`/`*.internal`; blocks literal and DNS-resolved private/reserved IPv4+IPv6 (RFC1918, loopback, link-local/metadata 169.254, CGNAT, multicast/reserved, `fc00::/7`, `fe80::/10`, IPv4-mapped IPv6 in dotted _and_ URL-normalized hex form); fails closed on unparseable addresses.
 - `fetchPublicText()` fetches with `redirect: "manual"` in a bounded loop (max 5 hops) and validates **every hop** — closes the redirect-to-private bypass. The iCal endpoint uses it; `ICalServerService` gained a `parseEvents()` split (its own `fetchEventsFromUrl` unchanged for the browser path, but with a 10s timeout + non-OK rejection).
 - Stored URLs are guarded **at the source**: integration create/update (admin-only) reject private iCal `baseUrl`s (case-insensitive service match), covering the unattended sync-manager fetch path. Mealie/Tandoor stay exempt — their LAN baseUrls are legitimate.
 - `FH_ALLOW_PRIVATE_URLS=true` escape hatch (`.env.example`, both compose files) for families hosting their own LAN feeds (e.g. Home Assistant `.ics`).
@@ -46,6 +51,7 @@ Original hole: temp mode fetched any caller-supplied URL and echoed the raw erro
 - **Accepted residual:** DNS rebinding between validation and fetch (needs resolved-IP pinning via a custom dispatcher; out of proportion for a LAN kiosk).
 
 ### `36d3516` — Mealie/Tandoor credentialed proxy
+
 The prescribed remediation ("require auth") already held via the global middleware; no production change. Added the middleware's first test suite (allowlist boundaries, 401 propagation, no `/api/authx` prefix confusion). Member (kid) access to the proxies is intentional — shopping lists are member-facing.
 
 ## Phase 2 — deploy/arm64 audit
@@ -53,12 +59,14 @@ The prescribed remediation ("require auth") already held via the global middlewa
 **Verified already correct (no change needed):** Prisma cross-build is safe — `schema.prisma` declares `binaryTargets = ["native", "linux-arm64-openssl-3.0.x", "debian-openssl-3.0.x"]`, so the amd64 builder emits arm64 engines and the QEMU-built production stage installs a native CLI. No native npm deps. `.gitattributes` forces LF on scripts (no CRLF bomb). `postgres:16`/Watchtower/node images are arm64 multi-arch. Compose enforces required secrets, doesn't publish Postgres, healthchecks the DB, label-scopes Watchtower. `.env.example` complete.
 
 **Fixed `d5bf402`:**
+
 - `scripts/backup.sh`: `pg_dump | gzip` reported gzip's exit status, so a failed dump was saved as a "good" backup and pruning would eventually rotate real backups out in favor of empty ones. Now dumps to a temp file and compresses only on success.
 - `scripts/restore.sh` on the Pi would `docker compose exec` into the **dev** compose project. Documented `export COMPOSE_FILE=docker-compose.prod.yml` in the script header and `docs/deployment.md` runbook.
 
 ## CI & test determinism (`58e7161`) — and a correction
 
 Mid-review I reported the suite had "55 pre-existing failures + 85 type errors on clean main." Root-causing them (required before gating releases on tests) showed **none were real**:
+
 - 46 were machine-timezone-dependent (rrule/recurrence/time-picker assert wall-clock values). Fixed by pinning `TZ=UTC` in `vitest.config.ts` — deterministic on any machine.
 - 7 (+ all 85 type errors) appear only on a checkout where `prisma generate` never ran (the `Role` enum is undefined). My fresh worktree hit this; your working copy wouldn't. CI now generates explicitly.
 - 2 `useCalendar` boundary tests depended on a **network** timezone fetch (`tz.add-to-calendar-technology.com`, currently 500ing) and silently degraded to UTC-day comparison. Now they register a static CST `VTIMEZONE` fixture — deterministic offline.

@@ -1,14 +1,14 @@
 <script setup lang="ts">
 definePageMeta({ layout: false });
 
-interface PickUser {
+type PickUser = {
   id: string;
   name: string;
   avatar: string | null;
   color: string | null;
   role: string;
   hasPin: boolean;
-}
+};
 
 const { fetch: refreshSession } = useUserSession();
 const { data: users } = await useFetch<PickUser[]>("/api/auth/users", {
@@ -21,7 +21,8 @@ const error = ref("");
 const loading = ref(false);
 
 function selectUser(u: PickUser) {
-  if (!u.hasPin) return;
+  if (!u.hasPin)
+    return;
   selected.value = u;
   pin.value = "";
   error.value = "";
@@ -34,7 +35,8 @@ function back() {
 }
 
 async function submit() {
-  if (!selected.value || pin.value.length < 4 || loading.value) return;
+  if (!selected.value || pin.value.length < 4 || loading.value)
+    return;
   loading.value = true;
   error.value = "";
   try {
@@ -75,7 +77,11 @@ async function submit() {
           :disabled="!u.hasPin"
           @click="selectUser(u)"
         >
-          <UAvatar :src="u.avatar || undefined" :alt="u.name" size="3xl" />
+          <UAvatar
+            :src="u.avatar || undefined"
+            :alt="u.name"
+            size="3xl"
+          />
           <span class="text-lg font-medium">{{ u.name }}</span>
           <span v-if="!u.hasPin" class="text-xs text-muted">no PIN set</span>
         </button>
@@ -88,14 +94,23 @@ async function submit() {
     <!-- Step 2: enter PIN -->
     <div v-else class="flex flex-col items-center gap-6">
       <div class="flex flex-col items-center gap-1">
-        <UAvatar :src="selected.avatar || undefined" :alt="selected.name" size="2xl" />
+        <UAvatar
+          :src="selected.avatar || undefined"
+          :alt="selected.name"
+          size="2xl"
+        />
         <span class="text-xl font-semibold">{{ selected.name }}</span>
       </div>
       <AuthPinPad v-model="pin" @submit="submit" />
       <p v-if="error" class="text-sm text-error">
         {{ error }}
       </p>
-      <UButton variant="link" color="neutral" label="← Back" @click="back" />
+      <UButton
+        variant="link"
+        color="neutral"
+        label="← Back"
+        @click="back"
+      />
     </div>
   </div>
 </template>

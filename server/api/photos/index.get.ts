@@ -1,11 +1,7 @@
 import { promises as fs } from "node:fs";
-import { extname, resolve } from "node:path";
+import { extname } from "node:path";
 
 const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp"]);
-
-function photosDir(): string {
-  return process.env.PHOTOS_DIR || resolve(process.cwd(), "photos");
-}
 
 /** List screensaver photos. Returns image filenames + their serve URLs. */
 export default defineEventHandler(async (event) => {

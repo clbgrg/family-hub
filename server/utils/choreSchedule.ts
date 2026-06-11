@@ -6,13 +6,13 @@ export function weekdayOf(localDate: string): number {
   return new Date(`${localDate}T00:00:00Z`).getUTCDay();
 }
 
-export interface ChoreDayInput {
+export type ChoreDayInput = {
   recurrence: "ONCE" | "DAILY" | "WEEKLY";
   daysOfWeek: number[];
   doneEver: boolean;
   doneToday: boolean;
   localDate: string;
-}
+};
 
 /**
  * For a chore on a given local date: is it part of "today's set" (dueToday),

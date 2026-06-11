@@ -3,12 +3,54 @@ import prisma from "~/lib/prisma";
 // Units we recognize at the start of an ingredient line, so "1 lb chicken"
 // parses into qty=1, unit=lb, name=chicken (and aggregates across days).
 const UNITS = new Set([
-  "lb", "lbs", "oz", "g", "kg", "gram", "grams", "cup", "cups", "tbsp", "tsp",
-  "jar", "jars", "can", "cans", "bottle", "bottles", "dozen", "pack", "packs",
-  "packet", "packets", "bag", "bags", "box", "boxes", "clove", "cloves",
-  "bunch", "bunches", "slice", "slices", "stick", "sticks", "pint", "pints",
-  "quart", "quarts", "gallon", "gallons", "ml", "l", "liter", "liters",
-  "head", "heads", "loaf", "loaves",
+  "lb",
+  "lbs",
+  "oz",
+  "g",
+  "kg",
+  "gram",
+  "grams",
+  "cup",
+  "cups",
+  "tbsp",
+  "tsp",
+  "jar",
+  "jars",
+  "can",
+  "cans",
+  "bottle",
+  "bottles",
+  "dozen",
+  "pack",
+  "packs",
+  "packet",
+  "packets",
+  "bag",
+  "bags",
+  "box",
+  "boxes",
+  "clove",
+  "cloves",
+  "bunch",
+  "bunches",
+  "slice",
+  "slices",
+  "stick",
+  "sticks",
+  "pint",
+  "pints",
+  "quart",
+  "quarts",
+  "gallon",
+  "gallons",
+  "ml",
+  "l",
+  "liter",
+  "liters",
+  "head",
+  "heads",
+  "loaf",
+  "loaves",
 ]);
 
 function normalizeUnit(u: string): string {
@@ -16,12 +58,14 @@ function normalizeUnit(u: string): string {
   return lower.length > 1 && lower.endsWith("s") ? lower.slice(0, -1) : lower;
 }
 
-interface Parsed { qty: number | null; unit: string; name: string }
+type Parsed = { qty: number | null; unit: string; name: string };
 
 // "2 lbs chicken" -> {2, lbs, chicken}; "parmesan" -> {null, "", parmesan};
 // "1/2 cup rice" / "1.5 lb beef" -> qty null (kept as free text, not summed).
 function parseLine(line: string): Parsed {
-  const m = /^(\d+)\s+(.+)$/.exec(line);
+  // (\S.*) instead of (.+): forces the boundary after \s+ so the regex can't
+  // backtrack super-linearly on whitespace runs (regexp lint).
+  const m = /^(\d+)\s+(\S.*)$/.exec(line);
   if (!m) {
     return { qty: null, unit: "", name: line };
   }
@@ -29,7 +73,7 @@ function parseLine(line: string): Parsed {
   const qty = Number.parseInt(qtyStr, 10);
   const rest = restRaw.trim();
 
-  const wm = /^(\S+)\s+(.+)$/.exec(rest);
+  const wm = /^(\S+)\s+(\S.*)$/.exec(rest);
   if (wm) {
     const [, unit = "", name = ""] = wm;
     if (UNITS.has(unit.toLowerCase())) {
@@ -71,16 +115,19 @@ export default defineEventHandler(async (event) => {
   for (const meal of meals) {
     for (const raw of (meal.ingredients ?? "").split("\n")) {
       const line = raw.trim();
-      if (!line) continue;
+      if (!line)
+        continue;
       const p = parseLine(line);
       if (p.qty == null) {
         const key = line.toLowerCase();
-        if (!unmeasured.has(key)) unmeasured.set(key, line);
+        if (!unmeasured.has(key))
+          unmeasured.set(key, line);
       }
       else {
         const key = `${normalizeUnit(p.unit)}|${p.name.toLowerCase()}`;
         const existing = measured.get(key);
-        if (existing) existing.qty += p.qty;
+        if (existing)
+          existing.qty += p.qty;
         else measured.set(key, { qty: p.qty, unit: p.unit, name: p.name });
       }
     }

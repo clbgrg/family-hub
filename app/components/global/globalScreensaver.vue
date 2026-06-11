@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useIdle } from "@vueuse/core";
 
-interface Photo {
+type Photo = {
   name: string;
   url: string;
-}
+};
 
 const { preferences } = useClientPreferences();
 const route = useRoute();
@@ -52,8 +52,10 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  if (clockTimer) clearInterval(clockTimer);
-  if (photoTimer) clearInterval(photoTimer);
+  if (clockTimer)
+    clearInterval(clockTimer);
+  if (photoTimer)
+    clearInterval(photoTimer);
 });
 </script>
 

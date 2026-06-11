@@ -1,13 +1,14 @@
 <script setup lang="ts">
 // Numeric PIN pad, kiosk/touch friendly. v-model is the PIN string.
 const props = defineProps<{ modelValue: string; max?: number }>();
-const emit = defineEmits<{ "update:modelValue": [string]; submit: [] }>();
+const emit = defineEmits<{ "update:modelValue": [string]; "submit": [] }>();
 
 const max = computed(() => props.max ?? 8);
 const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 function press(d: string) {
-  if (props.modelValue.length < max.value) emit("update:modelValue", props.modelValue + d);
+  if (props.modelValue.length < max.value)
+    emit("update:modelValue", props.modelValue + d);
 }
 function backspace() {
   emit("update:modelValue", props.modelValue.slice(0, -1));

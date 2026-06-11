@@ -21,7 +21,8 @@ const watchSource = computed(() => ({ isOpen: props.isOpen, reward: props.reward
 watch(
   watchSource,
   ({ isOpen, reward }) => {
-    if (!isOpen) return;
+    if (!isOpen)
+      return;
     name.value = reward?.name ?? "";
     pointsCost.value = reward?.pointsCost ?? 10;
     imageUrl.value = reward?.imageUrl ?? "";
@@ -58,7 +59,13 @@ function handleSave() {
         <h3 class="text-base font-semibold leading-6">
           {{ reward?.id ? "Edit Reward" : "Add Reward" }}
         </h3>
-        <UButton color="neutral" variant="ghost" icon="i-lucide-x" aria-label="Close dialog" @click="emit('close')" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-x"
+          aria-label="Close dialog"
+          @click="emit('close')"
+        />
       </div>
 
       <div class="space-y-4 p-4">
@@ -68,17 +75,35 @@ function handleSave() {
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-highlighted">Reward</label>
-          <UInput v-model="name" placeholder="e.g. Movie night" class="w-full" :ui="{ base: 'w-full' }" @keyup.enter="handleSave" />
+          <UInput
+            v-model="name"
+            placeholder="e.g. Movie night"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+            @keyup.enter="handleSave"
+          />
         </div>
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-highlighted">Cost (points)</label>
-          <UInput v-model.number="pointsCost" type="number" :min="0" class="w-full" :ui="{ base: 'w-full' }" />
+          <UInput
+            v-model.number="pointsCost"
+            type="number"
+            :min="0"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
         </div>
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-highlighted">Image URL (optional)</label>
-          <UInput v-model="imageUrl" type="url" placeholder="Paste an image link" class="w-full" :ui="{ base: 'w-full' }" />
+          <UInput
+            v-model="imageUrl"
+            type="url"
+            placeholder="Paste an image link"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
         </div>
       </div>
 
@@ -93,7 +118,11 @@ function handleSave() {
           Delete
         </UButton>
         <div class="flex gap-2" :class="{ 'ml-auto': !reward?.id }">
-          <UButton color="neutral" variant="ghost" @click="emit('close')">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            @click="emit('close')"
+          >
             Cancel
           </UButton>
           <UButton color="primary" @click="handleSave">

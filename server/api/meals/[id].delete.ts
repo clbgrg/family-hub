@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
     await prisma.meal.delete({ where: { id } });
     return { ok: true };
   }
-  catch (error: any) {
-    if (error?.code === "P2025") {
+  catch (error) {
+    if ((error as { code?: string })?.code === "P2025") {
       throw createError({ statusCode: 404, statusMessage: "Meal not found" });
     }
     throw error;

@@ -10,10 +10,6 @@ const EXT_BY_TYPE: Record<string, string> = {
 };
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
-function photosDir(): string {
-  return process.env.PHOTOS_DIR || resolve(process.cwd(), "photos");
-}
-
 /**
  * Upload a screensaver photo. Admin only. The stored filename is fully
  * generated (never the uploaded name → no traversal/collision), the type is

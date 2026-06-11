@@ -39,7 +39,8 @@ function cellMeal(date: string, slot: MealSlot): Meal | null {
   return mealByCell.value[`${date}|${slot}`] ?? null;
 }
 function openCell(date: string, slot: MealSlot) {
-  if (!isAdmin.value) return;
+  if (!isAdmin.value)
+    return;
   editing.value = { date, slot, meal: cellMeal(date, slot) };
   dialogOpen.value = true;
 }
@@ -74,14 +75,37 @@ async function onGenerate() {
   <div class="flex w-full flex-col">
     <div class="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-3 border-b border-default bg-default py-4 sm:px-4">
       <div class="flex items-center gap-2">
-        <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" aria-label="Previous week" @click="prevWeek" />
-        <UButton label="This week" variant="soft" color="neutral" size="sm" @click="thisWeek" />
-        <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" aria-label="Next week" @click="nextWeek" />
+        <UButton
+          icon="i-lucide-chevron-left"
+          variant="ghost"
+          color="neutral"
+          aria-label="Previous week"
+          @click="prevWeek"
+        />
+        <UButton
+          label="This week"
+          variant="soft"
+          color="neutral"
+          size="sm"
+          @click="thisWeek"
+        />
+        <UButton
+          icon="i-lucide-chevron-right"
+          variant="ghost"
+          color="neutral"
+          aria-label="Next week"
+          @click="nextWeek"
+        />
         <span class="ml-2 text-sm text-muted">Week of {{ dayLabel(weekStart) }}</span>
       </div>
       <div v-if="isAdmin" class="flex items-center gap-3">
         <span v-if="genResult" class="text-sm text-muted">{{ genResult }}</span>
-        <UButton icon="i-lucide-shopping-cart" label="Generate groceries" :loading="generating" @click="onGenerate" />
+        <UButton
+          icon="i-lucide-shopping-cart"
+          label="Generate groceries"
+          :loading="generating"
+          @click="onGenerate"
+        />
       </div>
     </div>
 

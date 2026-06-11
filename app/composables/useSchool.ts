@@ -1,10 +1,10 @@
 import type { Ref } from "vue";
 
-export interface SchoolNote {
+export type SchoolNote = {
   userId: string;
   date: string;
   text: string;
-}
+};
 
 /** School notes for the given Mon–Fri week (`weekStart` is a YYYY-MM-DD Monday). */
 export function useSchool(weekStart: Ref<string>) {

@@ -11,11 +11,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (loggedIn.value) {
     // Authenticated: keep them off the login/setup screens.
-    if (isPublic) return navigateTo("/");
+    if (isPublic)
+      return navigateTo("/");
     return;
   }
 
-  if (isPublic) return;
+  if (isPublic)
+    return;
 
   const { needsSetup } = await $fetch<{ needsSetup: boolean }>("/api/auth/setup");
   return navigateTo(needsSetup ? "/setup" : "/login");
