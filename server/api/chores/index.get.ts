@@ -21,19 +21,31 @@ export default defineEventHandler(async (event) => {
       assignments: {
         include: { user: { select: { id: true, name: true, avatar: true, color: true } } },
       },
-      // All completions' (userId, localDate) pairs: per-assignee doneToday and
-      // ONCE doneEver both need them, and volume is tiny for a family.
-      completions: { select: { userId: true, localDate: true } },
+      // Only TODAY's completions — doneEver (which needs history) only matters
+      // for ONCE chores, fetched separately below so the board query stays
+      // bounded as completion history grows.
+      completions: { where: { localDate: date }, select: { userId: true } },
     },
   });
 
-  return chores.flatMap(c =>
-    c.assignments.map(({ user }) => {
+  // Per-assignee doneEver for ONCE chores.
+  const onceIds = chores.filter(c => c.recurrence === "ONCE").map(c => c.id);
+  const everDone = onceIds.length
+    ? await prisma.choreCompletion.findMany({
+        where: { choreId: { in: onceIds } },
+        select: { choreId: true, userId: true },
+      })
+    : [];
+  const everDoneOnce = new Set(everDone.map(e => `${e.choreId}:${e.userId}`));
+
+  return chores.flatMap((c) => {
+    const doneToday = new Set(c.completions.map(x => x.userId));
+    return c.assignments.map(({ user }) => {
       const { dueToday, done } = choreDayStatus({
         recurrence: c.recurrence,
         daysOfWeek: c.daysOfWeek,
-        doneEver: c.completions.some(x => x.userId === user.id),
-        doneToday: c.completions.some(x => x.userId === user.id && x.localDate === date),
+        doneEver: doneToday.has(user.id) || everDoneOnce.has(`${c.id}:${user.id}`),
+        doneToday: doneToday.has(user.id),
         localDate: date,
       });
 
@@ -50,6 +62,6 @@ export default defineEventHandler(async (event) => {
         dueToday,
         done,
       };
-    }),
-  );
+    });
+  });
 });

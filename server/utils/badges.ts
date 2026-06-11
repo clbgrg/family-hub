@@ -28,8 +28,19 @@ const DEFAULT_BADGES = [
   { key: "HOT_STREAK", name: "Hot Streak", icon: "i-lucide-flame", description: "7-day streak", conditions: [{ ruleType: "STREAK", threshold: 7 }], order: 4 },
 ];
 
+// Seed only into an EMPTY badges table, once per process. Seeding on every
+// read (the old behavior) was a write on the hottest read path AND silently
+// resurrected default badges an admin had deliberately deleted.
+let defaultsChecked = false;
+
 export async function ensureDefaultBadges(): Promise<void> {
-  await prisma.badge.createMany({ data: DEFAULT_BADGES, skipDuplicates: true });
+  if (defaultsChecked)
+    return;
+  const existing = await prisma.badge.count();
+  if (existing === 0) {
+    await prisma.badge.createMany({ data: DEFAULT_BADGES, skipDuplicates: true });
+  }
+  defaultsChecked = true;
 }
 
 export async function getBadges(): Promise<Badge[]> {
@@ -77,12 +88,6 @@ export function badgeEarned(badge: Badge, stats: BadgeStats, userId: string): bo
   if (conditions.length === 0)
     return false;
   return conditions.every(c => statValue(c.ruleType, stats) >= c.threshold);
-}
-
-/** Badge definitions the user currently qualifies for. */
-export async function evaluateEarnedBadges(userId: string, stats: BadgeStats): Promise<Badge[]> {
-  const badges = await getBadges();
-  return badges.filter(b => badgeEarned(b, stats, userId));
 }
 
 /**

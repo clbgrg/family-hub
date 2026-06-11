@@ -63,8 +63,10 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const { newBadges, stats } = await awardNewBadges(targetUserId, localDate);
-  const allDoneToday = await isAllDoneToday(targetUserId, localDate);
+  const [{ newBadges, stats }, allDoneToday] = await Promise.all([
+    awardNewBadges(targetUserId, localDate),
+    isAllDoneToday(targetUserId, localDate),
+  ]);
 
   return {
     ok: true,

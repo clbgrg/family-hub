@@ -16,19 +16,19 @@ export async function awardNewBadges(userId: string, localDate: string): Promise
   newBadges: AwardedBadge[];
   stats: UserStats;
 }> {
-  const stats = await computeUserStats(userId, localDate);
+  const [stats, badges, existingBadges] = await Promise.all([
+    computeUserStats(userId, localDate),
+    getBadges(),
+    prisma.userBadge.findMany({ where: { userId }, select: { badgeKey: true } }),
+  ]);
   // Badges see completion-only values: manual deductions can't strip badge
   // progress and manual bonuses can't trigger completion-flavored badges.
-  const earnedBadges = await evaluateEarnedBadges(userId, {
+  const earnedBadges = badges.filter(b => badgeEarned(b, {
     totalCompletions: stats.totalCompletions,
     maxPointsInADay: stats.maxPointsInADay,
     streak: stats.streak,
     pointsTotal: stats.pointsTotalRaw,
-  });
-  const existingBadges = await prisma.userBadge.findMany({
-    where: { userId },
-    select: { badgeKey: true },
-  });
+  }, userId));
   const have = new Set(existingBadges.map(b => b.badgeKey));
   const newBadges = earnedBadges.filter(b => !have.has(b.key));
   if (newBadges.length) {

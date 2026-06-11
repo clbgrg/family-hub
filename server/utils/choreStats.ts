@@ -1,5 +1,7 @@
 import prisma from "~/lib/prisma";
 
+import type { PointEvent } from "./points";
+
 export type UserStats = {
   // Net values (completions + manual adjustments) — what gets DISPLAYED.
   pointsTotal: number;
@@ -24,7 +26,43 @@ export async function computeUserStats(userId: string, today: string): Promise<U
     getCompletionEvents(userId),
     getAdjustmentEvents(userId),
   ]);
+  return statsFromEvents(completions, adjustments, today);
+}
 
+/**
+ * Stats for MANY users in three batched queries (instead of three per user) —
+ * the leaderboard/stats endpoint is the hottest read in the app, polled by the
+ * dashboard, the chore board, and rewards at once.
+ */
+export async function computeAllUserStats(userIds: string[], today: string): Promise<Map<string, UserStats>> {
+  const where = { userId: { in: userIds } };
+  const [choreCompletions, schoolCompletions, adjustments] = await Promise.all([
+    prisma.choreCompletion.findMany({ where, select: { userId: true, localDate: true, points: true } }),
+    prisma.schoolItemCompletion.findMany({ where, select: { userId: true, localDate: true, points: true } }),
+    prisma.pointAdjustment.findMany({ where, select: { userId: true, localDate: true, delta: true } }),
+  ]);
+
+  const completionsByUser = new Map<string, PointEvent[]>();
+  for (const c of [...choreCompletions, ...schoolCompletions]) {
+    const arr = completionsByUser.get(c.userId) ?? [];
+    arr.push({ localDate: c.localDate, points: c.points });
+    completionsByUser.set(c.userId, arr);
+  }
+  const adjustmentsByUser = new Map<string, PointEvent[]>();
+  for (const a of adjustments) {
+    const arr = adjustmentsByUser.get(a.userId) ?? [];
+    arr.push({ localDate: a.localDate, points: a.delta });
+    adjustmentsByUser.set(a.userId, arr);
+  }
+
+  return new Map(userIds.map(id => [
+    id,
+    statsFromEvents(completionsByUser.get(id) ?? [], adjustmentsByUser.get(id) ?? [], today),
+  ]));
+}
+
+/** Pure stats derivation from already-fetched point events (see computeUserStats). */
+export function statsFromEvents(completions: PointEvent[], adjustments: PointEvent[], today: string): UserStats {
   let pointsTotalRaw = 0;
   let pointsToday = 0;
   const pointsByDate = new Map<string, number>();
@@ -89,17 +127,28 @@ export async function isAllDoneToday(userId: string, localDate: string): Promise
   const chores = await prisma.chore.findMany({
     where: { active: true, assignments: { some: { userId } } },
     include: {
-      // Only THIS user's completions count — assignees complete independently.
-      completions: { where: { userId }, select: { localDate: true } },
+      // Only THIS user's TODAY completions — assignees complete independently,
+      // and doneEver (which needs history) only matters for ONCE chores below.
+      completions: { where: { userId, localDate }, select: { localDate: true } },
     },
   });
+
+  // doneEver for ONCE chores, without dragging full completion history along.
+  const onceIds = chores.filter(c => c.recurrence === "ONCE").map(c => c.id);
+  const everDone = onceIds.length
+    ? await prisma.choreCompletion.findMany({
+        where: { userId, choreId: { in: onceIds } },
+        select: { choreId: true },
+      })
+    : [];
+  const everDoneOnce = new Set(everDone.map(e => e.choreId));
 
   const todays = chores
     .map(c => choreDayStatus({
       recurrence: c.recurrence,
       daysOfWeek: c.daysOfWeek,
-      doneEver: c.completions.length > 0,
-      doneToday: c.completions.some(x => x.localDate === localDate),
+      doneEver: c.completions.length > 0 || everDoneOnce.has(c.id),
+      doneToday: c.completions.length > 0,
       localDate,
     }))
     .filter(s => s.dueToday);

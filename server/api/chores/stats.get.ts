@@ -13,9 +13,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "date (YYYY-MM-DD) query param required" });
   }
 
-  const users = await prisma.user.findMany({ select: { id: true } });
-  const allUserBadges = await prisma.userBadge.findMany({ select: { userId: true, badgeKey: true, earnedAt: true } });
-  const definitions = new Map((await getBadges()).map(b => [b.key, b]));
+  const [users, allUserBadges, badgeDefs] = await Promise.all([
+    prisma.user.findMany({ select: { id: true } }),
+    prisma.userBadge.findMany({ select: { userId: true, badgeKey: true, earnedAt: true } }),
+    getBadges(),
+  ]);
+  const definitions = new Map(badgeDefs.map(b => [b.key, b]));
 
   const badgesByUser = new Map<string, { badgeKey: string; earnedAt: Date }[]>();
   for (const b of allUserBadges) {
@@ -24,9 +27,12 @@ export default defineEventHandler(async (event) => {
     badgesByUser.set(b.userId, arr);
   }
 
+  // Three batched queries for ALL users (vs three per user, sequentially).
+  const statsByUser = await computeAllUserStats(users.map(u => u.id), date);
+
   const result = [];
   for (const u of users) {
-    const stats = await computeUserStats(u.id, date);
+    const stats = statsByUser.get(u.id)!;
     const badges = (badgesByUser.get(u.id) ?? []).map(({ badgeKey: key, earnedAt }) => {
       const def = definitions.get(key);
       return {

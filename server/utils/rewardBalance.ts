@@ -31,3 +31,31 @@ export async function computeRewardBalance(userId: string): Promise<RewardBalanc
 
   return { userId, earned, approvedSpent, pendingSpent, available };
 }
+
+/**
+ * Balances for MANY users in five grouped queries total (instead of five per
+ * user) — the balances endpoint renders on every rewards-page load.
+ */
+export async function computeAllRewardBalances(userIds: string[]): Promise<RewardBalance[]> {
+  const where = { userId: { in: userIds } };
+  const [choreSums, schoolSums, adjustSums, approvedSums, pendingSums] = await Promise.all([
+    prisma.choreCompletion.groupBy({ by: ["userId"], where, _sum: { points: true } }),
+    prisma.schoolItemCompletion.groupBy({ by: ["userId"], where, _sum: { points: true } }),
+    prisma.pointAdjustment.groupBy({ by: ["userId"], where, _sum: { delta: true } }),
+    prisma.redemption.groupBy({ by: ["userId"], where: { ...where, status: "APPROVED" }, _sum: { pointsCost: true } }),
+    prisma.redemption.groupBy({ by: ["userId"], where: { ...where, status: "PENDING" }, _sum: { pointsCost: true } }),
+  ]);
+
+  const chore = new Map(choreSums.map(r => [r.userId, r._sum.points ?? 0]));
+  const school = new Map(schoolSums.map(r => [r.userId, r._sum.points ?? 0]));
+  const adjust = new Map(adjustSums.map(r => [r.userId, r._sum.delta ?? 0]));
+  const approved = new Map(approvedSums.map(r => [r.userId, r._sum.pointsCost ?? 0]));
+  const pending = new Map(pendingSums.map(r => [r.userId, r._sum.pointsCost ?? 0]));
+
+  return userIds.map((userId) => {
+    const earned = (chore.get(userId) ?? 0) + (school.get(userId) ?? 0) + (adjust.get(userId) ?? 0);
+    const approvedSpent = approved.get(userId) ?? 0;
+    const pendingSpent = pending.get(userId) ?? 0;
+    return { userId, earned, approvedSpent, pendingSpent, available: Math.max(0, earned - approvedSpent - pendingSpent) };
+  });
+}
