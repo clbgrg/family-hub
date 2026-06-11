@@ -17,7 +17,14 @@ export async function awardNewBadges(userId: string, localDate: string): Promise
   stats: UserStats;
 }> {
   const stats = await computeUserStats(userId, localDate);
-  const earnedBadges = await evaluateEarnedBadges(stats);
+  // Badges see completion-only values: manual deductions can't strip badge
+  // progress and manual bonuses can't trigger completion-flavored badges.
+  const earnedBadges = await evaluateEarnedBadges({
+    totalCompletions: stats.totalCompletions,
+    maxPointsInADay: stats.maxPointsInADay,
+    streak: stats.streak,
+    pointsTotal: stats.pointsTotalRaw,
+  });
   const existingBadges = await prisma.userBadge.findMany({
     where: { userId },
     select: { badgeKey: true },

@@ -37,6 +37,8 @@ model User {
   messages         Message[]
   redemptions      Redemption[]
   schoolNotes      SchoolNote[]
+  pointAdjustments        PointAdjustment[] @relation("PointAdjustmentUser")
+  pointAdjustmentsCreated PointAdjustment[] @relation("PointAdjustmentCreator")
 
   @@map("users")
 }
@@ -340,6 +342,25 @@ enum BadgeRuleType {
   TOTAL_POINTS
   TOTAL_COMPLETIONS
   POINTS_IN_DAY
+}
+
+// A manual points adjustment by a parent: negative = deduction (e.g. "-20
+// fighting"), positive = bonus. Affects POINTS ONLY (spendable balance and
+// displayed totals) — never streaks, completion counts, or badge progress.
+// createdBy is kept for the audit trail (SetNull survives parent deletion).
+model PointAdjustment {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("PointAdjustmentUser", fields: [userId], references: [id], onDelete: Cascade)
+  delta       Int
+  reason      String
+  createdById String?
+  createdBy   User?    @relation("PointAdjustmentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  localDate   String // client-local "YYYY-MM-DD"
+  createdAt   DateTime @default(now())
+
+  @@index([userId, localDate])
+  @@map("point_adjustments")
 }
 
 // A free-text school note for one member on one day (the weekly school grid:

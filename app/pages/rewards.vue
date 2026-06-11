@@ -6,7 +6,17 @@ const isAdmin = computed(() => user.value?.role === "ADMIN");
 // Management actions (catalog edits, approve/reject) need a fresh parent PIN
 // on the shared kiosk session; redeeming stays open to every member.
 const { gate } = useAdminGate();
-const { rewards, balanceByUser, redemptions, redeem, createReward, updateReward, deleteReward, approve, reject } = useRewards();
+const { rewards, balanceByUser, redemptions, redeem, createReward, updateReward, deleteReward, approve, reject, refreshAll: refreshRewardData } = useRewards();
+const { adjustments, createAdjustment, removeAdjustment } = useAdjustments();
+
+// Member list for the adjustment picker (admins only use it, but the fetch
+// is harmless for members).
+const requestFetch = useRequestFetch();
+const { data: users } = await useAsyncData(
+  "rewards-users",
+  () => requestFetch<{ id: string; name: string }[]>("/api/users"),
+  { default: () => [], server: false },
+);
 
 const myAvailable = computed(() => balanceByUser.value[user.value?.id ?? ""]?.available ?? 0);
 const pendingQueue = computed(() => (redemptions.value ?? []).filter(r => r.status === "PENDING"));
@@ -68,6 +78,41 @@ async function onReject(id: string) {
 
 function statusBadge(s: Redemption["status"]) {
   return s === "APPROVED" ? "success" : s === "REJECTED" ? "error" : "warning";
+}
+
+// --- Points adjustments (parent deductions/bonuses) ---
+const adjUserId = ref("");
+const adjDelta = ref(-10);
+const adjReason = ref("");
+const adjMsg = ref("");
+const userOptions = computed(() => (users.value ?? []).map(u => ({ label: u.name, value: u.id })));
+const myAdjustments = computed(() =>
+  (adjustments.value ?? []).filter(a => a.userId === user.value?.id),
+);
+
+async function applyAdjustment() {
+  adjMsg.value = "";
+  const delta = Math.trunc(Number(adjDelta.value) || 0);
+  if (!adjUserId.value || !delta || !adjReason.value.trim()) {
+    adjMsg.value = "Pick a member, a non-zero amount, and a reason.";
+    return;
+  }
+  await gate(async () => {
+    await createAdjustment({
+      userId: adjUserId.value,
+      delta,
+      reason: adjReason.value.trim(),
+      localDate: isoToday(),
+    });
+    await refreshRewardData();
+    adjReason.value = "";
+  });
+}
+async function deleteAdjustment(id: string) {
+  await gate(async () => {
+    await removeAdjustment(id);
+    await refreshRewardData();
+  });
 }
 </script>
 
@@ -181,6 +226,111 @@ function statusBadge(s: Redemption["status"]) {
                 size="sm"
                 @click="onReject(req.id)"
               />
+            </li>
+          </ul>
+        </div>
+
+        <!-- Admin: points adjustments (deductions / bonuses) -->
+        <div v-if="isAdmin" class="mt-8">
+          <h2 class="mb-1 text-lg font-semibold">
+            Points adjustments
+          </h2>
+          <p class="mb-3 text-sm text-muted">
+            Take away points (e.g. −20 for fighting) or give a bonus. Affects
+            spendable points only — never streaks or badges.
+          </p>
+          <div class="flex flex-wrap items-end gap-3 rounded-lg border border-default p-3">
+            <div class="w-40 space-y-1">
+              <label class="block text-xs font-medium text-muted">Member</label>
+              <USelect
+                v-model="adjUserId"
+                :items="userOptions"
+                option-attribute="label"
+                value-attribute="value"
+                placeholder="Who"
+                class="w-full"
+                :ui="{ base: 'w-full' }"
+              />
+            </div>
+            <div class="w-28 space-y-1">
+              <label class="block text-xs font-medium text-muted">Points (±)</label>
+              <UInput
+                v-model.number="adjDelta"
+                type="number"
+                class="w-full"
+                :ui="{ base: 'w-full' }"
+              />
+            </div>
+            <div class="min-w-48 flex-1 space-y-1">
+              <label class="block text-xs font-medium text-muted">Reason</label>
+              <UInput
+                v-model="adjReason"
+                placeholder="e.g. fighting"
+                class="w-full"
+                :ui="{ base: 'w-full' }"
+                @keyup.enter="applyAdjustment"
+              />
+            </div>
+            <UButton label="Apply" @click="applyAdjustment" />
+          </div>
+          <p v-if="adjMsg" class="mt-2 text-sm text-error">
+            {{ adjMsg }}
+          </p>
+          <ul v-if="adjustments.length" class="mt-3 flex flex-col gap-2">
+            <li
+              v-for="a in adjustments"
+              :key="a.id"
+              class="flex items-center gap-3 rounded-lg border border-default p-3"
+            >
+              <UAvatar
+                :src="a.user.avatar || undefined"
+                :alt="a.user.name"
+                size="sm"
+              />
+              <div class="min-w-0 flex-1">
+                <p class="truncate font-medium">
+                  {{ a.user.name }}
+                  <span :class="a.delta < 0 ? 'text-error' : 'text-success'">
+                    {{ a.delta > 0 ? `+${a.delta}` : a.delta }}
+                  </span>
+                  — {{ a.reason }}
+                </p>
+                <p class="text-xs text-muted">
+                  {{ a.localDate }}<template v-if="a.createdBy">
+                    · by {{ a.createdBy.name }}
+                  </template>
+                </p>
+              </div>
+              <UButton
+                icon="i-lucide-trash"
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                aria-label="Remove adjustment"
+                @click="deleteAdjustment(a.id)"
+              />
+            </li>
+          </ul>
+        </div>
+
+        <!-- Member: recent point changes (deductions show the reason) -->
+        <div v-if="!isAdmin && myAdjustments.length" class="mt-8">
+          <h2 class="mb-3 text-lg font-semibold">
+            Recent point changes
+          </h2>
+          <ul class="flex flex-col gap-2">
+            <li
+              v-for="a in myAdjustments"
+              :key="a.id"
+              class="flex items-center justify-between gap-3 rounded-lg border border-default p-3"
+            >
+              <span>
+                <span class="font-semibold" :class="a.delta < 0 ? 'text-error' : 'text-success'">
+                  {{ a.delta > 0 ? `+${a.delta}` : a.delta }}
+                </span>
+                — {{ a.reason }}
+              </span>
+              <span class="text-sm text-muted">{{ a.localDate }}</span>
             </li>
           </ul>
         </div>
