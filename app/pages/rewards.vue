@@ -141,6 +141,22 @@ async function deleteAdjustment(id: string) {
 
     <ClientOnly>
       <div class="mx-auto w-full max-w-5xl p-4">
+        <!-- Admin: everyone's spendable balance at a glance -->
+        <div
+          v-if="isAdmin && (users ?? []).length"
+          class="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-default px-3 py-2 text-sm"
+        >
+          <span class="font-semibold">Balances</span>
+          <span
+            v-for="u in users"
+            :key="u.id"
+            class="flex items-center gap-1 whitespace-nowrap"
+          >
+            {{ u.name }}
+            <span class="font-medium">{{ balanceByUser[u.id]?.available ?? 0 }} pts</span>
+          </span>
+        </div>
+
         <p v-if="message" class="mb-3 text-sm text-muted">
           {{ message }}
         </p>

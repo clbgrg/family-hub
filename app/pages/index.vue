@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { ChoreBoardItem } from "~/composables/useChores";
+import type { ChoreBoardItem, NewBadge } from "~/composables/useChores";
 import type { Meal, MealSlot } from "~/composables/useMeals";
+import type { SchoolItem } from "~/composables/useSchoolItems";
 
 type DashUser = { id: string; name: string; avatar: string | null; color: string | null };
 type DashEvent = {
@@ -12,14 +13,18 @@ type DashEvent = {
   color: string | null;
 };
 
+const { user } = useUserSession();
+const isAdmin = computed(() => user.value?.role === "ADMIN");
 const requestFetch = useRequestFetch();
 const today = isoToday();
 
-const { data: chores } = await useAsyncData(
-  "dash-chores",
-  () => requestFetch<ChoreBoardItem[]>("/api/chores", { query: { date: today } }),
-  { default: () => [], server: false },
-);
+// Shared asyncData keys with the chores page, so a check-off here refreshes
+// the board there (and vice versa) — plus interactive setDone + celebration.
+const { chores, statsByUser, setDone } = useChores();
+const weekStart = ref(weekStartMonday(today));
+const { itemsByUser: schoolItemsByUser, setDone: setSchoolDone } = useSchoolItems(weekStart);
+const toast = useToast();
+
 const { data: meals } = await useAsyncData(
   "dash-meals",
   () => requestFetch<Meal[]>("/api/meals", { query: { start: today, end: today } }),
@@ -47,13 +52,59 @@ const schoolByUser = computed(() => {
   return map;
 });
 
-// Per-member chores due today + today's school note (members with either).
+// School items worth surfacing today: not done yet (overdue or upcoming
+// within the visible week) or completed today (so the check stays visible).
+function dashSchoolItems(userId: string): SchoolItem[] {
+  return (schoolItemsByUser.value[userId] ?? []).filter(i => !i.done || i.dueDate >= today);
+}
+
+// Per-member chores due today + school items + today's school note.
 const board = computed(() => {
   const due = (chores.value ?? []).filter(c => c.dueToday);
   return (users.value ?? [])
-    .map(u => ({ user: u, chores: due.filter(c => c.assignee?.id === u.id), school: schoolByUser.value[u.id] ?? "" }))
-    .filter(g => g.chores.length > 0 || g.school);
+    .map(u => ({
+      user: u,
+      stats: statsByUser.value[u.id],
+      chores: due.filter(c => c.assignee?.id === u.id),
+      schoolItems: dashSchoolItems(u.id),
+      school: schoolByUser.value[u.id] ?? "",
+    }))
+    .filter(g => g.chores.length > 0 || g.schoolItems.length > 0 || g.school);
 });
+
+const celebration = ref<{ name: string; pointsToday: number; streak: number; newBadges: NewBadge[] } | null>(null);
+
+function canToggle(assigneeId: string | undefined) {
+  return isAdmin.value || user.value?.id === assigneeId;
+}
+async function toggleChore(chore: ChoreBoardItem) {
+  if (!canToggle(chore.assignee?.id) || !chore.assignee)
+    return;
+  const result = await setDone(chore.id, !chore.done, chore.assignee.id);
+  if (result?.allDoneToday) {
+    celebration.value = {
+      name: chore.assignee.name,
+      pointsToday: result.pointsToday,
+      streak: result.streak,
+      newBadges: result.newBadges,
+    };
+  }
+}
+async function toggleSchoolItem(item: SchoolItem) {
+  if (!canToggle(item.userId))
+    return;
+  const result = await setSchoolDone(item.id, !item.done);
+  for (const b of result?.newBadges ?? []) {
+    toast.add({ title: `New badge: ${b.label}!`, icon: b.icon, color: "primary" });
+  }
+}
+function schoolDueLabel(item: SchoolItem) {
+  if (item.dueDate < today)
+    return "overdue";
+  if (item.dueDate === today)
+    return "due today";
+  return `due ${dayLabel(item.dueDate)}`;
+}
 
 // Events overlapping today, earliest first.
 const todayEvents = computed(() => {
@@ -104,7 +155,7 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
 
     <ClientOnly>
       <div class="grid gap-4 p-4 lg:grid-cols-3">
-        <!-- Chores (per member) -->
+        <!-- Chores + school (per member, interactive) -->
         <UCard class="lg:col-span-2">
           <template #header>
             <div class="flex items-center gap-2">
@@ -123,21 +174,50 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
                   size="2xs"
                 />
                 <span class="font-medium">{{ group.user.name }}</span>
+                <span v-if="(group.stats?.streak ?? 0) > 0" class="text-xs text-muted">🔥 {{ group.stats!.streak }}</span>
+                <UBadge
+                  color="primary"
+                  variant="subtle"
+                  size="sm"
+                  class="ml-auto"
+                >
+                  {{ group.stats?.pointsTotal ?? 0 }} pts
+                </UBadge>
               </div>
               <ul class="flex flex-col gap-1">
                 <li
                   v-for="chore in group.chores"
                   :key="`${chore.id}:${group.user.id}`"
                   class="flex items-center gap-2 text-sm"
-                  :class="chore.done ? 'text-muted line-through' : ''"
+                  :class="chore.done ? 'text-muted' : ''"
                 >
-                  <UIcon
-                    :name="chore.done ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
-                    class="size-4 shrink-0"
-                    :class="chore.done ? 'text-primary' : 'text-muted'"
+                  <UCheckbox
+                    :model-value="chore.done"
+                    :disabled="!canToggle(chore.assignee?.id)"
+                    @update:model-value="toggleChore(chore)"
                   />
-                  <span class="truncate">{{ chore.title }}</span>
+                  <span class="truncate" :class="chore.done ? 'line-through' : ''">{{ chore.title }}</span>
                   <span class="ml-auto shrink-0 text-xs text-muted">+{{ chore.points }}</span>
+                </li>
+                <li
+                  v-for="item in group.schoolItems"
+                  :key="item.id"
+                  class="flex items-center gap-2 text-sm"
+                  :class="item.done ? 'text-muted' : ''"
+                >
+                  <UCheckbox
+                    :model-value="item.done"
+                    :disabled="!canToggle(item.userId)"
+                    @update:model-value="toggleSchoolItem(item)"
+                  />
+                  <UIcon name="i-lucide-graduation-cap" class="size-3.5 shrink-0 text-primary" />
+                  <span class="truncate" :class="item.done ? 'line-through' : ''">{{ item.title }}</span>
+                  <span
+                    class="ml-auto shrink-0 text-xs"
+                    :class="!item.done && item.dueDate < today ? 'font-medium text-error' : 'text-muted'"
+                  >
+                    {{ schoolDueLabel(item) }}<template v-if="item.points > 0"> · +{{ item.points }}</template>
+                  </span>
                 </li>
               </ul>
               <p v-if="group.school" class="mt-1 flex items-start gap-1.5 text-sm">
@@ -150,14 +230,24 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
             No chores due today 🎉
           </p>
           <template #footer>
-            <UButton
-              to="/chores"
-              label="Open chore board"
-              variant="ghost"
-              color="neutral"
-              size="sm"
-              trailing-icon="i-lucide-arrow-right"
-            />
+            <div class="flex items-center gap-2">
+              <UButton
+                to="/chores"
+                label="Open chore board"
+                variant="ghost"
+                color="neutral"
+                size="sm"
+                trailing-icon="i-lucide-arrow-right"
+              />
+              <UButton
+                to="/school"
+                label="Open school"
+                variant="ghost"
+                color="neutral"
+                size="sm"
+                trailing-icon="i-lucide-arrow-right"
+              />
+            </div>
           </template>
         </UCard>
 
@@ -235,5 +325,14 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
         </div>
       </template>
     </ClientOnly>
+
+    <CelebrationOverlay
+      v-if="celebration"
+      :name="celebration.name"
+      :points-today="celebration.pointsToday"
+      :streak="celebration.streak"
+      :new-badges="celebration.newBadges"
+      @dismiss="celebration = null"
+    />
   </div>
 </template>
