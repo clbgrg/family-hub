@@ -1,30 +1,44 @@
 export type BadgeRuleType = "STREAK" | "TOTAL_POINTS" | "TOTAL_COMPLETIONS" | "POINTS_IN_DAY";
 
-export interface BadgeDef {
+export type BadgeCondition = {
+  ruleType: BadgeRuleType;
+  threshold: number;
+};
+
+export type BadgeDef = {
   id: string;
   key: string;
   name: string;
   icon: string;
   description: string | null;
-  ruleType: BadgeRuleType;
-  threshold: number;
+  conditions: BadgeCondition[]; // ALL must be met (ANDed)
+  appliesToUserIds: string[]; // empty = everyone
   order: number;
-}
+};
 
-export interface CreateBadgeInput {
+export type CreateBadgeInput = {
   name: string;
   icon: string;
   description?: string;
-  ruleType: BadgeRuleType;
-  threshold: number;
-}
+  conditions: BadgeCondition[];
+  appliesToUserIds: string[];
+};
 
 export const BADGE_RULE_LABELS: Record<BadgeRuleType, string> = {
   STREAK: "Day streak ≥",
   TOTAL_POINTS: "Total points earned ≥",
-  TOTAL_COMPLETIONS: "Total chores done ≥",
+  TOTAL_COMPLETIONS: "Total chores + school items done ≥",
   POINTS_IN_DAY: "Points in one day ≥",
 };
+
+/** Human summary of a badge's conditions, e.g. "7-day streak AND 500 points". */
+export function badgeConditionSummary(conditions: BadgeCondition[]): string {
+  if (!conditions.length)
+    return "No conditions";
+  return conditions
+    .map(c => `${BADGE_RULE_LABELS[c.ruleType]} ${c.threshold}`)
+    .join(" AND ");
+}
 
 export function useBadges() {
   const requestFetch = useRequestFetch();

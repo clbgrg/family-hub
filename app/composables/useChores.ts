@@ -32,13 +32,19 @@ export type NewBadge = {
   icon: string;
 };
 
+// Stats payload badges carry tooltip metadata (description, earned date).
+export type EarnedBadge = NewBadge & {
+  description?: string | null;
+  earnedAt?: string;
+};
+
 export type ChoreStats = {
   userId: string;
   pointsTotal: number;
   pointsToday: number;
   pointsWeek: number;
   streak: number;
-  badges: NewBadge[];
+  badges: EarnedBadge[];
 };
 
 export type CompleteResult = {

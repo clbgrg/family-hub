@@ -17,8 +17,8 @@ export default defineEventHandler(async (event) => {
     await prisma.badge.delete({ where: { id } });
     return { ok: true };
   }
-  catch (error: any) {
-    if (error?.code === "P2025") {
+  catch (error) {
+    if ((error as { code?: string })?.code === "P2025") {
       throw createError({ statusCode: 404, statusMessage: "Badge not found" });
     }
     throw error;

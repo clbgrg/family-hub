@@ -19,7 +19,7 @@ export async function awardNewBadges(userId: string, localDate: string): Promise
   const stats = await computeUserStats(userId, localDate);
   // Badges see completion-only values: manual deductions can't strip badge
   // progress and manual bonuses can't trigger completion-flavored badges.
-  const earnedBadges = await evaluateEarnedBadges({
+  const earnedBadges = await evaluateEarnedBadges(userId, {
     totalCompletions: stats.totalCompletions,
     maxPointsInADay: stats.maxPointsInADay,
     streak: stats.streak,

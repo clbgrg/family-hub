@@ -14,22 +14,28 @@ export default defineEventHandler(async (event) => {
   }
 
   const users = await prisma.user.findMany({ select: { id: true } });
-  const allUserBadges = await prisma.userBadge.findMany({ select: { userId: true, badgeKey: true } });
+  const allUserBadges = await prisma.userBadge.findMany({ select: { userId: true, badgeKey: true, earnedAt: true } });
   const definitions = new Map((await getBadges()).map(b => [b.key, b]));
 
-  const badgesByUser = new Map<string, string[]>();
+  const badgesByUser = new Map<string, { badgeKey: string; earnedAt: Date }[]>();
   for (const b of allUserBadges) {
     const arr = badgesByUser.get(b.userId) ?? [];
-    arr.push(b.badgeKey);
+    arr.push(b);
     badgesByUser.set(b.userId, arr);
   }
 
   const result = [];
   for (const u of users) {
     const stats = await computeUserStats(u.id, date);
-    const badges = (badgesByUser.get(u.id) ?? []).map((key) => {
+    const badges = (badgesByUser.get(u.id) ?? []).map(({ badgeKey: key, earnedAt }) => {
       const def = definitions.get(key);
-      return { key, label: def?.name ?? key, icon: def?.icon ?? "i-lucide-award" };
+      return {
+        key,
+        label: def?.name ?? key,
+        icon: def?.icon ?? "i-lucide-award",
+        description: def?.description ?? null,
+        earnedAt,
+      };
     });
     result.push({ userId: u.id, ...stats, badges });
   }

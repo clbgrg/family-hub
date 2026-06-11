@@ -322,28 +322,24 @@ model UserBadge {
   @@map("user_badges")
 }
 
-// An admin-editable badge definition. Earned when a user's stats meet the rule
-// (ruleType value >= threshold). Seeded with defaults on first use.
+// An admin-editable badge definition. Earned when ALL conditions are met —
+// conditions is a JSON array of { ruleType, threshold } (ANDed; rule types
+// validated server-side on write, see server/utils/badges.ts). Empty
+// appliesToUserIds = everyone can earn it; otherwise only the listed members
+// (stale ids after a user deletion are inert). Seeded with defaults on first use.
 model Badge {
-  id          String        @id @default(cuid())
-  key         String        @unique
-  name        String
-  icon        String
-  description String?
-  ruleType    BadgeRuleType
-  threshold   Int
-  order       Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id               String   @id @default(cuid())
+  key              String   @unique
+  name             String
+  icon             String
+  description      String?
+  conditions       Json     @default("[]")
+  appliesToUserIds String[] @default([])
+  order            Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@map("badges")
-}
-
-enum BadgeRuleType {
-  STREAK
-  TOTAL_POINTS
-  TOTAL_COMPLETIONS
-  POINTS_IN_DAY
 }
 
 // A manual points adjustment by a parent: negative = deduction (e.g. "-20

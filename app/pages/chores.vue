@@ -47,6 +47,14 @@ const celebration = ref<{ name: string; pointsToday: number; streak: number; new
 function canToggle(chore: ChoreBoardItem) {
   return isAdmin.value || user.value?.id === chore.assignee?.id;
 }
+function badgeTooltip(b: { label: string; description?: string | null; earnedAt?: string }) {
+  const parts = [b.label];
+  if (b.description)
+    parts.push(b.description);
+  if (b.earnedAt)
+    parts.push(`Earned ${new Date(b.earnedAt).toLocaleDateString()}`);
+  return parts.join(" — ");
+}
 async function toggle(chore: ChoreBoardItem) {
   if (!canToggle(chore) || !chore.assignee)
     return;
@@ -131,13 +139,13 @@ async function onDelete(id: string) {
                 </p>
                 <div class="flex items-center gap-2 text-sm text-muted">
                   <span v-if="group.streak > 0" :title="`${group.streak}-day streak`">🔥 {{ group.streak }}</span>
-                  <UIcon
+                  <UTooltip
                     v-for="b in group.badges"
                     :key="b.key"
-                    :name="b.icon"
-                    class="size-4 text-primary"
-                    :title="b.label"
-                  />
+                    :text="badgeTooltip(b)"
+                  >
+                    <UIcon :name="b.icon" class="size-4 text-primary" />
+                  </UTooltip>
                 </div>
               </div>
               <UBadge

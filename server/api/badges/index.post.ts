@@ -1,7 +1,5 @@
 import { randomUUID } from "node:crypto";
 
-import { BadgeRuleType } from "@prisma/client";
-
 import prisma from "~/lib/prisma";
 
 function slugKey(name: string): string {
@@ -9,7 +7,7 @@ function slugKey(name: string): string {
   return `${base}_${randomUUID().slice(0, 6)}`;
 }
 
-/** Create a custom badge. Admin only. */
+/** Create a custom badge. Parent unlock required. */
 export default defineEventHandler(async (event) => {
   await requireElevatedAdmin(event);
 
@@ -18,10 +16,8 @@ export default defineEventHandler(async (event) => {
   if (!name) {
     throw createError({ statusCode: 400, statusMessage: "name is required" });
   }
-  if (!Object.values(BadgeRuleType).includes(body?.ruleType)) {
-    throw createError({ statusCode: 400, statusMessage: "ruleType must be STREAK, TOTAL_POINTS, TOTAL_COMPLETIONS, or POINTS_IN_DAY" });
-  }
-  const threshold = Math.max(1, Number.parseInt(String(body?.threshold), 10) || 1);
+  const conditions = validateBadgeConditions(body?.conditions);
+  const appliesToUserIds = await validateBadgeAppliesTo(body?.appliesToUserIds);
 
   const maxOrder = await prisma.badge.aggregate({ _max: { order: true } });
 
@@ -31,8 +27,8 @@ export default defineEventHandler(async (event) => {
       name,
       icon: String(body?.icon ?? "").trim() || "i-lucide-award",
       description: String(body?.description ?? "").trim() || null,
-      ruleType: body.ruleType,
-      threshold,
+      conditions,
+      appliesToUserIds,
       order: ((maxOrder._max?.order) || 0) + 1,
     },
   });
