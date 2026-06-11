@@ -75,9 +75,9 @@ Pi tracking `:latest` updates itself.
 You can also run it manually (Actions → "Publish image" → Run workflow) with an
 explicit tag.
 
-### One-time setup: make the GHCR package public
+### GHCR package visibility
 
-After the first publish, the image package defaults to **private**. For families
-to pull it without authenticating, make it public once:
-GitHub → your profile → Packages → `family-hub` → Package settings → Change
-visibility → Public. (Or `gh api -X PATCH /user/packages/container/family-hub/visibility -f visibility=public`.)
+The `family-hub` package on GHCR is **public** (verified 2026-06-10: anonymous
+pulls work). If it ever needs changing, use the web UI — GitHub → your profile
+→ Packages → `family-hub` → Package settings → Change visibility. (There is NO
+REST endpoint for package visibility; `gh api` returns 404.)
