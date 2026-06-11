@@ -2,7 +2,7 @@ import prisma from "~/lib/prisma";
 
 /** Create a reward. Admin only (parents curate the store). */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event);
+  await requireElevatedAdmin(event);
 
   const body = await readBody(event);
   const name = String(body?.name ?? "").trim();

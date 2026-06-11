@@ -2,7 +2,7 @@ import prisma from "~/lib/prisma";
 
 /** Update a reward. Admin only. */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event);
+  await requireElevatedAdmin(event);
 
   const id = getRouterParam(event, "id");
   if (!id) {

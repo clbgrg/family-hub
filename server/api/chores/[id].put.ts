@@ -4,7 +4,7 @@ const VALID_RECURRENCE = ["ONCE", "DAILY", "WEEKLY"];
 
 /** Update a chore. Admin only. */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event);
+  await requireElevatedAdmin(event);
 
   const id = getRouterParam(event, "id");
   if (!id) {

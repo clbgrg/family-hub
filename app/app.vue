@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AdminGateModal from "~/components/auth/adminGateModal.vue";
 import GlobalAppLoading from "~/components/global/globalAppLoading.vue";
 import GlobalDock from "~/components/global/globalDock.vue";
 import GlobalScreensaver from "~/components/global/globalScreensaver.vue";
@@ -43,6 +44,7 @@ onNuxtReady(() => {
 
     <ClientOnly>
       <GlobalScreensaver />
+      <AdminGateModal />
     </ClientOnly>
   </UApp>
 </template>

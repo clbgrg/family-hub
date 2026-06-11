@@ -4,7 +4,7 @@ const VALID_RECURRENCE = ["ONCE", "DAILY", "WEEKLY"];
 
 /** Create a chore. Admin only (parents define chores). */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event);
+  await requireElevatedAdmin(event);
 
   const body = await readBody(event);
   const title = String(body?.title ?? "").trim();

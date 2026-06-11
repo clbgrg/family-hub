@@ -29,6 +29,10 @@ const setResponseHeadersMock = vi.fn((event: H3Event, headers: Record<string, st
 const requireAdminMock = vi.fn(async () => ({
   user: { id: "test-admin", name: "Test Admin", role: "ADMIN" },
 }));
+const requireElevatedAdminMock = vi.fn(async () => ({
+  user: { id: "test-admin", name: "Test Admin", role: "ADMIN" },
+  elevatedUntil: Date.now() + 300_000,
+}));
 
 vi.stubGlobal("defineEventHandler", defineEventHandlerMock);
 vi.stubGlobal("readBody", readBodyMock);
@@ -37,6 +41,7 @@ vi.stubGlobal("getRouterParam", getRouterParamMock);
 vi.stubGlobal("getQuery", getQueryMock);
 vi.stubGlobal("setResponseHeaders", setResponseHeadersMock);
 vi.stubGlobal("requireAdmin", requireAdminMock);
+vi.stubGlobal("requireElevatedAdmin", requireElevatedAdminMock);
 
 class EventSourceMock {
   static readonly CONNECTING = 0;

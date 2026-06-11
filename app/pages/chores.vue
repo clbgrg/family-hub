@@ -3,6 +3,9 @@ import type { ChoreBoardItem, CreateChoreInput, NewBadge } from "~/composables/u
 
 const { user } = useUserSession();
 const isAdmin = computed(() => user.value?.role === "ADMIN");
+// Opening the add/edit dialog needs a fresh parent PIN (shared kiosk session);
+// the server enforces the same on the mutation endpoints.
+const { gate } = useAdminGate();
 
 const { chores, pointsByUser, statsByUser, leaderboard, createChore, updateChore, deleteChore, setDone } = useChores();
 
@@ -45,7 +48,8 @@ function canToggle(chore: ChoreBoardItem) {
   return isAdmin.value || user.value?.id === chore.assignee?.id;
 }
 async function toggle(chore: ChoreBoardItem) {
-  if (!canToggle(chore)) return;
+  if (!canToggle(chore))
+    return;
   const result = await setDone(chore.id, !chore.done);
   if (result?.allDoneToday) {
     celebration.value = {
@@ -57,19 +61,28 @@ async function toggle(chore: ChoreBoardItem) {
   }
 }
 function addChore() {
-  editing.value = null;
-  dialogOpen.value = true;
+  gate(() => {
+    editing.value = null;
+    dialogOpen.value = true;
+  });
 }
 function editChore(chore: ChoreBoardItem) {
-  editing.value = chore;
-  dialogOpen.value = true;
+  gate(() => {
+    editing.value = chore;
+    dialogOpen.value = true;
+  });
 }
+// gate() also wraps the mutations so an expired unlock (dialog left open
+// past the window) re-prompts and retries instead of failing silently.
 async function onSave(data: CreateChoreInput) {
-  if (editing.value) await updateChore(editing.value.id, data);
-  else await createChore(data);
+  await gate(async () => {
+    if (editing.value)
+      await updateChore(editing.value.id, data);
+    else await createChore(data);
+  });
 }
 async function onDelete(id: string) {
-  await deleteChore(id);
+  await gate(() => deleteChore(id));
 }
 </script>
 
@@ -77,7 +90,12 @@ async function onDelete(id: string) {
   <div class="flex w-full flex-col">
     <div class="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-default bg-default py-5 sm:px-4">
       <GlobalDateHeader />
-      <UButton v-if="isAdmin" icon="i-lucide-plus" label="Add chore" @click="addChore" />
+      <UButton
+        v-if="isAdmin"
+        icon="i-lucide-plus"
+        label="Add chore"
+        @click="addChore"
+      />
     </div>
 
     <ClientOnly>
@@ -102,7 +120,11 @@ async function onDelete(id: string) {
         <UCard v-for="group in board" :key="group.user.id">
           <template #header>
             <div class="flex items-center gap-3">
-              <UAvatar :src="group.user.avatar || undefined" :alt="group.user.name" size="lg" />
+              <UAvatar
+                :src="group.user.avatar || undefined"
+                :alt="group.user.name"
+                size="lg"
+              />
               <div class="min-w-0 flex-1">
                 <p class="truncate text-lg font-semibold">
                   {{ group.user.name }}
@@ -118,7 +140,11 @@ async function onDelete(id: string) {
                   />
                 </div>
               </div>
-              <UBadge color="primary" variant="subtle" size="lg">
+              <UBadge
+                color="primary"
+                variant="subtle"
+                size="lg"
+              >
                 {{ group.points }} pts
               </UBadge>
             </div>

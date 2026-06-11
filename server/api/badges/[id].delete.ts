@@ -6,7 +6,7 @@ import prisma from "~/lib/prisma";
  * display just degrades to a default icon if the definition is gone.
  */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event);
+  await requireElevatedAdmin(event);
 
   const id = getRouterParam(event, "id");
   if (!id) {

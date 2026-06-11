@@ -15,6 +15,11 @@ export default defineEventHandler(async (event) => {
   if (session.user.role !== "ADMIN" && session.user.id !== id) {
     throw createError({ statusCode: 403, statusMessage: "You can only change your own PIN" });
   }
+  // Changing your own PIN stays ungated; resetting someone ELSE's is a
+  // management action and needs a fresh parent unlock (shared kiosk session).
+  if (session.user.id !== id) {
+    await requireElevatedAdmin(event);
+  }
 
   const body = await readBody(event);
   const pin = String(body?.pin ?? "");
@@ -26,8 +31,8 @@ export default defineEventHandler(async (event) => {
   try {
     await prisma.user.update({ where: { id }, data: { pinHash } });
   }
-  catch (error: any) {
-    if (error?.code === "P2025") {
+  catch (error) {
+    if ((error as { code?: string })?.code === "P2025") {
       throw createError({ statusCode: 404, statusMessage: "User not found" });
     }
     throw error;

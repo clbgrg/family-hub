@@ -3,7 +3,7 @@ import { Role } from "@prisma/client";
 import prisma from "~/lib/prisma";
 
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event);
+  await requireElevatedAdmin(event);
 
   try {
     const body = await readBody(event);

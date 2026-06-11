@@ -11,7 +11,7 @@ function slugKey(name: string): string {
 
 /** Create a custom badge. Admin only. */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event);
+  await requireElevatedAdmin(event);
 
   const body = await readBody(event);
   const name = String(body?.name ?? "").trim();

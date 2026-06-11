@@ -7,7 +7,7 @@ import prisma from "~/lib/prisma";
  * Only acts on a PENDING request (a terminal one can't be flipped).
  */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event);
+  await requireElevatedAdmin(event);
 
   const id = getRouterParam(event, "id");
   if (!id) {

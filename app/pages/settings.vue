@@ -9,6 +9,7 @@ import type {
 } from "~/types/database";
 import type { ConnectionTestResult, FontPreference } from "~/types/ui";
 
+import SettingsBadgeManager from "~/components/settings/settingsBadgeManager.vue";
 import SettingsCalendarSelectDialog from "~/components/settings/settingsCalendarSelectDialog.vue";
 import SettingsIntegrationDialog from "~/components/settings/settingsIntegrationDialog.vue";
 import SettingsUserDialog from "~/components/settings/settingsUserDialog.vue";
@@ -41,6 +42,10 @@ const {
 } = useSyncManager();
 
 const { preferences, updatePreferences } = useClientPreferences();
+
+// Parent unlock: management sections re-confirm a PIN on the shared kiosk
+// admin session; mutations re-check before firing in case the window expired.
+const { isUnlocked, secondsLeft, ensureElevated, lockNow } = useAdminGate();
 
 const isClient = ref(false);
 onMounted(() => {
@@ -187,6 +192,8 @@ const filteredIntegrations = computed(() => {
 async function handleUserSave(
   userData: CreateUserInput & { role?: "ADMIN" | "MEMBER"; pin?: string },
 ) {
+  if (!(await ensureElevated()))
+    return;
   // PIN goes to the dedicated /pin endpoint, not the user record.
   const { pin, ...userFields } = userData;
   try {
@@ -214,6 +221,8 @@ async function handleUserSave(
 }
 
 async function handleUserDelete(userId: string) {
+  if (!(await ensureElevated()))
+    return;
   try {
     const { data: cachedUsers } = useNuxtData("users");
     const previousUsers = cachedUsers.value ? [...cachedUsers.value] : [];
@@ -251,6 +260,8 @@ function openUserDialog(user: User | null = null) {
 }
 
 async function handleIntegrationSave(integrationData: CreateIntegrationInput) {
+  if (!(await ensureElevated()))
+    return;
   try {
     connectionTestResult.value = {
       success: false,
@@ -431,6 +442,8 @@ function handleCalendarsDisabled(calendarIds: string[]) {
 }
 
 async function handleIntegrationDelete(integrationId: string) {
+  if (!(await ensureElevated()))
+    return;
   try {
     const { data: cachedIntegrations } = useNuxtData("integrations");
     const previousIntegrations = cachedIntegrations.value
@@ -491,6 +504,8 @@ async function handleToggleIntegration(
   integrationId: string,
   enabled: boolean,
 ) {
+  if (!(await ensureElevated()))
+    return;
   try {
     const integration = (integrations.value as Integration[]).find(
       (i: Integration) => i.id === integrationId,
@@ -790,8 +805,46 @@ onMounted(async () => {
           </div>
         </div>
 
+        <!-- Parent unlock banner: management sections below require a fresh PIN
+             because the kiosk stays signed in as an admin. -->
         <div
           v-if="isAdmin"
+          class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-semibold text-highlighted">
+                Parent settings
+              </h2>
+              <p class="text-sm text-muted">
+                {{ isUnlocked
+                  ? "Unlocked — users, integrations, and badges can be changed."
+                  : "Locked. Unlock with a parent PIN to manage users, integrations, and badges." }}
+              </p>
+            </div>
+            <div class="flex items-center gap-3">
+              <template v-if="isUnlocked">
+                <span class="font-mono text-sm text-muted">{{ Math.floor(secondsLeft / 60) }}:{{ String(secondsLeft % 60).padStart(2, "0") }}</span>
+                <UButton
+                  icon="i-lucide-lock"
+                  label="Lock now"
+                  color="neutral"
+                  variant="soft"
+                  @click="lockNow"
+                />
+              </template>
+              <UButton
+                v-else
+                icon="i-lucide-lock-open"
+                label="Unlock parent settings"
+                @click="() => { void ensureElevated(); }"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="isAdmin && isUnlocked"
           class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
         >
           <div class="flex items-center justify-between mb-6">
@@ -874,7 +927,7 @@ onMounted(async () => {
         </div>
 
         <div
-          v-if="isAdmin"
+          v-if="isAdmin && isUnlocked"
           class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
         >
           <div class="flex items-center justify-between mb-6">
@@ -1022,6 +1075,16 @@ onMounted(async () => {
               </div>
             </div>
           </div>
+        </div>
+
+        <div
+          v-if="isAdmin && isUnlocked"
+          class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
+        >
+          <h2 class="text-lg font-semibold text-highlighted mb-4">
+            Badges
+          </h2>
+          <SettingsBadgeManager />
         </div>
 
         <div

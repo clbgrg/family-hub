@@ -4,7 +4,7 @@ import prisma from "~/lib/prisma";
 
 /** Update a badge. Admin only. The key (which earned records point at) is stable. */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event);
+  await requireElevatedAdmin(event);
 
   const id = getRouterParam(event, "id");
   if (!id) {
