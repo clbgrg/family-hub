@@ -22,6 +22,11 @@ cp .env.example .env        # set POSTGRES_PASSWORD + NUXT_SESSION_PASSWORD
 docker compose -f docker-compose.prod.yml up -d
 ```
 
+Also set `APP_PUBLIC_URL=http://<pi-lan-ip>:3000` in `.env` — it's what the
+Settings → Network & Access QR code encodes. Inside Docker the app can't detect
+the Pi's LAN address, so without it the QR section shows setup guidance instead
+of a scannable code.
+
 - `:latest` only moves when a **release tag** is cut (see below) — not on every
   commit — so the Pi won't auto-pull an untested change.
 - **Pin a version** instead of auto-updating: set `FH_IMAGE_TAG=2026.6.0` in

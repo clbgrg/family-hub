@@ -10,7 +10,7 @@ Assumes a fresh Raspberry Pi 5 with Pi OS Lite (64-bit) on a microSD card. Whole
 | 2. Boot and connect | Insert card, power on. SSH in: `ssh pi@raspberrypi.local` — or use the IP from your router's device list. |
 | 3. Install Docker | `curl -fsSL https://get.docker.com \| sh` then `sudo usermod -aG docker pi` |
 | 4. Clone Skylite-UX | `git clone https://github.com/Wetzel402/Skylite-UX.git` then `cd Skylite-UX` |
-| 5. Configure .env | `cp .env.example .env` then edit with nano — set DB password, secret key, port (3000). |
+| 5. Configure .env | `cp .env.example .env` then edit with nano — set DB password, secret key, port (3000), and `APP_PUBLIC_URL=http://[pi-ip]:3000` (what the Settings QR code encodes — Docker can't detect the Pi's LAN IP itself). |
 | 6. Start the app | `docker compose up -d` — downloads and starts everything. First run 5-10 min. |
 | 7. Open in browser | On any WiFi device, go to `http://[pi-ip]:3000` — Skylite-UX setup screen. |
 | 8. Set static IP | In router admin, find the Pi's MAC and assign a fixed local IP. Note it for the family. |

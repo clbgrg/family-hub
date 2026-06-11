@@ -22,6 +22,11 @@ export default defineNuxtConfig({
       maxAge: 60 * 60 * 24 * 30, // 30 days — the kiosk stays signed in
     },
 
+    // Canonical LAN URL phones should use (e.g. http://192.168.1.50:3000).
+    // Set via NUXT_APP_PUBLIC_URL; needed in Docker, where the container can't
+    // see the host's LAN IP and would otherwise QR-encode localhost.
+    appPublicUrl: "",
+
     public: {
       skyliteVersion: pkg.version,
       nuxtVersion: pkg.devDependencies.nuxt,

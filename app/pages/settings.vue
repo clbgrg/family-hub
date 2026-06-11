@@ -108,7 +108,8 @@ const photoMsg = ref("");
 async function onPhotoUpload(e: Event) {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
-  if (!file) return;
+  if (!file)
+    return;
   photoUploading.value = true;
   photoMsg.value = "";
   try {
@@ -117,8 +118,9 @@ async function onPhotoUpload(e: Event) {
     await $fetch("/api/photos", { method: "POST", body: fd });
     await refreshScreensaverPhotos();
   }
-  catch (err: any) {
-    photoMsg.value = err?.statusMessage || err?.data?.statusMessage || "Upload failed";
+  catch (err) {
+    const e = err as { statusMessage?: string; data?: { statusMessage?: string } };
+    photoMsg.value = e?.statusMessage || e?.data?.statusMessage || "Upload failed";
   }
   finally {
     photoUploading.value = false;
@@ -685,7 +687,8 @@ async function changeMyPin() {
     myPinError.value = "PIN must be 4-8 digits";
     return;
   }
-  if (!sessionUser.value?.id) return;
+  if (!sessionUser.value?.id)
+    return;
   try {
     await $fetch(`/api/users/${sessionUser.value.id}/pin`, { method: "PUT", body: { pin: myPin.value } });
     myPin.value = "";
@@ -699,8 +702,24 @@ async function changeMyPin() {
 // --- Network & Access: QR to open the app on a phone ---
 const appUrl = ref("");
 const qrDataUrl = ref("");
+const appUrlMissing = ref(false);
 onMounted(async () => {
-  appUrl.value = window.location.origin;
+  // Server-resolved LAN URL (env override or interface detection); fall back
+  // to the browser origin only when it isn't localhost — a localhost QR is
+  // useless on a phone, so show setup guidance instead.
+  try {
+    const res = await $fetch<{ url: string | null }>("/api/system/app-url");
+    if (res.url)
+      appUrl.value = res.url;
+  }
+  catch { /* fall through to origin check */ }
+  if (!appUrl.value && !/^https?:\/\/(?:localhost|127\.)/.test(window.location.origin)) {
+    appUrl.value = window.location.origin;
+  }
+  if (!appUrl.value) {
+    appUrlMissing.value = true;
+    return;
+  }
   try {
     const QRCode = (await import("qrcode")).default;
     qrDataUrl.value = await QRCode.toDataURL(appUrl.value, { width: 200, margin: 1 });
@@ -736,13 +755,30 @@ onMounted(async () => {
                   {{ isAdmin ? "Parent (admin)" : "Kid (member)" }}
                 </p>
               </div>
-              <UButton icon="i-lucide-log-out" color="neutral" variant="soft" label="Sign out" @click="signOut" />
+              <UButton
+                icon="i-lucide-log-out"
+                color="neutral"
+                variant="soft"
+                label="Sign out"
+                @click="signOut"
+              />
             </div>
             <div class="flex flex-col gap-2 border-t border-default pt-4">
               <label class="text-sm font-medium text-highlighted">Change my PIN</label>
               <div class="flex items-center gap-2">
-                <UInput v-model="myPin" type="password" inputmode="numeric" autocomplete="off" placeholder="New 4-8 digit PIN" class="max-w-xs" />
-                <UButton label="Update PIN" :disabled="!myPin" @click="changeMyPin" />
+                <UInput
+                  v-model="myPin"
+                  type="password"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  placeholder="New 4-8 digit PIN"
+                  class="max-w-xs"
+                />
+                <UButton
+                  label="Update PIN"
+                  :disabled="!myPin"
+                  @click="changeMyPin"
+                />
               </div>
               <p v-if="myPinError" class="text-sm text-error">
                 {{ myPinError }}
@@ -1093,8 +1129,16 @@ onMounted(async () => {
                 {{ photoMsg }}
               </p>
               <div v-if="screensaverPhotos.length" class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
-                <div v-for="ph in screensaverPhotos" :key="ph.name" class="group relative">
-                  <img :src="ph.url" :alt="ph.name" class="aspect-square w-full rounded-md object-cover">
+                <div
+                  v-for="ph in screensaverPhotos"
+                  :key="ph.name"
+                  class="group relative"
+                >
+                  <img
+                    :src="ph.url"
+                    :alt="ph.name"
+                    class="aspect-square w-full rounded-md object-cover"
+                  >
                   <button
                     type="button"
                     class="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white opacity-80 hover:opacity-100"
@@ -1186,15 +1230,20 @@ onMounted(async () => {
               <p class="font-medium text-highlighted">
                 Open on a phone
               </p>
-              <p class="text-sm text-muted">
-                Scan this code from a device on the same WiFi to open Family Hub.
-              </p>
-              <p class="mt-1 break-all font-mono text-sm">
-                {{ appUrl }}
-              </p>
-              <p class="mt-1 text-xs text-muted">
-                Shows the address you're currently using — on the Pi kiosk that's localhost,
-                so scan it from a phone or browse to the Pi's LAN IP instead.
+              <template v-if="!appUrlMissing">
+                <p class="text-sm text-muted">
+                  Scan this code from a device on the same WiFi to open Family Hub.
+                </p>
+                <p class="mt-1 break-all font-mono text-sm">
+                  {{ appUrl }}
+                </p>
+              </template>
+              <p v-else class="text-sm text-warning">
+                Couldn't determine this device's network address. Set
+                <span class="font-mono">APP_PUBLIC_URL</span> in your
+                <span class="font-mono">.env</span> (e.g.
+                <span class="font-mono">http://192.168.1.50:3000</span>) so
+                phones can scan a working QR code.
               </p>
             </div>
           </div>

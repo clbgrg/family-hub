@@ -21,6 +21,9 @@ services:
       NUXT_PUBLIC_TZ: ${NUXT_PUBLIC_TZ:-America/Los_Angeles}
       NUXT_PUBLIC_LOG_LEVEL: ${NUXT_PUBLIC_LOG_LEVEL:-warn}
       FH_ALLOW_PRIVATE_URLS: ${FH_ALLOW_PRIVATE_URLS:-false}
+      # LAN URL for the settings QR code — the container can't see the host's
+      # LAN IP, so set APP_PUBLIC_URL=http://<host-lan-ip>:3000 in .env
+      NUXT_APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
     depends_on:
       db:
         condition: service_healthy

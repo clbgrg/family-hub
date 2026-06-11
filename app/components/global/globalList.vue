@@ -97,12 +97,22 @@ function hasIntegrationProperties(
     && (list.source === "integration" || list.source === "native")
   );
 }
+
+// Mouse wheels only emit vertical deltas, so translate them into horizontal
+// panning when the board overflows (touch/trackpad/shift+wheel keep working).
+function onBoardWheel(event: WheelEvent) {
+  const el = event.currentTarget as HTMLElement;
+  if (event.deltaY === 0 || event.shiftKey || el.scrollWidth <= el.clientWidth)
+    return;
+  el.scrollLeft += event.deltaY;
+  event.preventDefault();
+}
 </script>
 
 <template>
-  <div class="flex w-full flex-col rounded-lg">
-    <div class="flex-1">
-      <div class="p-4">
+  <div class="flex h-full w-full flex-col rounded-lg">
+    <div class="flex-1 min-h-0">
+      <div class="h-full min-h-0 p-4">
         <div v-if="loading" class="flex items-center justify-center h-full">
           <div class="text-center">
             <UIcon
@@ -139,7 +149,7 @@ function hasIntegrationProperties(
           </div>
         </div>
         <div v-else class="h-full">
-          <div class="h-full overflow-x-auto pb-4">
+          <div class="board-scroll h-full overflow-x-auto pb-4" @wheel="onBoardWheel">
             <div class="flex gap-6 min-w-max h-full">
               <div
                 v-for="(list, listIndex) in sortedLists"
@@ -432,3 +442,21 @@ function hasIntegrationProperties(
     </div>
   </div>
 </template>
+
+<style scoped>
+/* app.vue hides all scrollbars globally; the board needs a visible horizontal
+   one or mouse users have no affordance that more columns exist. */
+.board-scroll {
+  scrollbar-width: thin;
+}
+
+.board-scroll::-webkit-scrollbar {
+  display: block;
+  height: 8px;
+}
+
+.board-scroll::-webkit-scrollbar-thumb {
+  background: var(--ui-border-accented);
+  border-radius: 4px;
+}
+</style>
