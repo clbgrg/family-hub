@@ -3,9 +3,10 @@
 # Build stage
 # NOTE: upstream used dhi.io/node:20-debian13-dev (Docker Hardened Images —
 # subscription-gated, returns 401 when building a fork). Swapped to the public
-# Debian 13 (trixie) Node 20 image so anyone can clone and build.
+# Debian 13 (trixie) Node image so anyone can clone and build.
+# Node 22 (LTS) is required: Nuxt 4.4.6+ dropped Node 20 (engines node >=22.12).
 # See docs/skylite-ux-review.md.
-FROM --platform=$BUILDPLATFORM node:20-trixie AS builder
+FROM --platform=$BUILDPLATFORM node:22-trixie AS builder
 
 # Set working directory
 WORKDIR /app
@@ -14,8 +15,12 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install system dependencies and npm packages
+# Install system dependencies and npm packages.
+# npm@11: node:22-trixie ships npm 10.9.x, which errors EBADPLATFORM on the
+# optional cross-platform native bindings (rolldown/oxc) that npm 11 records in
+# the lockfile and correctly skips. Match the lockfile's generator.
 RUN apt-get update -y && apt-get install -y openssl && \
+    npm install -g npm@11 && \
     npm ci && \
     rm -rf /var/lib/apt/lists/*
 
@@ -29,7 +34,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production stage
-FROM node:20-trixie AS production
+FROM node:22-trixie AS production
 
 # Set environment variables
 ENV NODE_ENV=production
