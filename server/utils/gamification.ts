@@ -1,0 +1,37 @@
+import prisma from "~/lib/prisma";
+
+export type AwardedBadge = {
+  key: string;
+  label: string;
+  icon: string;
+};
+
+/**
+ * Evaluate and persist any newly-earned badges for a user (read existing →
+ * diff → insert). Shared by chore and school-item completion. Returns the
+ * fresh stats so callers can build their celebration payload without a
+ * second computeUserStats pass.
+ */
+export async function awardNewBadges(userId: string, localDate: string): Promise<{
+  newBadges: AwardedBadge[];
+  stats: UserStats;
+}> {
+  const stats = await computeUserStats(userId, localDate);
+  const earnedBadges = await evaluateEarnedBadges(stats);
+  const existingBadges = await prisma.userBadge.findMany({
+    where: { userId },
+    select: { badgeKey: true },
+  });
+  const have = new Set(existingBadges.map(b => b.badgeKey));
+  const newBadges = earnedBadges.filter(b => !have.has(b.key));
+  if (newBadges.length) {
+    await prisma.userBadge.createMany({
+      data: newBadges.map(b => ({ userId, badgeKey: b.key })),
+      skipDuplicates: true,
+    });
+  }
+  return {
+    newBadges: newBadges.map(b => ({ key: b.key, label: b.name, icon: b.icon })),
+    stats,
+  };
+}

@@ -1,13 +1,13 @@
 import prisma from "~/lib/prisma";
 
-export interface UserStats {
+export type UserStats = {
   pointsTotal: number;
   pointsToday: number;
   pointsWeek: number;
   streak: number;
   totalCompletions: number;
   maxPointsInADay: number;
-}
+};
 
 /**
  * Derive a user's gamification stats from their completion history (no stored
@@ -25,7 +25,8 @@ export async function computeUserStats(userId: string, today: string): Promise<U
   const pointsByDate = new Map<string, number>();
   for (const c of completions) {
     pointsTotal += c.points;
-    if (c.localDate === today) pointsToday += c.points;
+    if (c.localDate === today)
+      pointsToday += c.points;
     pointsByDate.set(c.localDate, (pointsByDate.get(c.localDate) ?? 0) + c.points);
   }
 
@@ -37,7 +38,8 @@ export async function computeUserStats(userId: string, today: string): Promise<U
   const end = addDays(start, 6);
   let pointsWeek = 0;
   for (const c of completions) {
-    if (c.localDate >= start && c.localDate <= end) pointsWeek += c.points;
+    if (c.localDate >= start && c.localDate <= end)
+      pointsWeek += c.points;
   }
 
   // Streak: consecutive days with >=1 completion, ending today (or yesterday,
@@ -60,10 +62,10 @@ export async function computeUserStats(userId: string, today: string): Promise<U
  */
 export async function isAllDoneToday(userId: string, localDate: string): Promise<boolean> {
   const chores = await prisma.chore.findMany({
-    where: { active: true, assigneeId: userId },
+    where: { active: true, assignments: { some: { userId } } },
     include: {
-      completions: { where: { localDate } },
-      _count: { select: { completions: true } },
+      // Only THIS user's completions count — assignees complete independently.
+      completions: { where: { userId }, select: { localDate: true } },
     },
   });
 
@@ -71,8 +73,8 @@ export async function isAllDoneToday(userId: string, localDate: string): Promise
     .map(c => choreDayStatus({
       recurrence: c.recurrence,
       daysOfWeek: c.daysOfWeek,
-      doneEver: c._count.completions > 0,
-      doneToday: c.completions.length > 0,
+      doneEver: c.completions.length > 0,
+      doneToday: c.completions.some(x => x.localDate === localDate),
       localDate,
     }))
     .filter(s => s.dueToday);

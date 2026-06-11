@@ -48,9 +48,9 @@ function canToggle(chore: ChoreBoardItem) {
   return isAdmin.value || user.value?.id === chore.assignee?.id;
 }
 async function toggle(chore: ChoreBoardItem) {
-  if (!canToggle(chore))
+  if (!canToggle(chore) || !chore.assignee)
     return;
-  const result = await setDone(chore.id, !chore.done);
+  const result = await setDone(chore.id, !chore.done, chore.assignee.id);
   if (result?.allDoneToday) {
     celebration.value = {
       name: chore.assignee?.name ?? "you",
@@ -153,7 +153,7 @@ async function onDelete(id: string) {
           <ul class="flex flex-col gap-1">
             <li
               v-for="chore in group.chores"
-              :key="chore.id"
+              :key="`${chore.id}:${group.user.id}`"
               class="flex items-center gap-3 rounded-lg p-2 hover:bg-elevated"
               :class="chore.done ? 'opacity-60' : ''"
             >

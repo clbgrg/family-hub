@@ -2,14 +2,17 @@ import { consola } from "consola";
 
 export type ChoreRecurrence = "ONCE" | "DAILY" | "WEEKLY";
 
-export interface ChoreAssignee {
+export type ChoreAssignee = {
   id: string;
   name: string;
   avatar: string | null;
   color: string | null;
-}
+};
 
-export interface ChoreBoardItem {
+// One board row per (chore × assignee): a chore assigned to both kids shows
+// as two rows, each with its own done state. `id` therefore repeats — use
+// `${id}:${assignee.id}` as the render key.
+export type ChoreBoardItem = {
   id: string;
   title: string;
   description: string | null;
@@ -18,45 +21,48 @@ export interface ChoreBoardItem {
   daysOfWeek: number[];
   order: number;
   assignee: ChoreAssignee | null;
+  assigneeIds: string[];
   dueToday: boolean;
   done: boolean;
-}
+};
 
-export interface NewBadge {
+export type NewBadge = {
   key: string;
   label: string;
   icon: string;
-}
+};
 
-export interface ChoreStats {
+export type ChoreStats = {
   userId: string;
   pointsTotal: number;
   pointsToday: number;
   pointsWeek: number;
   streak: number;
   badges: NewBadge[];
-}
+};
 
-export interface CompleteResult {
+export type CompleteResult = {
   ok: boolean;
   assigneeId: string;
   newBadges: NewBadge[];
   allDoneToday: boolean;
   pointsToday: number;
   streak: number;
-}
+};
 
-export interface CreateChoreInput {
+export type CreateChoreInput = {
   title: string;
   description?: string;
   points: number;
   recurrence: ChoreRecurrence;
   daysOfWeek?: number[];
-  assigneeId: string;
-}
+  assigneeIds: string[];
+};
 
-/** Client-local date "YYYY-MM-DD" — the server is UTC, so done-today logic
- *  must key off the client's day (mirrors useTodos' clientDate pattern). */
+/**
+ * Client-local date "YYYY-MM-DD" — the server is UTC, so done-today logic
+ *  must key off the client's day (mirrors useTodos' clientDate pattern).
+ */
 function localDateString(d = new Date()): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -146,19 +152,21 @@ export function useChores() {
     }
   }
 
-  // Check a chore off (or undo) for the client's today. Completing returns the
-  // celebration payload (new badges, all-done-today, points, streak).
-  async function setDone(id: string, done: boolean): Promise<CompleteResult | null> {
+  // Check a chore off (or undo) for the client's today, for one assignee —
+  // always pass the board row's assignee id, since a chore can have several
+  // and the server credits the TARGET user (admin can complete for a kid).
+  // Completing returns the celebration payload.
+  async function setDone(id: string, done: boolean, userId: string): Promise<CompleteResult | null> {
     try {
       let result: CompleteResult | null = null;
       if (done) {
         result = await $fetch<CompleteResult>(`/api/chores/${id}/complete`, {
           method: "POST",
-          body: { localDate: today },
+          body: { localDate: today, userId },
         });
       }
       else {
-        await $fetch(`/api/chores/${id}/complete`, { method: "DELETE", query: { localDate: today } });
+        await $fetch(`/api/chores/${id}/complete`, { method: "DELETE", query: { localDate: today, userId } });
       }
       await refreshAll();
       return result;

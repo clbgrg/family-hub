@@ -30,7 +30,7 @@ model User {
 
   todoColumn TodoColumn?
   calendarEvents CalendarEventUser[]
-  assignedChores   Chore[]           @relation("ChoreAssignee")
+  choreAssignments ChoreAssignment[] @relation("ChoreAssignmentUser")
   choreCompletions ChoreCompletion[] @relation("ChoreCompletionUser")
   badges           UserBadge[]
   mealsCooking     Meal[]            @relation("MealCook")
@@ -162,8 +162,10 @@ enum Role {
   MEMBER
 }
 
-// A chore template assigned to one family member. Completion is tracked as
-// ChoreCompletion rows (one per day for recurring chores), so "reset" is
+// A chore template assigned to one or more family members ("Make bed" for
+// both kids — each completes their own copy and earns the points; editing the
+// chore once applies to everyone). Completion is tracked as ChoreCompletion
+// rows (one per assignee per day for recurring chores), so "reset" is
 // implicit each new day — no cron — and history is kept for streaks/points.
 model Chore {
   id          String          @id @default(cuid())
@@ -175,10 +177,7 @@ model Chore {
   order       Int             @default(0)
   active      Boolean         @default(true)
 
-  // Every chore has exactly one owner (the points recipient).
-  assigneeId String
-  assignee   User   @relation("ChoreAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
-
+  assignments ChoreAssignment[]
   completions ChoreCompletion[]
 
   createdAt DateTime @default(now())
@@ -187,10 +186,22 @@ model Chore {
   @@map("chores")
 }
 
-// One completion of a chore on a given local day. userId is the chore's
-// assignee (who earns the points), set server-side — not the session user,
-// so an admin checking off a kid's chore credits the kid. points snapshots
-// the chore's value at completion time.
+// Join table: which members a chore is assigned to. Explicit (not implicit
+// m2m) for FK cascade on user deletion and room for per-assignee fields later.
+model ChoreAssignment {
+  choreId String
+  chore   Chore  @relation(fields: [choreId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation("ChoreAssignmentUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([choreId, userId])
+  @@map("chore_assignments")
+}
+
+// One completion of a chore by one assignee on a given local day. userId is
+// the assignee being credited (who earns the points), set server-side — not
+// the session user, so an admin checking off a kid's chore credits the kid.
+// points snapshots the chore's value at completion time.
 model ChoreCompletion {
   id          String   @id @default(cuid())
   choreId     String
@@ -201,7 +212,7 @@ model ChoreCompletion {
   points      Int
   completedAt DateTime @default(now())
 
-  @@unique([choreId, localDate]) // a chore is completed at most once per day
+  @@unique([choreId, userId, localDate]) // each assignee completes at most once per day
   @@map("chore_completions")
 }
 

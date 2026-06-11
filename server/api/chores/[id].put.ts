@@ -2,7 +2,7 @@ import prisma from "~/lib/prisma";
 
 const VALID_RECURRENCE = ["ONCE", "DAILY", "WEEKLY"];
 
-/** Update a chore. Admin only. */
+/** Update a chore (including reassigning its members). Admin only. */
 export default defineEventHandler(async (event) => {
   await requireElevatedAdmin(event);
 
@@ -14,12 +14,16 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const data: Record<string, unknown> = {};
 
-  if (typeof body?.title === "string") data.title = body.title.trim();
-  if ("description" in body) data.description = String(body.description ?? "").trim() || null;
-  if (body?.points !== undefined) data.points = Math.max(0, Number.parseInt(String(body.points), 10) || 0);
-  if (typeof body?.assigneeId === "string" && body.assigneeId) data.assigneeId = body.assigneeId;
-  if (typeof body?.active === "boolean") data.active = body.active;
-  if (body?.order !== undefined) data.order = Number.parseInt(String(body.order), 10) || 0;
+  if (typeof body?.title === "string")
+    data.title = body.title.trim();
+  if ("description" in body)
+    data.description = String(body.description ?? "").trim() || null;
+  if (body?.points !== undefined)
+    data.points = Math.max(0, Number.parseInt(String(body.points), 10) || 0);
+  if (typeof body?.active === "boolean")
+    data.active = body.active;
+  if (body?.order !== undefined)
+    data.order = Number.parseInt(String(body.order), 10) || 0;
 
   if (VALID_RECURRENCE.includes(body?.recurrence)) {
     data.recurrence = body.recurrence;
@@ -28,14 +32,36 @@ export default defineEventHandler(async (event) => {
       : [];
   }
 
-  try {
-    return await prisma.chore.update({ where: { id }, data });
+  const rawAssignees: unknown = body?.assigneeIds;
+  let assigneeIds: string[] | null = null;
+  if (Array.isArray(rawAssignees)) {
+    assigneeIds = [...new Set(rawAssignees.filter((x): x is string => typeof x === "string" && !!x))];
+    if (assigneeIds.length === 0) {
+      throw createError({ statusCode: 400, statusMessage: "assigneeIds must include at least one member" });
+    }
   }
-  catch (error: any) {
-    if (error?.code === "P2025") {
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      if (assigneeIds) {
+        await tx.choreAssignment.deleteMany({ where: { choreId: id } });
+        await tx.choreAssignment.createMany({
+          data: assigneeIds.map(userId => ({ choreId: id, userId })),
+        });
+      }
+      return await tx.chore.update({
+        where: { id },
+        data,
+        include: { assignments: true },
+      });
+    });
+  }
+  catch (error) {
+    const code = (error as { code?: string })?.code;
+    if (code === "P2025") {
       throw createError({ statusCode: 404, statusMessage: "Chore not found" });
     }
-    if (error?.code === "P2003") {
+    if (code === "P2003") {
       throw createError({ statusCode: 400, statusMessage: "assignee does not exist" });
     }
     throw error;

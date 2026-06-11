@@ -2,15 +2,15 @@
 import type { ChoreBoardItem } from "~/composables/useChores";
 import type { Meal, MealSlot } from "~/composables/useMeals";
 
-interface DashUser { id: string; name: string; avatar: string | null; color: string | null }
-interface DashEvent {
+type DashUser = { id: string; name: string; avatar: string | null; color: string | null };
+type DashEvent = {
   id: string;
   title: string;
   start: string;
   end: string;
   allDay: boolean;
   color: string | null;
-}
+};
 
 const requestFetch = useRequestFetch();
 const today = isoToday();
@@ -80,7 +80,8 @@ const slots: { key: MealSlot; label: string }[] = [
 ];
 
 function eventTime(e: DashEvent) {
-  if (e.allDay) return "All day";
+  if (e.allDay)
+    return "All day";
   return new Date(e.start).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
@@ -116,17 +117,25 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
           <div v-if="board.length" class="grid gap-4 sm:grid-cols-2">
             <div v-for="group in board" :key="group.user.id">
               <div class="mb-1 flex items-center gap-2">
-                <UAvatar :src="group.user.avatar || undefined" :alt="group.user.name" size="2xs" />
+                <UAvatar
+                  :src="group.user.avatar || undefined"
+                  :alt="group.user.name"
+                  size="2xs"
+                />
                 <span class="font-medium">{{ group.user.name }}</span>
               </div>
               <ul class="flex flex-col gap-1">
                 <li
                   v-for="chore in group.chores"
-                  :key="chore.id"
+                  :key="`${chore.id}:${group.user.id}`"
                   class="flex items-center gap-2 text-sm"
                   :class="chore.done ? 'text-muted line-through' : ''"
                 >
-                  <UIcon :name="chore.done ? 'i-lucide-check-circle-2' : 'i-lucide-circle'" class="size-4 shrink-0" :class="chore.done ? 'text-primary' : 'text-muted'" />
+                  <UIcon
+                    :name="chore.done ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                    class="size-4 shrink-0"
+                    :class="chore.done ? 'text-primary' : 'text-muted'"
+                  />
                   <span class="truncate">{{ chore.title }}</span>
                   <span class="ml-auto shrink-0 text-xs text-muted">+{{ chore.points }}</span>
                 </li>
@@ -141,7 +150,14 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
             No chores due today 🎉
           </p>
           <template #footer>
-            <UButton to="/chores" label="Open chore board" variant="ghost" color="neutral" size="sm" trailing-icon="i-lucide-arrow-right" />
+            <UButton
+              to="/chores"
+              label="Open chore board"
+              variant="ghost"
+              color="neutral"
+              size="sm"
+              trailing-icon="i-lucide-arrow-right"
+            />
           </template>
         </UCard>
 
@@ -157,7 +173,11 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
               </div>
             </template>
             <ul v-if="todayEvents.length" class="flex flex-col gap-2">
-              <li v-for="e in todayEvents" :key="e.id" class="flex items-start gap-2">
+              <li
+                v-for="e in todayEvents"
+                :key="e.id"
+                class="flex items-start gap-2"
+              >
                 <span class="mt-1.5 size-2 shrink-0 rounded-full" :style="{ backgroundColor: e.color || '#6b7280' }" />
                 <div class="min-w-0">
                   <p class="truncate font-medium">
@@ -185,7 +205,11 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
               </div>
             </template>
             <ul class="flex flex-col gap-2">
-              <li v-for="s in slots" :key="s.key" class="flex items-baseline justify-between gap-3">
+              <li
+                v-for="s in slots"
+                :key="s.key"
+                class="flex items-baseline justify-between gap-3"
+              >
                 <span class="text-sm text-muted">{{ s.label }}</span>
                 <span class="truncate text-right font-medium">
                   {{ mealBySlot[s.key]?.title || "—" }}
@@ -193,7 +217,14 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
               </li>
             </ul>
             <template #footer>
-              <UButton to="/mealPlanner" label="Open meal planner" variant="ghost" color="neutral" size="sm" trailing-icon="i-lucide-arrow-right" />
+              <UButton
+                to="/mealPlanner"
+                label="Open meal planner"
+                variant="ghost"
+                color="neutral"
+                size="sm"
+                trailing-icon="i-lucide-arrow-right"
+              />
             </template>
           </UCard>
         </div>

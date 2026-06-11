@@ -16,7 +16,7 @@ const emit = defineEmits<{
 const title = ref("");
 const description = ref("");
 const points = ref(5);
-const assigneeId = ref("");
+const assigneeIds = ref<string[]>([]);
 const recurrence = ref<ChoreRecurrence>("DAILY");
 const daysOfWeek = ref<number[]>([]);
 const error = ref<string | null>(null);
@@ -35,17 +35,18 @@ const dayChips = [
   { label: "Fr", value: 5 },
   { label: "Sa", value: 6 },
 ];
-const userOptions = computed(() => props.users.map(u => ({ label: u.name, value: u.id })));
-
 const watchSource = computed(() => ({ isOpen: props.isOpen, chore: props.chore }));
 watch(
   watchSource,
   ({ isOpen, chore }) => {
-    if (!isOpen) return;
+    if (!isOpen)
+      return;
     title.value = chore?.title ?? "";
     description.value = chore?.description ?? "";
     points.value = chore?.points ?? 5;
-    assigneeId.value = chore?.assignee?.id ?? (props.users[0]?.id ?? "");
+    assigneeIds.value = chore?.assigneeIds?.length
+      ? [...chore.assigneeIds]
+      : (props.users[0] ? [props.users[0].id] : []);
     recurrence.value = chore?.recurrence ?? "DAILY";
     daysOfWeek.value = chore?.daysOfWeek ? [...chore.daysOfWeek] : [];
     error.value = null;
@@ -59,12 +60,18 @@ function toggleDay(d: number) {
     : [...daysOfWeek.value, d];
 }
 
+function toggleAssignee(id: string) {
+  assigneeIds.value = assigneeIds.value.includes(id)
+    ? assigneeIds.value.filter(x => x !== id)
+    : [...assigneeIds.value, id];
+}
+
 function handleSave() {
   if (!title.value.trim()) {
     error.value = "Chore name is required";
     return;
   }
-  if (!assigneeId.value) {
+  if (assigneeIds.value.length === 0) {
     error.value = "Choose who it's for";
     return;
   }
@@ -78,7 +85,7 @@ function handleSave() {
     points: Math.max(0, Number(points.value) || 0),
     recurrence: recurrence.value,
     daysOfWeek: daysOfWeek.value,
-    assigneeId: assigneeId.value,
+    assigneeIds: assigneeIds.value,
   });
   emit("close");
 }
@@ -125,23 +132,39 @@ function handleSave() {
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-highlighted">Notes (optional)</label>
-          <UInput v-model="description" placeholder="Any details" class="w-full" :ui="{ base: 'w-full' }" />
+          <UInput
+            v-model="description"
+            placeholder="Any details"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
         </div>
 
-        <div class="flex gap-4">
-          <div class="w-28 space-y-2">
-            <label class="block text-sm font-medium text-highlighted">Points</label>
-            <UInput v-model.number="points" type="number" :min="0" class="w-full" :ui="{ base: 'w-full' }" />
-          </div>
-          <div class="flex-1 space-y-2">
-            <label class="block text-sm font-medium text-highlighted">For</label>
-            <USelect
-              v-model="assigneeId"
-              :items="userOptions"
-              option-attribute="label"
-              value-attribute="value"
-              class="w-full"
-              :ui="{ base: 'w-full' }"
+        <div class="w-28 space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Points</label>
+          <UInput
+            v-model.number="points"
+            type="number"
+            :min="0"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">For</label>
+          <p class="text-xs text-muted">
+            Pick one or more — each person checks off their own copy and earns the points.
+          </p>
+          <div class="flex flex-wrap gap-1">
+            <UButton
+              v-for="u in users"
+              :key="u.id"
+              :label="u.name"
+              size="sm"
+              :variant="assigneeIds.includes(u.id) ? 'solid' : 'outline'"
+              :color="assigneeIds.includes(u.id) ? 'primary' : 'neutral'"
+              @click="toggleAssignee(u.id)"
             />
           </div>
         </div>
@@ -185,7 +208,11 @@ function handleSave() {
           Delete
         </UButton>
         <div class="flex gap-2" :class="{ 'ml-auto': !chore?.id }">
-          <UButton color="neutral" variant="ghost" @click="emit('close')">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            @click="emit('close')"
+          >
             Cancel
           </UButton>
           <UButton color="primary" @click="handleSave">

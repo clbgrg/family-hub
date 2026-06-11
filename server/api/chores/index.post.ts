@@ -2,18 +2,21 @@ import prisma from "~/lib/prisma";
 
 const VALID_RECURRENCE = ["ONCE", "DAILY", "WEEKLY"];
 
-/** Create a chore. Admin only (parents define chores). */
+/** Create a chore for one or more assignees. Admin only (parents define chores). */
 export default defineEventHandler(async (event) => {
   await requireElevatedAdmin(event);
 
   const body = await readBody(event);
   const title = String(body?.title ?? "").trim();
-  const assigneeId = String(body?.assigneeId ?? "");
   if (!title) {
     throw createError({ statusCode: 400, statusMessage: "title is required" });
   }
-  if (!assigneeId) {
-    throw createError({ statusCode: 400, statusMessage: "assigneeId is required" });
+  const rawAssignees: unknown = body?.assigneeIds;
+  const assigneeIds = Array.isArray(rawAssignees)
+    ? [...new Set(rawAssignees.filter((x): x is string => typeof x === "string" && !!x))]
+    : [];
+  if (assigneeIds.length === 0) {
+    throw createError({ statusCode: 400, statusMessage: "assigneeIds (at least one) is required" });
   }
 
   const recurrence = VALID_RECURRENCE.includes(body?.recurrence) ? body.recurrence : "DAILY";
@@ -32,13 +35,14 @@ export default defineEventHandler(async (event) => {
         points,
         recurrence,
         daysOfWeek: recurrence === "WEEKLY" ? daysOfWeek : [],
-        assigneeId,
         order: ((maxOrder._max?.order) || 0) + 1,
+        assignments: { create: assigneeIds.map(userId => ({ userId })) },
       },
+      include: { assignments: true },
     });
   }
-  catch (error: any) {
-    if (error?.code === "P2003") {
+  catch (error) {
+    if ((error as { code?: string })?.code === "P2003") {
       throw createError({ statusCode: 400, statusMessage: "assignee does not exist" });
     }
     throw error;
