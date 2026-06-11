@@ -16,14 +16,15 @@ export type RewardBalance = {
  * approve time and inherits adjustments automatically.
  */
 export async function computeRewardBalance(userId: string): Promise<RewardBalance> {
-  const [earnedAgg, adjustAgg, approvedAgg, pendingAgg] = await Promise.all([
+  const [choreAgg, schoolAgg, adjustAgg, approvedAgg, pendingAgg] = await Promise.all([
     prisma.choreCompletion.aggregate({ where: { userId }, _sum: { points: true } }),
+    prisma.schoolItemCompletion.aggregate({ where: { userId }, _sum: { points: true } }),
     prisma.pointAdjustment.aggregate({ where: { userId }, _sum: { delta: true } }),
     prisma.redemption.aggregate({ where: { userId, status: "APPROVED" }, _sum: { pointsCost: true } }),
     prisma.redemption.aggregate({ where: { userId, status: "PENDING" }, _sum: { pointsCost: true } }),
   ]);
 
-  const earned = (earnedAgg._sum.points ?? 0) + (adjustAgg._sum.delta ?? 0);
+  const earned = (choreAgg._sum.points ?? 0) + (schoolAgg._sum.points ?? 0) + (adjustAgg._sum.delta ?? 0);
   const approvedSpent = approvedAgg._sum.pointsCost ?? 0;
   const pendingSpent = pendingAgg._sum.pointsCost ?? 0;
   const available = Math.max(0, earned - approvedSpent - pendingSpent);

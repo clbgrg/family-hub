@@ -39,6 +39,8 @@ model User {
   schoolNotes      SchoolNote[]
   pointAdjustments        PointAdjustment[] @relation("PointAdjustmentUser")
   pointAdjustmentsCreated PointAdjustment[] @relation("PointAdjustmentCreator")
+  schoolItems             SchoolItem[]           @relation("SchoolItemUser")
+  schoolItemCompletions   SchoolItemCompletion[] @relation("SchoolItemCompletionUser")
 
   @@map("users")
 }
@@ -361,6 +363,44 @@ model PointAdjustment {
 
   @@index([userId, localDate])
   @@map("point_adjustments")
+}
+
+// A dated, assignable school item ("spelling packet, due Friday") a kid
+// checks off like a chore. Single-assignee and non-recurring: "the same
+// worksheet for both kids" fans out to one row per kid at creation, and
+// school work is dated rather than repeating. points = 0 = plain checkbox;
+// otherwise completion feeds the SAME points pool as chores.
+model SchoolItem {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  points      Int      @default(0)
+  dueDate     String // client-local "YYYY-MM-DD"
+  userId      String
+  user        User     @relation("SchoolItemUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  completions SchoolItemCompletion[]
+
+  @@index([userId, dueDate])
+  @@map("school_items")
+}
+
+// Completion record (at most one — school items don't recur). localDate is
+// the day it was checked off (the points/streak credit day), independent of
+// the item's dueDate. points snapshots the item's value at completion time.
+model SchoolItemCompletion {
+  id           String     @id @default(cuid())
+  schoolItemId String     @unique
+  schoolItem   SchoolItem @relation(fields: [schoolItemId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation("SchoolItemCompletionUser", fields: [userId], references: [id], onDelete: Cascade)
+  localDate    String // client-local "YYYY-MM-DD"
+  points       Int
+  completedAt  DateTime   @default(now())
+
+  @@map("school_item_completions")
 }
 
 // A free-text school note for one member on one day (the weekly school grid:

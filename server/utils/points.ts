@@ -6,16 +6,22 @@ export type PointEvent = {
 };
 
 /**
- * All point-earning COMPLETION events for a user (chore completions; school
- * item completions join in once that feature lands). These drive streaks,
- * completion counts, and badge progress — adjustments deliberately do NOT.
+ * All point-earning COMPLETION events for a user (chore + school item
+ * completions, one pool). These drive streaks, completion counts, and badge
+ * progress — adjustments deliberately do NOT.
  */
 export async function getCompletionEvents(userId: string): Promise<PointEvent[]> {
-  const choreCompletions = await prisma.choreCompletion.findMany({
-    where: { userId },
-    select: { localDate: true, points: true },
-  });
-  return choreCompletions;
+  const [choreCompletions, schoolCompletions] = await Promise.all([
+    prisma.choreCompletion.findMany({
+      where: { userId },
+      select: { localDate: true, points: true },
+    }),
+    prisma.schoolItemCompletion.findMany({
+      where: { userId },
+      select: { localDate: true, points: true },
+    }),
+  ]);
+  return [...choreCompletions, ...schoolCompletions];
 }
 
 /**

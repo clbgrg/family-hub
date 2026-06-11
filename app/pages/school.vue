@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import type { CreateSchoolItemInput, SchoolItem } from "~/composables/useSchoolItems";
+
+import SchoolItemDialog from "~/components/school/schoolItemDialog.vue";
+
 const { user } = useUserSession();
 const isAdmin = computed(() => user.value?.role === "ADMIN");
+const { gate } = useAdminGate();
 
 const weekStart = ref(weekStartMonday(isoToday()));
 const { noteByCell, saveNote } = useSchool(weekStart);
+const { itemsByUser, createItem, updateItem, removeItem, setDone } = useSchoolItems(weekStart);
+const toast = useToast();
 
 const requestFetch = useRequestFetch();
 const { data: users } = await useAsyncData(
@@ -14,6 +21,13 @@ const { data: users } = await useAsyncData(
 
 const days = computed(() => Array.from({ length: 5 }, (_, i) => addDaysIso(weekStart.value, i)));
 const today = isoToday();
+
+// Members with items this week (or overdue), for the Assignments section.
+const assignmentGroups = computed(() =>
+  (users.value ?? [])
+    .map(u => ({ user: u, items: itemsByUser.value[u.id] ?? [] }))
+    .filter(g => g.items.length > 0),
+);
 
 function prevWeek() {
   weekStart.value = addDaysIso(weekStart.value, -7);
@@ -33,8 +47,51 @@ function cellText(userId: string, date: string) {
 }
 async function onCellBlur(userId: string, date: string, e: FocusEvent) {
   const text = (e.target as HTMLTextAreaElement).value;
-  if (text === cellText(userId, date)) return; // unchanged
+  if (text === cellText(userId, date))
+    return; // unchanged
   await saveNote(userId, date, text);
+}
+
+// --- Assignments (structured, check-off, gamified like chores) ---
+const dialogOpen = ref(false);
+const editing = ref<SchoolItem | null>(null);
+
+function isOverdue(item: SchoolItem) {
+  return !item.done && item.dueDate < today;
+}
+async function toggleItem(item: SchoolItem) {
+  if (!canEdit(item.userId))
+    return;
+  const result = await setDone(item.id, !item.done);
+  for (const b of result?.newBadges ?? []) {
+    toast.add({ title: `New badge: ${b.label}!`, icon: b.icon, color: "primary" });
+  }
+}
+function addItem() {
+  gate(() => {
+    editing.value = null;
+    dialogOpen.value = true;
+  });
+}
+function editItem(item: SchoolItem) {
+  gate(() => {
+    editing.value = item;
+    dialogOpen.value = true;
+  });
+}
+async function onItemSave(data: CreateSchoolItemInput) {
+  await gate(async () => {
+    if (editing.value) {
+      const { userIds, ...fields } = data;
+      await updateItem(editing.value.id, { ...fields, userId: userIds[0] });
+    }
+    else {
+      await createItem(data);
+    }
+  });
+}
+async function onItemDelete(id: string) {
+  await gate(() => removeItem(id));
 }
 </script>
 
@@ -45,14 +102,101 @@ async function onCellBlur(userId: string, date: string, e: FocusEvent) {
         School
       </h1>
       <div class="flex items-center gap-2">
-        <UButton icon="i-lucide-chevron-left" variant="ghost" color="neutral" aria-label="Previous week" @click="prevWeek" />
-        <UButton label="This week" variant="soft" color="neutral" size="sm" @click="thisWeek" />
-        <UButton icon="i-lucide-chevron-right" variant="ghost" color="neutral" aria-label="Next week" @click="nextWeek" />
+        <UButton
+          icon="i-lucide-chevron-left"
+          variant="ghost"
+          color="neutral"
+          aria-label="Previous week"
+          @click="prevWeek"
+        />
+        <UButton
+          label="This week"
+          variant="soft"
+          color="neutral"
+          size="sm"
+          @click="thisWeek"
+        />
+        <UButton
+          icon="i-lucide-chevron-right"
+          variant="ghost"
+          color="neutral"
+          aria-label="Next week"
+          @click="nextWeek"
+        />
         <span class="ml-2 text-sm text-muted">Week of {{ dayLabel(weekStart) }}</span>
       </div>
+      <UButton
+        v-if="isAdmin"
+        icon="i-lucide-plus"
+        label="Add assignment"
+        class="ml-auto"
+        @click="addItem"
+      />
     </div>
 
     <ClientOnly>
+      <!-- Assignments: dated items checked off like chores, same points pool -->
+      <div v-if="assignmentGroups.length" class="border-b border-default p-4">
+        <h2 class="mb-3 text-lg font-semibold">
+          Assignments
+        </h2>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div v-for="group in assignmentGroups" :key="group.user.id">
+            <div class="mb-1 flex items-center gap-2">
+              <UAvatar
+                :src="group.user.avatar || undefined"
+                :alt="group.user.name"
+                size="2xs"
+              />
+              <span class="font-medium">{{ group.user.name }}</span>
+            </div>
+            <ul class="flex flex-col gap-1">
+              <li
+                v-for="item in group.items"
+                :key="item.id"
+                class="flex items-center gap-3 rounded-lg p-2 hover:bg-elevated"
+                :class="item.done ? 'opacity-60' : ''"
+              >
+                <UCheckbox
+                  :model-value="item.done"
+                  :disabled="!canEdit(item.userId)"
+                  size="xl"
+                  @update:model-value="toggleItem(item)"
+                />
+                <div class="min-w-0 flex-1">
+                  <p class="truncate font-medium" :class="item.done ? 'line-through' : ''">
+                    {{ item.title }}
+                  </p>
+                  <p class="text-xs" :class="isOverdue(item) ? 'font-medium text-error' : 'text-muted'">
+                    {{ isOverdue(item) ? "Overdue — " : "" }}due {{ dayLabel(item.dueDate) }}
+                    <template v-if="item.description">
+                      · {{ item.description }}
+                    </template>
+                  </p>
+                </div>
+                <UBadge
+                  v-if="item.points > 0"
+                  color="neutral"
+                  variant="soft"
+                >
+                  +{{ item.points }}
+                </UBadge>
+                <UButton
+                  v-if="isAdmin"
+                  icon="i-lucide-pencil"
+                  size="xs"
+                  variant="ghost"
+                  color="neutral"
+                  aria-label="Edit assignment"
+                  @click="editItem(item)"
+                />
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly free-text notes grid -->
       <div class="overflow-x-auto p-4">
         <div class="grid min-w-[760px] grid-cols-[8rem_repeat(5,minmax(0,1fr))] gap-2">
           <!-- header -->
@@ -69,7 +213,11 @@ async function onCellBlur(userId: string, date: string, e: FocusEvent) {
           <!-- one row per member -->
           <template v-for="u in users" :key="u.id">
             <div class="flex items-center gap-2 text-sm font-medium">
-              <UAvatar :src="u.avatar || undefined" :alt="u.name" size="2xs" />
+              <UAvatar
+                :src="u.avatar || undefined"
+                :alt="u.name"
+                size="2xs"
+              />
               <span class="truncate">{{ u.name }}</span>
             </div>
             <div
@@ -103,5 +251,14 @@ async function onCellBlur(userId: string, date: string, e: FocusEvent) {
         </div>
       </template>
     </ClientOnly>
+
+    <SchoolItemDialog
+      :is-open="dialogOpen"
+      :item="editing"
+      :users="users ?? []"
+      @close="dialogOpen = false"
+      @save="onItemSave"
+      @delete="onItemDelete"
+    />
   </div>
 </template>
