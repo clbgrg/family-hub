@@ -17,6 +17,7 @@ import type { DialogField, ShoppingListWithIntegration } from "~/types/ui";
 import GlobalFloatingActionButton from "~/components/global/globalFloatingActionButton.vue";
 import GlobalList from "~/components/global/globalList.vue";
 import ShoppingListDialog from "~/components/shopping/shoppingListDialog.vue";
+import ShoppingListExportDialog from "~/components/shopping/shoppingListExportDialog.vue";
 import ShoppingListItemDialog from "~/components/shopping/shoppingListItemDialog.vue";
 import { useAlertToast } from "~/composables/useAlertToast";
 import { useStableDate } from "~/composables/useStableDate";
@@ -77,9 +78,16 @@ const {
 
 const listDialog = ref(false);
 const itemDialog = ref(false);
+const exportDialog = ref(false);
 const selectedListId = ref<string>("");
 const editingList = ref<ShoppingList | null>(null);
 const editingItem = ref<ShoppingListItem | null>(null);
+const exportingList = ref<ShoppingList | null>(null);
+
+function openExport(list: ShoppingList) {
+  exportingList.value = list;
+  exportDialog.value = true;
+}
 
 const { showError, showWarning } = useAlertToast();
 
@@ -1329,6 +1337,8 @@ function getFilteredFieldsForItem(
           }
         "
         show-integration-icons
+        show-export
+        @export-list="(list) => openExport(list as ShoppingList)"
         @create="openCreateList"
         @edit="
           editingList = $event as ShoppingListWithIntegration;
@@ -1367,6 +1377,15 @@ function getFilteredFieldsForItem(
       "
       @save="handleListSave"
       @delete="handleListDelete"
+    />
+
+    <ShoppingListExportDialog
+      :is-open="exportDialog"
+      :list="exportingList"
+      @close="
+        exportDialog = false;
+        exportingList = null;
+      "
     />
 
     <ShoppingListItemDialog

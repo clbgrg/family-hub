@@ -17,6 +17,7 @@ const props = defineProps<{
   showAdd?: boolean | ((list: AnyListWithIntegration) => boolean);
   showEditItem?: boolean | ((list: AnyListWithIntegration) => boolean);
   showCompleted?: boolean | ((list: AnyListWithIntegration) => boolean);
+  showExport?: boolean | ((list: AnyListWithIntegration) => boolean);
   showIntegrationIcons?: boolean;
   itemSortMode?: "manual" | "auto";
 }>();
@@ -30,6 +31,7 @@ const _emit = defineEmits<{
   (e: "reorderItem", itemId: string, direction: "up" | "down"): void;
   (e: "reorderList", listId: string, direction: "up" | "down"): void;
   (e: "clearCompleted", listId: string): void;
+  (e: "exportList", list: AnyListWithIntegration): void;
 }>();
 
 const sortedLists = computed(() => {
@@ -265,6 +267,19 @@ function onBoardWheel(event: WheelEvent) {
                           <div style="height: 16px" />
                         </template>
                       </div>
+                      <UButton
+                        v-if="
+                          (typeof showExport === 'function'
+                            ? showExport(list)
+                            : showExport) && (list.items?.length ?? 0) > 0
+                        "
+                        icon="i-lucide-share-2"
+                        size="xs"
+                        variant="ghost"
+                        color="neutral"
+                        :aria-label="`Export ${list.name}`"
+                        @click="_emit('exportList', list)"
+                      />
                       <UButton
                         v-if="
                           typeof showEdit === 'function'
