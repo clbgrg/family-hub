@@ -254,6 +254,21 @@ enum MealSlot {
   DINNER
 }
 
+// A reusable meal in the "Saved meals" repository: save "Chicken Night" once,
+// then drag it onto any planner day (or pick it in the meal dialog) instead of
+// retyping. Carries only the fields that repeat (title/notes/ingredients) —
+// per-day attributes (cook, time) are set on the planned Meal itself.
+model SavedMeal {
+  id          String   @id @default(cuid())
+  title       String
+  notes       String?
+  ingredients String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("saved_meals")
+}
+
 // A reward in the store (admin-curated catalog). Kids spend chore points to
 // redeem one; a parent approves or rejects the request.
 model Reward {

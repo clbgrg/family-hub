@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Meal, MealSlot, UpsertMealInput } from "~/composables/useMeals";
+import type { CreateSavedMealInput, SavedMeal } from "~/composables/useSavedMeals";
 
 const props = defineProps<{
   isOpen: boolean;
@@ -7,12 +8,14 @@ const props = defineProps<{
   mealSlot: MealSlot;
   meal?: Meal | null;
   users: { id: string; name: string }[];
+  savedMeals?: SavedMeal[];
 }>();
 
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "save", data: UpsertMealInput): void;
   (e: "delete", id: string): void;
+  (e: "saveToRepo", data: CreateSavedMealInput): void;
 }>();
 
 const title = ref("");
@@ -29,6 +32,35 @@ const cookOptions = computed(() => [
   ...props.users.map(u => ({ label: u.name, value: u.id })),
 ]);
 
+// Picking a saved meal fills the form (still editable before saving).
+const savedPick = ref("");
+const savedOptions = computed(() =>
+  (props.savedMeals ?? []).map(m => ({ label: m.title, value: m.id })),
+);
+watch(savedPick, (id) => {
+  const saved = (props.savedMeals ?? []).find(m => m.id === id);
+  if (!saved)
+    return;
+  title.value = saved.title;
+  notes.value = saved.notes ?? "";
+  ingredients.value = saved.ingredients ?? "";
+});
+
+const savedToRepo = ref(false);
+function handleSaveToRepo() {
+  if (!title.value.trim()) {
+    errorMsg.value = "Meal name is required";
+    return;
+  }
+  emit("saveToRepo", {
+    title: title.value.trim(),
+    notes: notes.value.trim(),
+    ingredients: ingredients.value.trim(),
+  });
+  savedToRepo.value = true;
+  setTimeout(() => (savedToRepo.value = false), 2000);
+}
+
 const watchSource = computed(() => ({ isOpen: props.isOpen, meal: props.meal }));
 watch(
   watchSource,
@@ -40,6 +72,8 @@ watch(
     ingredients.value = meal?.ingredients ?? "";
     time.value = meal?.time ?? "";
     cookId.value = meal?.cookId ?? NO_COOK;
+    savedPick.value = "";
+    savedToRepo.value = false;
     errorMsg.value = null;
   },
   { immediate: true },
@@ -89,6 +123,19 @@ function handleSave() {
       <div class="space-y-4 p-4">
         <div v-if="errorMsg" class="rounded-md bg-error/10 px-3 py-2 text-sm text-error">
           {{ errorMsg }}
+        </div>
+
+        <div v-if="savedOptions.length" class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Use a saved meal</label>
+          <USelect
+            v-model="savedPick"
+            :items="savedOptions"
+            placeholder="Pick from saved meals…"
+            option-attribute="label"
+            value-attribute="value"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
         </div>
 
         <div class="space-y-2">
@@ -151,16 +198,26 @@ function handleSave() {
       </div>
 
       <div class="flex justify-between border-t border-default p-4">
-        <UButton
-          v-if="meal?.id"
-          color="error"
-          variant="ghost"
-          icon="i-lucide-trash"
-          @click="emit('delete', meal.id); emit('close')"
-        >
-          Clear
-        </UButton>
-        <div class="flex gap-2" :class="{ 'ml-auto': !meal?.id }">
+        <div class="flex gap-2">
+          <UButton
+            v-if="meal?.id"
+            color="error"
+            variant="ghost"
+            icon="i-lucide-trash"
+            @click="emit('delete', meal.id); emit('close')"
+          >
+            Clear
+          </UButton>
+          <UButton
+            color="neutral"
+            variant="ghost"
+            :icon="savedToRepo ? 'i-lucide-check' : 'i-lucide-bookmark-plus'"
+            @click="handleSaveToRepo"
+          >
+            {{ savedToRepo ? "Saved!" : "Save for later" }}
+          </UButton>
+        </div>
+        <div class="flex gap-2">
           <UButton
             color="neutral"
             variant="ghost"

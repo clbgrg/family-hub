@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { Meal, MealSlot, UpsertMealInput } from "~/composables/useMeals";
+import type { CreateSavedMealInput, SavedMeal } from "~/composables/useSavedMeals";
 
 const { user } = useUserSession();
 const isAdmin = computed(() => user.value?.role === "ADMIN");
 
 const weekStart = ref(weekStartSunday(isoToday()));
 const { mealByCell, upsertMeal, deleteMeal, generateGroceries } = useMeals(weekStart);
+const { savedMeals, createSavedMeal, deleteSavedMeal } = useSavedMeals();
 
 const requestFetch = useRequestFetch();
 const { data: users } = await useAsyncData(
@@ -49,6 +51,33 @@ async function onSave(data: UpsertMealInput) {
 }
 async function onDelete(id: string) {
   await deleteMeal(id);
+}
+
+// --- Saved meals: drag a card onto a day cell (or pick one in the dialog) ---
+const savedDialogOpen = ref(false);
+
+function onSavedDragStart(e: DragEvent, meal: SavedMeal) {
+  e.dataTransfer?.setData("application/x-saved-meal", meal.id);
+  if (e.dataTransfer)
+    e.dataTransfer.effectAllowed = "copy";
+}
+async function onCellDrop(date: string, slot: MealSlot, e: DragEvent) {
+  if (!isAdmin.value)
+    return;
+  const id = e.dataTransfer?.getData("application/x-saved-meal");
+  const saved = (savedMeals.value ?? []).find(m => m.id === id);
+  if (!saved)
+    return;
+  await upsertMeal({
+    date,
+    slot,
+    title: saved.title,
+    notes: saved.notes ?? "",
+    ingredients: saved.ingredients ?? "",
+  });
+}
+async function onSavedMealCreate(data: CreateSavedMealInput) {
+  await createSavedMeal(data);
 }
 
 const generating = ref(false);
@@ -110,47 +139,106 @@ async function onGenerate() {
     </div>
 
     <ClientOnly>
-      <div class="overflow-x-auto p-4">
-        <div class="grid min-w-[820px] grid-cols-[5rem_repeat(7,minmax(0,1fr))] gap-2">
-          <!-- header row -->
-          <div />
-          <div
-            v-for="d in days"
-            :key="`h-${d}`"
-            class="px-2 pb-1 text-center text-sm font-semibold"
-            :class="d === today ? 'text-primary' : ''"
-          >
-            {{ dayLabel(d) }}
-          </div>
-
-          <!-- one row per slot -->
-          <template v-for="s in slots" :key="s.key">
-            <div class="flex items-center text-sm font-medium text-muted">
-              {{ s.label }}
-            </div>
-            <button
+      <div class="flex flex-col gap-4 p-4 xl:flex-row">
+        <div class="min-w-0 flex-1 overflow-x-auto">
+          <div class="grid min-w-[820px] grid-cols-[5rem_repeat(7,minmax(0,1fr))] gap-2">
+            <!-- header row -->
+            <div />
+            <div
               v-for="d in days"
-              :key="`${d}-${s.key}`"
-              type="button"
-              class="min-h-20 rounded-lg border border-default p-2 text-left align-top transition"
-              :class="[
-                isAdmin ? 'cursor-pointer hover:bg-elevated' : 'cursor-default',
-                d === today ? 'bg-elevated/50' : 'bg-default',
-              ]"
-              @click="openCell(d, s.key)"
+              :key="`h-${d}`"
+              class="px-2 pb-1 text-center text-sm font-semibold"
+              :class="d === today ? 'text-primary' : ''"
             >
-              <template v-if="cellMeal(d, s.key)">
-                <p class="text-sm font-medium leading-tight">
-                  {{ cellMeal(d, s.key)!.title }}
-                </p>
-                <p v-if="cellMeal(d, s.key)!.cook || cellMeal(d, s.key)!.time" class="mt-1 text-xs text-muted">
-                  <span v-if="cellMeal(d, s.key)!.cook">👨‍🍳 {{ cellMeal(d, s.key)!.cook!.name }}</span>
-                  <span v-if="cellMeal(d, s.key)!.time"> · {{ cellMeal(d, s.key)!.time }}</span>
-                </p>
-              </template>
-              <span v-else-if="isAdmin" class="text-xs text-muted">+ Add</span>
-            </button>
-          </template>
+              {{ dayLabel(d) }}
+            </div>
+
+            <!-- one row per slot -->
+            <template v-for="s in slots" :key="s.key">
+              <div class="flex items-center text-sm font-medium text-muted">
+                {{ s.label }}
+              </div>
+              <button
+                v-for="d in days"
+                :key="`${d}-${s.key}`"
+                type="button"
+                class="min-h-20 rounded-lg border border-default p-2 text-left align-top transition"
+                :class="[
+                  isAdmin ? 'cursor-pointer hover:bg-elevated' : 'cursor-default',
+                  d === today ? 'bg-elevated/50' : 'bg-default',
+                ]"
+                @click="openCell(d, s.key)"
+                @dragover.prevent
+                @drop.prevent="onCellDrop(d, s.key, $event)"
+              >
+                <template v-if="cellMeal(d, s.key)">
+                  <p class="text-sm font-medium leading-tight">
+                    {{ cellMeal(d, s.key)!.title }}
+                  </p>
+                  <p v-if="cellMeal(d, s.key)!.cook || cellMeal(d, s.key)!.time" class="mt-1 text-xs text-muted">
+                    <span v-if="cellMeal(d, s.key)!.cook">👨‍🍳 {{ cellMeal(d, s.key)!.cook!.name }}</span>
+                    <span v-if="cellMeal(d, s.key)!.time"> · {{ cellMeal(d, s.key)!.time }}</span>
+                  </p>
+                </template>
+                <span v-else-if="isAdmin" class="text-xs text-muted">+ Add</span>
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <!-- Saved meals repository: drag a card onto a day (admins) -->
+        <div class="w-full shrink-0 xl:w-64">
+          <div class="rounded-lg border border-default">
+            <div class="flex items-center justify-between border-b border-default p-3">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-lucide-bookmark" class="size-4 text-primary" />
+                <h2 class="text-sm font-semibold">
+                  Saved meals
+                </h2>
+              </div>
+              <UButton
+                v-if="isAdmin"
+                icon="i-lucide-plus"
+                size="xs"
+                variant="soft"
+                aria-label="Save a meal"
+                @click="savedDialogOpen = true"
+              />
+            </div>
+            <ul v-if="(savedMeals ?? []).length" class="flex flex-col gap-1 p-2">
+              <li
+                v-for="m in savedMeals"
+                :key="m.id"
+                class="group flex items-center gap-2 rounded-md border border-default bg-elevated/40 px-2 py-1.5"
+                :class="isAdmin ? 'cursor-grab active:cursor-grabbing' : ''"
+                :draggable="isAdmin"
+                @dragstart="onSavedDragStart($event, m)"
+              >
+                <UIcon name="i-lucide-grip-vertical" class="size-3.5 shrink-0 text-muted" />
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-medium">
+                    {{ m.title }}
+                  </p>
+                  <p v-if="m.ingredients" class="truncate text-xs text-muted">
+                    {{ m.ingredients.split("\n").length }} ingredient{{ m.ingredients.split("\n").length === 1 ? "" : "s" }}
+                  </p>
+                </div>
+                <UButton
+                  v-if="isAdmin"
+                  icon="i-lucide-x"
+                  size="xs"
+                  variant="ghost"
+                  color="neutral"
+                  class="opacity-0 transition group-hover:opacity-100"
+                  :aria-label="`Delete ${m.title}`"
+                  @click="deleteSavedMeal(m.id)"
+                />
+              </li>
+            </ul>
+            <p v-else class="p-3 text-xs text-muted">
+              {{ isAdmin ? "Save a meal once, then drag it onto any day — no retyping." : "No saved meals yet." }}
+            </p>
+          </div>
         </div>
       </div>
       <template #fallback>
@@ -160,6 +248,12 @@ async function onGenerate() {
       </template>
     </ClientOnly>
 
+    <SavedMealDialog
+      :is-open="savedDialogOpen"
+      @close="savedDialogOpen = false"
+      @save="onSavedMealCreate"
+    />
+
     <MealDialog
       v-if="editing"
       :is-open="dialogOpen"
@@ -167,9 +261,11 @@ async function onGenerate() {
       :meal-slot="editing.slot"
       :meal="editing.meal"
       :users="users ?? []"
+      :saved-meals="savedMeals ?? []"
       @close="dialogOpen = false"
       @save="onSave"
       @delete="onDelete"
+      @save-to-repo="onSavedMealCreate"
     />
   </div>
 </template>
