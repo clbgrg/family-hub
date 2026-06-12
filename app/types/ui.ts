@@ -124,6 +124,8 @@ export type ClientPreferences = {
   // per-device client preferences (not a shared server setting).
   screensaverEnabled?: boolean;
   screensaverIdleMinutes?: number;
+  // School page: hide the parents' (admin) rows/columns — kids are the students.
+  schoolStudentsOnly?: boolean;
 };
 
 export const MAIN_VIEW_OPTIONS: { path: string; label: string }[] = [
@@ -142,6 +144,7 @@ export const defaultClientPreferences: ClientPreferences = {
   calendarView: "week",
   screensaverEnabled: true,
   screensaverIdleMinutes: 5,
+  schoolStudentsOnly: true,
 };
 
 export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [

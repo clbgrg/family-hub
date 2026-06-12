@@ -15,8 +15,18 @@ const toast = useToast();
 const requestFetch = useRequestFetch();
 const { data: users } = await useAsyncData(
   "school-users",
-  () => requestFetch<{ id: string; name: string; avatar: string | null; color: string | null }[]>("/api/users"),
+  () => requestFetch<{ id: string; name: string; avatar: string | null; color: string | null; role: string }[]>("/api/users"),
   { default: () => [], server: false },
+);
+
+// "Students only" hides the parents' (admin) rows — per-device preference.
+const { preferences, updatePreferences } = useClientPreferences();
+const studentsOnly = computed({
+  get: () => preferences.value?.schoolStudentsOnly !== false,
+  set: value => updatePreferences({ schoolStudentsOnly: value }),
+});
+const visibleUsers = computed(() =>
+  (users.value ?? []).filter(u => !studentsOnly.value || u.role === "MEMBER"),
 );
 
 const days = computed(() => Array.from({ length: 5 }, (_, i) => addDaysIso(weekStart.value, i)));
@@ -24,7 +34,7 @@ const today = isoToday();
 
 // Members with items this week (or overdue), for the Assignments section.
 const assignmentGroups = computed(() =>
-  (users.value ?? [])
+  visibleUsers.value
     .map(u => ({ user: u, items: itemsByUser.value[u.id] ?? [] }))
     .filter(g => g.items.length > 0),
 );
@@ -55,6 +65,7 @@ async function onCellBlur(userId: string, date: string, e: FocusEvent) {
 // --- Assignments (structured, check-off, gamified like chores) ---
 const dialogOpen = ref(false);
 const editing = ref<SchoolItem | null>(null);
+const { startTimerFor } = useTaskTimer();
 
 function isOverdue(item: SchoolItem) {
   return !item.done && item.dueDate < today;
@@ -125,13 +136,22 @@ async function onItemDelete(id: string) {
         />
         <span class="ml-2 text-sm text-muted">Week of {{ dayLabel(weekStart) }}</span>
       </div>
-      <UButton
-        v-if="isAdmin"
-        icon="i-lucide-plus"
-        label="Add assignment"
-        class="ml-auto"
-        @click="addItem"
-      />
+      <div class="ml-auto flex items-center gap-3">
+        <div class="flex items-center gap-2 text-sm text-muted">
+          <USwitch
+            v-model="studentsOnly"
+            size="sm"
+            aria-label="Show students only"
+          />
+          <span>Students only</span>
+        </div>
+        <UButton
+          v-if="isAdmin"
+          icon="i-lucide-plus"
+          label="Add assignment"
+          @click="addItem"
+        />
+      </div>
     </div>
 
     <ClientOnly>
@@ -182,6 +202,15 @@ async function onItemDelete(id: string) {
                   +{{ item.points }}
                 </UBadge>
                 <UButton
+                  v-if="!item.done && canEdit(item.userId)"
+                  icon="i-lucide-timer"
+                  size="xs"
+                  variant="ghost"
+                  color="neutral"
+                  aria-label="Start a timer for this assignment"
+                  @click="startTimerFor({ kind: 'school', id: item.id, title: item.title })"
+                />
+                <UButton
                   v-if="isAdmin"
                   icon="i-lucide-pencil"
                   size="xs"
@@ -211,7 +240,7 @@ async function onItemDelete(id: string) {
           </div>
 
           <!-- one row per member -->
-          <template v-for="u in users" :key="u.id">
+          <template v-for="u in visibleUsers" :key="u.id">
             <div class="flex items-center gap-2 text-sm font-medium">
               <UAvatar
                 :src="u.avatar || undefined"
