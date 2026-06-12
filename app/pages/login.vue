@@ -20,7 +20,30 @@ const pin = ref("");
 const error = ref("");
 const loading = ref(false);
 
-function selectUser(u: PickUser) {
+async function selectUser(u: PickUser) {
+  // Kid tap-in: members without a PIN sign in by just picking their profile.
+  // (Admins without a PIN stay locked out — a parent profile always needs one.)
+  if (!u.hasPin && u.role === "MEMBER") {
+    if (loading.value)
+      return;
+    loading.value = true;
+    error.value = "";
+    try {
+      await $fetch("/api/auth/login", {
+        method: "POST",
+        body: { userId: u.id },
+      });
+      await refreshSession();
+      await navigateTo("/");
+    }
+    catch {
+      error.value = "Couldn't sign in. Try again.";
+    }
+    finally {
+      loading.value = false;
+    }
+    return;
+  }
   if (!u.hasPin)
     return;
   selected.value = u;
@@ -74,7 +97,7 @@ async function submit() {
           :key="u.id"
           type="button"
           class="flex flex-col items-center gap-2 rounded-xl p-4 transition hover:bg-elevated disabled:opacity-40"
-          :disabled="!u.hasPin"
+          :disabled="!u.hasPin && u.role !== 'MEMBER'"
           @click="selectUser(u)"
         >
           <UAvatar
@@ -83,12 +106,16 @@ async function submit() {
             size="3xl"
           />
           <span class="text-lg font-medium">{{ u.name }}</span>
-          <span v-if="!u.hasPin" class="text-xs text-muted">no PIN set</span>
+          <span v-if="u.hasPin" class="text-xs text-muted"><UIcon name="i-lucide-lock" class="inline size-3" /> PIN</span>
+          <span v-else-if="u.role !== 'MEMBER'" class="text-xs text-muted">no PIN set</span>
         </button>
         <p v-if="users.length === 0" class="text-muted">
           No accounts yet.
         </p>
       </div>
+      <p v-if="error" class="text-sm text-error">
+        {{ error }}
+      </p>
     </div>
 
     <!-- Step 2: enter PIN -->

@@ -8,6 +8,7 @@ type Photo = {
 
 const { preferences } = useClientPreferences();
 const route = useRoute();
+const { loggedIn, clear: clearSession } = useUserSession();
 
 const enabled = computed(() => preferences.value?.screensaverEnabled !== false);
 // useIdle's timeout isn't reactive; read once at setup (changing it takes a reload).
@@ -26,6 +27,17 @@ let clockTimer: ReturnType<typeof setInterval> | null = null;
 let photoTimer: ReturnType<typeof setInterval> | null = null;
 
 const showSaver = computed(() => enabled.value && !onAuthScreen.value && idle.value);
+
+// Wake = lock-screen semantics: the touch that dismisses the screensaver ends
+// the session and lands on the profile picker, so the device never resumes as
+// the last active user (kids tap back in; parents re-enter their PIN).
+watch(showSaver, async (showing, wasShowing) => {
+  if (!wasShowing || showing)
+    return;
+  if (loggedIn.value)
+    await clearSession();
+  await navigateTo("/login");
+});
 const currentPhoto = computed(() => photos.value[photoIdx.value]?.url ?? null);
 const clock = computed(() =>
   now.value.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
