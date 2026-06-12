@@ -4,6 +4,7 @@ import GlobalAppLoading from "~/components/global/globalAppLoading.vue";
 import GlobalDock from "~/components/global/globalDock.vue";
 import GlobalScreensaver from "~/components/global/globalScreensaver.vue";
 import GlobalSideBar from "~/components/global/globalSideBar.vue";
+import TaskTimerOverlay from "~/components/global/taskTimerOverlay.vue";
 
 const dock = false;
 const { isLoading, loadingMessage, setLoading } = useGlobalLoading();
@@ -45,6 +46,7 @@ onNuxtReady(() => {
     <ClientOnly>
       <GlobalScreensaver />
       <AdminGateModal />
+      <TaskTimerOverlay />
     </ClientOnly>
   </UApp>
 </template>
