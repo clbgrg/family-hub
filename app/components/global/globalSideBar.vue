@@ -3,6 +3,20 @@ const route = useRoute();
 function isActivePath(path: string) {
   return route.path === path;
 }
+
+// iMessage-style unread badge on the Family Board tab. Refreshed on every
+// navigation plus a slow poll, so notes posted from another device show up
+// on the kiosk without a reload.
+const { count: unreadNotes, refresh: refreshUnread } = useUnreadMessages();
+watch(() => route.path, () => refreshUnread());
+let unreadTimer: ReturnType<typeof setInterval> | null = null;
+onMounted(() => {
+  unreadTimer = setInterval(refreshUnread, 60_000);
+});
+onBeforeUnmount(() => {
+  if (unreadTimer)
+    clearInterval(unreadTimer);
+});
 </script>
 
 <template>
@@ -57,14 +71,24 @@ function isActivePath(path: string) {
       size="xl"
       aria-label="Rewards"
     />
-    <UButton
-      :class="isActivePath('/messages') ? 'text-primary' : 'text-default'"
-      to="/messages"
-      variant="ghost"
-      icon="i-lucide-sticky-note"
-      size="xl"
-      aria-label="Family Board"
-    />
+    <div class="relative">
+      <UButton
+        :class="isActivePath('/messages') ? 'text-primary' : 'text-default'"
+        to="/messages"
+        variant="ghost"
+        icon="i-lucide-sticky-note"
+        size="xl"
+        aria-label="Family Board"
+      />
+      <ClientOnly>
+        <span
+          v-if="unreadNotes > 0"
+          class="pointer-events-none absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-semibold text-white"
+        >
+          {{ unreadNotes > 9 ? "9+" : unreadNotes }}
+        </span>
+      </ClientOnly>
+    </div>
     <UButton
       :class="isActivePath('/shoppingLists') ? 'text-primary' : 'text-default'"
       to="/shoppingLists"

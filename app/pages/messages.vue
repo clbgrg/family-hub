@@ -4,6 +4,12 @@ import type { Message } from "~/composables/useMessages";
 const { user } = useUserSession();
 const { messages, postMessage, deleteMessage } = useMessages();
 
+// Visiting the board clears your unread badge.
+const { markRead } = useUnreadMessages();
+onMounted(() => {
+  markRead();
+});
+
 const requestFetch = useRequestFetch();
 const { data: users } = await useAsyncData(
   "messages-users",

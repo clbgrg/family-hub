@@ -41,6 +41,7 @@ model User {
   pointAdjustmentsCreated PointAdjustment[] @relation("PointAdjustmentCreator")
   schoolItems             SchoolItem[]           @relation("SchoolItemUser")
   schoolItemCompletions   SchoolItemCompletion[] @relation("SchoolItemCompletionUser")
+  messageRead             MessageRead?
 
   @@map("users")
 }
@@ -307,6 +308,18 @@ model Message {
 
   @@index([expiresAt])
   @@map("messages")
+}
+
+// Per-user "I've seen the board" pointer for unread-note badges. One row per
+// user, bumped to now() whenever they view the board. Unread = non-expired
+// notes from OTHERS created after this timestamp (all of them if no row yet).
+model MessageRead {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime @default(now())
+
+  @@map("message_reads")
 }
 
 // A badge a user has earned, keyed by the badge's slug. Permanent once earned —
