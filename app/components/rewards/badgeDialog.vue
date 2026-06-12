@@ -25,7 +25,26 @@ const ruleOptions: { label: string; value: BadgeRuleType }[] = [
   { label: "Total points earned ≥", value: "TOTAL_POINTS" },
   { label: "Total chores + school items done ≥", value: "TOTAL_COMPLETIONS" },
   { label: "Points in one day ≥", value: "POINTS_IN_DAY" },
+  { label: "Tasks done before an hour ≥", value: "EARLY_BIRD" },
+  { label: "Weekend tasks done ≥", value: "WEEKEND_COMPLETIONS" },
+  { label: "Big tasks (≥ X pts each) done ≥", value: "HIGH_VALUE_COMPLETIONS" },
+  { label: "Avg points over last X tasks ≥", value: "ROLLING_AVG_POINTS" },
 ];
+
+// Rules with a second knob: which extra field, its label, bounds, and default.
+const EXTRA_PARAMS: Partial<Record<BadgeRuleType, { key: "beforeHour" | "minPoints" | "window"; label: string; min: number; max: number; fallback: number }>> = {
+  EARLY_BIRD: { key: "beforeHour", label: "before hour (0–23)", min: 0, max: 23, fallback: 8 },
+  HIGH_VALUE_COMPLETIONS: { key: "minPoints", label: "min points each", min: 1, max: 9999, fallback: 20 },
+  ROLLING_AVG_POINTS: { key: "window", label: "over last … tasks", min: 1, max: 1000, fallback: 50 },
+};
+
+// Switching a row's rule seeds the extra field so the save is always valid.
+function onRuleChange(c: BadgeCondition) {
+  const extra = EXTRA_PARAMS[c.ruleType];
+  if (extra && typeof c[extra.key] !== "number") {
+    c[extra.key] = extra.fallback;
+  }
+}
 
 const watchSource = computed(() => ({ isOpen: props.isOpen, badge: props.badge }));
 watch(
@@ -70,10 +89,18 @@ function handleSave() {
     name: name.value.trim(),
     icon: icon.value.trim() || "i-lucide-award",
     description: description.value.trim(),
-    conditions: conditions.value.map(c => ({
-      ruleType: c.ruleType,
-      threshold: Math.max(1, Number(c.threshold) || 1),
-    })),
+    conditions: conditions.value.map((c) => {
+      const out: BadgeCondition = {
+        ruleType: c.ruleType,
+        threshold: Math.max(1, Number(c.threshold) || 1),
+      };
+      const extra = EXTRA_PARAMS[c.ruleType];
+      if (extra) {
+        const raw = Number(c[extra.key] ?? extra.fallback);
+        out[extra.key] = Math.min(extra.max, Math.max(extra.min, Number.isFinite(raw) ? Math.round(raw) : extra.fallback));
+      }
+      return out;
+    }),
     appliesToUserIds: appliesToUserIds.value,
   });
   emit("close");
@@ -163,32 +190,46 @@ function handleSave() {
           <div
             v-for="(c, i) in conditions"
             :key="i"
-            class="flex items-center gap-2"
+            class="space-y-1"
           >
-            <USelect
-              v-model="c.ruleType"
-              :items="ruleOptions"
-              option-attribute="label"
-              value-attribute="value"
-              class="flex-1"
-              :ui="{ base: 'w-full' }"
-            />
-            <UInput
-              v-model.number="c.threshold"
-              type="number"
-              :min="1"
-              class="w-24"
-              :ui="{ base: 'w-full' }"
-            />
-            <UButton
-              v-if="conditions.length > 1"
-              icon="i-lucide-x"
-              size="xs"
-              variant="ghost"
-              color="neutral"
-              aria-label="Remove condition"
-              @click="removeCondition(i)"
-            />
+            <div class="flex items-center gap-2">
+              <USelect
+                v-model="c.ruleType"
+                :items="ruleOptions"
+                option-attribute="label"
+                value-attribute="value"
+                class="flex-1"
+                :ui="{ base: 'w-full' }"
+                @update:model-value="onRuleChange(c)"
+              />
+              <UInput
+                v-model.number="c.threshold"
+                type="number"
+                :min="1"
+                class="w-24"
+                :ui="{ base: 'w-full' }"
+              />
+              <UButton
+                v-if="conditions.length > 1"
+                icon="i-lucide-x"
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                aria-label="Remove condition"
+                @click="removeCondition(i)"
+              />
+            </div>
+            <div v-if="EXTRA_PARAMS[c.ruleType]" class="flex items-center justify-end gap-2">
+              <span class="text-xs text-muted">{{ EXTRA_PARAMS[c.ruleType]!.label }}</span>
+              <UInput
+                v-model.number="c[EXTRA_PARAMS[c.ruleType]!.key]"
+                type="number"
+                :min="EXTRA_PARAMS[c.ruleType]!.min"
+                :max="EXTRA_PARAMS[c.ruleType]!.max"
+                class="w-24"
+                :ui="{ base: 'w-full' }"
+              />
+            </div>
           </div>
         </div>
 
