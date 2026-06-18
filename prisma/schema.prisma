@@ -491,3 +491,17 @@ model Setting {
 
   @@map("settings")
 }
+
+// A family document/media file. The bytes live on disk (filesDir / a Docker
+// volume); this row holds metadata + the generated on-disk name. The original
+// filename is shown to users; storedName is server-generated (no traversal).
+model Document {
+  id         String   @id @default(cuid())
+  name       String // original/display filename
+  storedName String // generated on-disk name
+  type       String // MIME type
+  size       Int // bytes
+  createdAt  DateTime @default(now())
+
+  @@map("documents")
+}
