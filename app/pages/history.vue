@@ -3,6 +3,8 @@ import { formatDistanceToNow } from "date-fns";
 
 const { user } = useUserSession();
 const isAdmin = computed(() => user.value?.role === "ADMIN");
+const today = isoToday();
+const { pointsLabel } = useFamilyConfig();
 
 const requestFetch = useRequestFetch();
 const { data: users } = await useAsyncData(
@@ -56,6 +58,13 @@ function timeAgo(ts: string) {
     </div>
 
     <ClientOnly>
+      <div class="p-4 pb-0">
+        <PointsLineChart
+          :user-id="selectedUserId"
+          :date="today"
+          :points-label="pointsLabel"
+        />
+      </div>
       <div v-if="events.length" class="flex flex-col gap-1 p-4">
         <div
           v-for="e in events"
