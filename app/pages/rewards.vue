@@ -8,6 +8,7 @@ const isAdmin = computed(() => user.value?.role === "ADMIN");
 const { gate } = useAdminGate();
 const { rewards, balanceByUser, redemptions, redeem, createReward, updateReward, deleteReward, approve, reject, refreshAll: refreshRewardData } = useRewards();
 const { adjustments, createAdjustment, removeAdjustment } = useAdjustments();
+const { pointsLabel } = useFamilyConfig();
 
 // Member list for the adjustment picker (admins only use it, but the fetch
 // is harmless for members).
@@ -128,7 +129,7 @@ async function deleteAdjustment(id: string) {
           variant="subtle"
           size="lg"
         >
-          {{ myAvailable }} points to spend
+          {{ myAvailable }} {{ pointsLabel }} to spend
         </UBadge>
       </div>
       <UButton
@@ -153,7 +154,7 @@ async function deleteAdjustment(id: string) {
             class="flex items-center gap-1 whitespace-nowrap"
           >
             {{ u.name }}
-            <span class="font-medium">{{ balanceByUser[u.id]?.available ?? 0 }} pts</span>
+            <span class="font-medium">{{ balanceByUser[u.id]?.available ?? 0 }} {{ pointsLabel }}</span>
           </span>
         </div>
 
@@ -176,7 +177,7 @@ async function deleteAdjustment(id: string) {
                   {{ r.name }}
                 </p>
                 <UBadge color="neutral" variant="soft">
-                  {{ r.pointsCost }} pts
+                  {{ r.pointsCost }} {{ pointsLabel }}
                 </UBadge>
               </div>
               <div class="flex items-center gap-2">
@@ -226,7 +227,7 @@ async function deleteAdjustment(id: string) {
                   {{ req.user.name }} wants <span class="font-semibold">{{ req.rewardName }}</span>
                 </p>
                 <p class="text-sm text-muted">
-                  {{ req.pointsCost }} pts · has {{ balanceByUser[req.userId]?.available ?? 0 }} available
+                  {{ req.pointsCost }} {{ pointsLabel }} · has {{ balanceByUser[req.userId]?.available ?? 0 }} available
                 </p>
               </div>
               <UButton
@@ -362,7 +363,7 @@ async function deleteAdjustment(id: string) {
               :key="req.id"
               class="flex items-center justify-between gap-3 rounded-lg border border-default p-3"
             >
-              <span>{{ req.rewardName }} <span class="text-sm text-muted">({{ req.pointsCost }} pts)</span></span>
+              <span>{{ req.rewardName }} <span class="text-sm text-muted">({{ req.pointsCost }} {{ pointsLabel }})</span></span>
               <UBadge :color="statusBadge(req.status)" variant="subtle">
                 {{ req.status.toLowerCase() }}
               </UBadge>

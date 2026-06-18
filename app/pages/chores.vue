@@ -10,6 +10,7 @@ const isAdmin = computed(() => user.value?.role === "ADMIN");
 const { gate } = useAdminGate();
 
 const { chores, pointsByUser, statsByUser, leaderboard, createChore, updateChore, deleteChore, setDone } = useChores();
+const { pointsLabel } = useFamilyConfig();
 
 // useRequestFetch forwards the cookie on SSR (plain $fetch would 401).
 const requestFetch = useRequestFetch();
@@ -136,7 +137,7 @@ async function onDelete(id: string) {
         >
           <span class="text-muted">{{ i + 1 }}.</span>
           {{ r.user!.name }}
-          <span class="font-medium">{{ r.pointsWeek }} pts</span>
+          <span class="font-medium">{{ r.pointsWeek }} {{ pointsLabel }}</span>
         </span>
       </div>
 
@@ -169,7 +170,7 @@ async function onDelete(id: string) {
                 variant="subtle"
                 size="lg"
               >
-                {{ group.points }} pts
+                {{ group.points }} {{ pointsLabel }}
               </UBadge>
             </div>
           </template>

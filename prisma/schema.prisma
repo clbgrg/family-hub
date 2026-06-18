@@ -438,6 +438,7 @@ model SchoolItem {
   title       String
   description String?
   points      Int      @default(0)
+  grade       String? // optional mark, e.g. "A" or "92%" (free-text or from the configured scale)
   dueDate     String // client-local "YYYY-MM-DD"
   userId      String
   user        User     @relation("SchoolItemUser", fields: [userId], references: [id], onDelete: Cascade)
@@ -479,4 +480,14 @@ model SchoolNote {
 
   @@unique([userId, date])
   @@map("school_notes")
+}
+
+// Household configuration as simple key/value strings (points label, grade
+// scale, …). One row per setting; defaults live in the app, so a missing key
+// just means "use the default". Admin-managed.
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
 }

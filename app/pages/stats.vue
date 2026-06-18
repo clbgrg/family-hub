@@ -6,6 +6,7 @@ const isAdmin = computed(() => user.value?.role === "ADMIN");
 const { gate } = useAdminGate();
 const { updateChore, today } = useChores();
 const { analytics, refresh } = useAnalytics(today);
+const { pointsLabel } = useFamilyConfig();
 
 const maxUser = computed(() => Math.max(1, ...analytics.value.perUser.map(u => u.completions)));
 
@@ -54,7 +55,7 @@ function areaLabel(a: { name: string; icon: string | null }) {
               <div class="h-2 flex-1 overflow-hidden rounded-full bg-elevated">
                 <div class="h-full rounded-full bg-primary" :style="{ width: `${(u.completions / maxUser) * 100}%` }" />
               </div>
-              <span class="w-28 shrink-0 text-right text-xs text-muted">{{ u.completions }} done · {{ u.points }} pts</span>
+              <span class="w-28 shrink-0 text-right text-xs text-muted">{{ u.completions }} done · {{ u.points }} {{ pointsLabel }}</span>
             </div>
           </div>
           <p v-else class="text-sm text-muted">
@@ -101,7 +102,7 @@ function areaLabel(a: { name: string; icon: string | null }) {
                   {{ c.title }}
                 </p>
                 <p class="text-xs text-muted">
-                  {{ recurrenceLabel(c) }} · {{ c.completions }}× in {{ analytics.windowDays }}d · {{ c.points }} pts
+                  {{ recurrenceLabel(c) }} · {{ c.completions }}× in {{ analytics.windowDays }}d · {{ c.points }} {{ pointsLabel }}
                 </p>
               </div>
               <UButton

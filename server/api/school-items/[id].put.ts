@@ -33,6 +33,8 @@ export default defineEventHandler(async (event) => {
   }
   if (typeof body?.userId === "string" && body.userId)
     data.userId = body.userId;
+  if ("grade" in body)
+    data.grade = String(body.grade ?? "").trim() || null;
 
   try {
     return await prisma.schoolItem.update({ where: { id }, data });
