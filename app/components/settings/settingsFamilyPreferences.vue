@@ -6,6 +6,8 @@ const { pointsLabel, gradeScale, config, save } = useFamilyConfig();
 
 const labelInput = ref("");
 const gradeInput = ref("");
+const pinnedTitle = ref("");
+const pinnedBody = ref("");
 const saved = ref(false);
 
 // Seed inputs from the saved config. Only the initial load and a post-save
@@ -13,10 +15,17 @@ const saved = ref(false);
 watchEffect(() => {
   labelInput.value = config.value.pointsLabel ?? "";
   gradeInput.value = config.value.gradeScale ?? "";
+  pinnedTitle.value = config.value.pinnedNoteTitle ?? "";
+  pinnedBody.value = config.value.pinnedNoteBody ?? "";
 });
 
 async function onSave() {
-  await gate(() => save({ pointsLabel: labelInput.value.trim(), gradeScale: gradeInput.value.trim() }));
+  await gate(() => save({
+    pointsLabel: labelInput.value.trim(),
+    gradeScale: gradeInput.value.trim(),
+    pinnedNoteTitle: pinnedTitle.value.trim(),
+    pinnedNoteBody: pinnedBody.value.trim(),
+  }));
   saved.value = true;
   setTimeout(() => {
     saved.value = false;
@@ -51,6 +60,26 @@ async function onSave() {
         Comma-separated grades offered on school items. Leave blank for free-text.<template v-if="gradeScale.length">
           ({{ gradeScale.length }} grades)
         </template>
+      </p>
+    </div>
+
+    <div class="space-y-2">
+      <label class="block text-sm font-medium text-highlighted">Pinned dashboard note</label>
+      <UInput
+        v-model="pinnedTitle"
+        placeholder="Title (e.g. Verse of the week)"
+        class="w-full"
+        :ui="{ base: 'w-full' }"
+      />
+      <UTextarea
+        v-model="pinnedBody"
+        :rows="3"
+        placeholder="The message to pin at the top of the dashboard. Leave blank to hide it."
+        class="w-full"
+        :ui="{ base: 'w-full' }"
+      />
+      <p class="text-xs text-muted">
+        Shown to everyone at the top of the dashboard — a weekly verse, reminder, or family message.
       </p>
     </div>
 

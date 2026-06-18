@@ -22,6 +22,7 @@ const requestFetch = useRequestFetch();
 const today = isoToday();
 const { count: unreadNotes } = useUnreadMessages();
 const { startTimerFor } = useTaskTimer();
+const { pinnedNoteTitle, pinnedNoteBody } = useFamilyConfig();
 
 // Shared asyncData keys with the chores page, so a check-off here refreshes
 // the board there (and vice versa) — plus interactive setDone + celebration.
@@ -195,6 +196,22 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
     </div>
 
     <ClientOnly>
+      <div
+        v-if="pinnedNoteBody"
+        class="mx-4 mt-4 rounded-lg border border-primary/30 bg-primary/10 p-4"
+      >
+        <div class="flex items-start gap-3">
+          <UIcon name="i-lucide-pin" class="mt-0.5 size-5 shrink-0 text-primary" />
+          <div class="min-w-0">
+            <p v-if="pinnedNoteTitle" class="font-semibold text-highlighted">
+              {{ pinnedNoteTitle }}
+            </p>
+            <p class="whitespace-pre-wrap text-sm">
+              {{ pinnedNoteBody }}
+            </p>
+          </div>
+        </div>
+      </div>
       <NuxtLink
         v-if="unreadNotes > 0"
         to="/messages"
@@ -238,12 +255,13 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
         <section
           v-for="col in columns"
           :key="col.user.id"
-          class="flex h-fit flex-col rounded-lg border border-default bg-default shadow-sm"
+          class="flex h-fit flex-col rounded-lg border-2 border-default bg-default shadow-sm"
+          :style="col.user.color ? { borderColor: col.user.color } : {}"
         >
           <button
             type="button"
             class="flex w-full items-center gap-2 rounded-t-lg border-b border-default p-3 text-left"
-            :style="col.user.color ? { borderTopColor: col.user.color, borderTopWidth: '3px' } : {}"
+            :style="col.user.color ? { backgroundColor: `${col.user.color}1a` } : {}"
             @click="toggleCollapsed(col.user.id)"
           >
             <UAvatar

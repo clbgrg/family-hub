@@ -1,7 +1,7 @@
 import prisma from "~/lib/prisma";
 
 // Only these keys are writable — guards against arbitrary settings being set.
-const ALLOWED = new Set(["pointsLabel", "gradeScale"]);
+const ALLOWED = new Set(["pointsLabel", "gradeScale", "pinnedNoteTitle", "pinnedNoteBody"]);
 
 /**
  * Upsert one or more household settings. Admin only. Body is a key→value
