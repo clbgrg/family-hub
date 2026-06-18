@@ -22,7 +22,7 @@ import {
 } from "~/types/integrations";
 import { FONT_OPTIONS, getFontStack, MAIN_VIEW_OPTIONS } from "~/types/ui";
 
-const { users, loading, error, createUser, deleteUser, updateUser }
+const { users, loading, error, createUser, deleteUser, updateUser, reorderUser }
   = useUsers();
 
 const logoLoaded = ref(true);
@@ -46,6 +46,14 @@ const { preferences, updatePreferences } = useClientPreferences();
 // Parent unlock: management sections re-confirm a PIN on the shared kiosk
 // admin session; mutations re-check before firing in case the window expired.
 const { isUnlocked, secondsLeft, ensureElevated, lockNow } = useAdminGate();
+
+// Reorder members (their dashboard sequence). Admin-gated; reorderUser writes
+// todoOrder, which /api/users now sorts by.
+async function moveUser(userId: string, direction: "up" | "down") {
+  if (!(await ensureElevated()))
+    return;
+  await reorderUser(userId, direction);
+}
 
 const isClient = ref(false);
 onMounted(() => {
@@ -889,7 +897,7 @@ onMounted(async () => {
           <div v-else>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div
-                v-for="user in users"
+                v-for="(user, idx) in users"
                 :key="user.id"
                 class="flex items-center gap-3 p-4 rounded-lg border border-default bg-muted"
               >
@@ -912,7 +920,23 @@ onMounted(async () => {
                     No email
                   </p>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1">
+                  <UButton
+                    variant="ghost"
+                    size="sm"
+                    icon="i-lucide-chevron-up"
+                    :disabled="idx === 0"
+                    :aria-label="`Move ${user.name} earlier`"
+                    @click="moveUser(user.id, 'up')"
+                  />
+                  <UButton
+                    variant="ghost"
+                    size="sm"
+                    icon="i-lucide-chevron-down"
+                    :disabled="idx === users.length - 1"
+                    :aria-label="`Move ${user.name} later`"
+                    @click="moveUser(user.id, 'down')"
+                  />
                   <UButton
                     variant="ghost"
                     size="sm"

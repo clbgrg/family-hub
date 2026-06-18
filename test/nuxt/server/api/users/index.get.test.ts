@@ -76,9 +76,10 @@ describe("gET /api/users", () => {
             },
           },
         },
-        orderBy: {
-          name: "asc",
-        },
+        orderBy: [
+          { todoOrder: "asc" },
+          { name: "asc" },
+        ],
       });
 
       expect(response).toEqual(mockUsers);

@@ -239,6 +239,16 @@ async function onDelete(id: string) {
                   >
                     {{ recurrenceLabel(chore) }}
                   </UBadge>
+                  <UBadge
+                    v-if="chore.boost"
+                    color="primary"
+                    variant="soft"
+                    size="sm"
+                    icon="i-lucide-trending-up"
+                    :title="`Neglected chore — boosted +${chore.boost}`"
+                  >
+                    +{{ chore.boost }}
+                  </UBadge>
                   <UBadge color="neutral" variant="soft">
                     +{{ chore.points }}
                   </UBadge>

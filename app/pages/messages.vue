@@ -22,6 +22,21 @@ const draft = ref("");
 const fromId = ref("");
 const posting = ref(false);
 const postError = ref("");
+const attachment = ref<File | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
+const ACCEPT = "image/*,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx";
+
+function onFilePick(e: Event) {
+  attachment.value = (e.target as HTMLInputElement).files?.[0] ?? null;
+}
+function clearAttachment() {
+  attachment.value = null;
+  if (fileInput.value)
+    fileInput.value.value = "";
+}
+function isImage(type: string | null): boolean {
+  return !!type && type.startsWith("image/");
+}
 
 // Default the "From" picker to the current user once the session resolves.
 watchEffect(() => {
@@ -36,8 +51,9 @@ async function submit() {
   posting.value = true;
   postError.value = "";
   try {
-    await postMessage(body, fromId.value || undefined);
+    await postMessage(body, fromId.value || undefined, attachment.value);
     draft.value = "";
+    clearAttachment();
   }
   catch (err) {
     const e = err as { statusMessage?: string; data?: { statusMessage?: string } };
@@ -93,7 +109,36 @@ function timeAgo(iso: string): string {
           @keydown.enter.ctrl.prevent="submit"
         />
         <div class="flex items-center justify-between gap-3">
-          <span class="text-sm text-error">{{ postError }}</span>
+          <div class="flex min-w-0 items-center gap-2">
+            <input
+              ref="fileInput"
+              type="file"
+              :accept="ACCEPT"
+              class="hidden"
+              @change="onFilePick"
+            >
+            <UButton
+              icon="i-lucide-paperclip"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              aria-label="Attach a file"
+              @click="fileInput?.click()"
+            />
+            <span v-if="attachment" class="flex min-w-0 items-center gap-1 rounded bg-elevated px-2 py-0.5 text-xs">
+              <UIcon name="i-lucide-file" class="size-3 shrink-0" />
+              <span class="max-w-40 truncate">{{ attachment.name }}</span>
+              <UButton
+                icon="i-lucide-x"
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                aria-label="Remove attachment"
+                @click="clearAttachment"
+              />
+            </span>
+            <span v-if="postError" class="text-sm text-error">{{ postError }}</span>
+          </div>
           <div class="ml-auto flex items-center gap-2">
             <span class="text-sm text-muted">From</span>
             <USelect
@@ -134,6 +179,25 @@ function timeAgo(iso: string): string {
             <p class="flex-1 whitespace-pre-wrap break-words pr-5 text-lg leading-snug">
               {{ m.body }}
             </p>
+            <a
+              v-if="m.attachmentName"
+              :href="`/api/messages/${m.id}/attachment`"
+              target="_blank"
+              rel="noopener"
+              class="mt-2 block"
+              :title="m.attachmentName"
+            >
+              <img
+                v-if="isImage(m.attachmentType)"
+                :src="`/api/messages/${m.id}/attachment`"
+                :alt="m.attachmentName"
+                class="max-h-44 w-full rounded object-cover"
+              >
+              <span v-else class="inline-flex max-w-full items-center gap-1 rounded bg-black/10 px-2 py-1 text-sm">
+                <UIcon name="i-lucide-paperclip" class="size-4 shrink-0" />
+                <span class="truncate">{{ m.attachmentName }}</span>
+              </span>
+            </a>
             <p class="mt-3 text-sm opacity-80">
               — {{ m.author.name }} · {{ timeAgo(m.createdAt) }}
             </p>

@@ -7,7 +7,7 @@ const isAdmin = computed(() => user.value?.role === "ADMIN");
 
 const weekStart = ref(weekStartSunday(isoToday()));
 const { mealByCell, upsertMeal, deleteMeal, generateGroceries } = useMeals(weekStart);
-const { savedMeals, createSavedMeal, deleteSavedMeal } = useSavedMeals();
+const { savedMeals, createSavedMeal, updateSavedMeal, deleteSavedMeal } = useSavedMeals();
 
 const requestFetch = useRequestFetch();
 const { data: users } = await useAsyncData(
@@ -55,6 +55,17 @@ async function onDelete(id: string) {
 
 // --- Saved meals: drag a card onto a day cell (or pick one in the dialog) ---
 const savedDialogOpen = ref(false);
+// When set, the saved-meal dialog edits this meal; null means create a new one.
+const savedEditing = ref<SavedMeal | null>(null);
+
+function openSavedCreate() {
+  savedEditing.value = null;
+  savedDialogOpen.value = true;
+}
+function openSavedEdit(meal: SavedMeal) {
+  savedEditing.value = meal;
+  savedDialogOpen.value = true;
+}
 
 function onSavedDragStart(e: DragEvent, meal: SavedMeal) {
   e.dataTransfer?.setData("application/x-saved-meal", meal.id);
@@ -78,6 +89,12 @@ async function onCellDrop(date: string, slot: MealSlot, e: DragEvent) {
 }
 async function onSavedMealCreate(data: CreateSavedMealInput) {
   await createSavedMeal(data);
+}
+async function onSavedMealSave(data: CreateSavedMealInput) {
+  if (savedEditing.value)
+    await updateSavedMeal(savedEditing.value.id, data);
+  else
+    await createSavedMeal(data);
 }
 
 const generating = ref(false);
@@ -202,7 +219,7 @@ async function onGenerate() {
                 size="xs"
                 variant="soft"
                 aria-label="Save a meal"
-                @click="savedDialogOpen = true"
+                @click="openSavedCreate"
               />
             </div>
             <ul v-if="(savedMeals ?? []).length" class="flex flex-col gap-1 p-2">
@@ -223,6 +240,16 @@ async function onGenerate() {
                     {{ m.ingredients.split("\n").length }} ingredient{{ m.ingredients.split("\n").length === 1 ? "" : "s" }}
                   </p>
                 </div>
+                <UButton
+                  v-if="isAdmin"
+                  icon="i-lucide-pencil"
+                  size="xs"
+                  variant="ghost"
+                  color="neutral"
+                  class="opacity-0 transition group-hover:opacity-100"
+                  :aria-label="`Edit ${m.title}`"
+                  @click="openSavedEdit(m)"
+                />
                 <UButton
                   v-if="isAdmin"
                   icon="i-lucide-x"
@@ -250,8 +277,9 @@ async function onGenerate() {
 
     <SavedMealDialog
       :is-open="savedDialogOpen"
+      :meal="savedEditing"
       @close="savedDialogOpen = false"
-      @save="onSavedMealCreate"
+      @save="onSavedMealSave"
     />
 
     <MealDialog

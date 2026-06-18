@@ -27,6 +27,25 @@ export default defineEventHandler(async (event) => {
   ]);
   const choreById = new Map(chores.map(c => [c.id, c]));
 
+  // Current auto-boost per recurring chore (when enabled), so the neglected list
+  // shows the live bonus a parent is effectively handing out by leaving it undone.
+  const boostOn = await getBoolSetting("autoBoostEnabled");
+  const lastByChore = new Map<string, string>();
+  if (boostOn) {
+    const recurringIds = chores.filter(c => c.recurrence !== "ONCE").map(c => c.id);
+    if (recurringIds.length) {
+      const lastRows = await prisma.choreCompletion.groupBy({
+        by: ["choreId"],
+        where: { choreId: { in: recurringIds }, localDate: { lt: date } },
+        _max: { localDate: true },
+      });
+      for (const r of lastRows) {
+        if (r._max.localDate)
+          lastByChore.set(r.choreId, r._max.localDate);
+      }
+    }
+  }
+
   // Who does the most (completions + points earned in the window).
   const byUser = new Map<string, { completions: number; points: number }>();
   const byChore = new Map<string, number>();
@@ -62,6 +81,9 @@ export default defineEventHandler(async (event) => {
       recurrence: c.recurrence,
       area: c.area,
       completions: byChore.get(c.id) ?? 0,
+      boost: boostOn
+        ? computeBoost({ recurrence: c.recurrence, daysOfWeek: c.daysOfWeek, startDate: c.startDate, endDate: c.endDate, pausedUntil: c.pausedUntil, createdAt: c.createdAt.toISOString().slice(0, 10) }, lastByChore.get(c.id) ?? null, date)
+        : 0,
     }))
     .sort((a, b) => a.completions - b.completions)
     .slice(0, 10);

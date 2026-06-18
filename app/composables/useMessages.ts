@@ -13,6 +13,9 @@ export type Message = {
   createdAt: string;
   expiresAt: string;
   author: MessageAuthor;
+  attachmentName: string | null;
+  attachmentType: string | null;
+  attachmentSize: number | null;
 };
 
 export function useMessages() {
@@ -28,8 +31,20 @@ export function useMessages() {
   // Throws on validation errors (400) so the page can surface the message.
   // authorId defaults to the session user server-side; pass it to post "from"
   // another family member on the shared board.
-  async function postMessage(body: string, authorId?: string) {
-    await $fetch("/api/messages", { method: "POST", body: { body, authorId } });
+  // Sends multipart when a file is attached, JSON otherwise. authorId defaults
+  // to the session user server-side; pass it to post "from" another member.
+  async function postMessage(body: string, authorId?: string, file?: File | null) {
+    if (file) {
+      const fd = new FormData();
+      fd.append("body", body);
+      if (authorId)
+        fd.append("authorId", authorId);
+      fd.append("file", file);
+      await $fetch("/api/messages", { method: "POST", body: fd });
+    }
+    else {
+      await $fetch("/api/messages", { method: "POST", body: { body, authorId } });
+    }
     await refresh();
   }
 

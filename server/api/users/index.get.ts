@@ -12,9 +12,12 @@ export default defineEventHandler(async (_event) => {
           },
         },
       },
-      orderBy: {
-        name: "asc",
-      },
+      // Custom dashboard order (admin reorder writes todoOrder); name breaks
+      // ties and is the default when nobody's reordered yet.
+      orderBy: [
+        { todoOrder: "asc" },
+        { name: "asc" },
+      ],
     });
     return users;
   }
