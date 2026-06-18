@@ -360,6 +360,13 @@ model Message {
   createdAt DateTime @default(now())
   expiresAt DateTime // createdAt + 7 days (stored so expiry is configurable later)
 
+  // Optional single attachment (image/pdf/doc/sheet), stored on the files volume
+  // like documents. All null when the note has no file.
+  attachmentName       String?
+  attachmentStoredName String?
+  attachmentType       String?
+  attachmentSize       Int?
+
   @@index([expiresAt])
   @@map("messages")
 }

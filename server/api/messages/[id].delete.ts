@@ -13,6 +13,14 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "message id is required" });
   }
 
+  // Grab the attachment (if any) before deleting, so we can remove its file too.
+  const msg = await prisma.message.findUnique({
+    where: { id },
+    select: { attachmentStoredName: true },
+  });
   await prisma.message.deleteMany({ where: { id } });
+  if (msg?.attachmentStoredName) {
+    await deleteStoredFile(msg.attachmentStoredName);
+  }
   return { ok: true };
 });
