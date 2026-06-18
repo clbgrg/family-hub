@@ -27,6 +27,10 @@ export type ChoreBoardItem = {
   endDate: string | null;
   pausedUntil: string | null;
   rotate: boolean;
+  claimable: boolean;
+  claimedBy: string | null;
+  claimedById: string | null;
+  reward: { id: string; name: string } | null;
   assignee: ChoreAssignee | null;
   assigneeIds: string[];
   dueToday: boolean;
@@ -75,6 +79,8 @@ export type CreateChoreInput = {
   endDate?: string | null;
   pausedUntil?: string | null;
   rotate?: boolean;
+  claimable?: boolean;
+  rewardId?: string | null;
 };
 
 export type AreaGroup<T> = { area: AreaInfo | null; chores: T[] };

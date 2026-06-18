@@ -46,6 +46,10 @@ export default defineEventHandler(async (event) => {
     data.pausedUntil = dateOrNull(body.pausedUntil);
   if (typeof body?.rotate === "boolean")
     data.rotate = body.rotate;
+  if (typeof body?.claimable === "boolean")
+    data.claimable = body.claimable;
+  if ("rewardId" in body)
+    data.rewardId = String(body.rewardId ?? "").trim() || null;
 
   const rawAssignees: unknown = body?.assigneeIds;
   let assigneeIds: string[] | null = null;
@@ -77,7 +81,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, statusMessage: "Chore not found" });
     }
     if (code === "P2003") {
-      throw createError({ statusCode: 400, statusMessage: "assignee or area does not exist" });
+      throw createError({ statusCode: 400, statusMessage: "assignee, area, or reward does not exist" });
     }
     throw error;
   }

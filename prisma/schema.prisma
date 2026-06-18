@@ -206,10 +206,17 @@ model Chore {
   // Multi-assignee rotation: when true, only the on-duty assignee (by member
   // order, derived from the date) is due each occurrence, instead of everyone.
   rotate      Boolean         @default(false)
+  // Up-for-grabs: anyone in the assignee pool can claim it, first-come — a
+  // single shared completion per occurrence rather than one per assignee.
+  claimable   Boolean         @default(false)
+  // Optional fixed reward granted (as a pending redemption) on completion,
+  // independent of points. SetNull so deleting the reward just unlinks it.
+  rewardId    String?
 
   assignments ChoreAssignment[]
   completions ChoreCompletion[]
   area        Area?           @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  reward      Reward?         @relation(fields: [rewardId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -313,6 +320,7 @@ model Reward {
   updatedAt  DateTime @updatedAt
 
   redemptions Redemption[]
+  chores      Chore[]
 
   @@map("rewards")
 }

@@ -56,7 +56,12 @@ function startTimer(chore: ChoreBoardItem) {
 }
 
 function canToggle(chore: ChoreBoardItem) {
-  return isAdmin.value || user.value?.id === chore.assignee?.id;
+  if (isAdmin.value)
+    return true;
+  // Up-for-grabs: only the claimer can undo their own claim.
+  if (chore.claimable && chore.done)
+    return user.value?.id === chore.claimedById;
+  return user.value?.id === chore.assignee?.id;
 }
 function badgeTooltip(b: { label: string; description?: string | null; earnedAt?: string }) {
   const parts = [b.label];
@@ -207,6 +212,25 @@ async function onDelete(id: string) {
                       {{ chore.description }}
                     </p>
                   </div>
+                  <UTooltip v-if="chore.reward" :text="`Reward: ${chore.reward.name}`">
+                    <UIcon name="i-lucide-gift" class="size-4 shrink-0 text-primary" />
+                  </UTooltip>
+                  <UBadge
+                    v-if="chore.claimable && !chore.done"
+                    color="primary"
+                    variant="soft"
+                    size="sm"
+                  >
+                    Up for grabs
+                  </UBadge>
+                  <UBadge
+                    v-else-if="chore.claimable && chore.done"
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                  >
+                    claimed by {{ chore.claimedBy }}
+                  </UBadge>
                   <UBadge
                     color="neutral"
                     variant="soft"

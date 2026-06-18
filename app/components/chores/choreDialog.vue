@@ -24,9 +24,16 @@ const startDate = ref("");
 const endDate = ref("");
 const pausedUntil = ref("");
 const rotate = ref(false);
+const claimable = ref(false);
+const rewardId = ref("");
 const error = ref<string | null>(null);
 
 const { areas } = useAreas();
+const { rewards } = useRewards();
+const rewardOptions = computed(() => [
+  { label: "No reward", value: "" },
+  ...(rewards.value ?? []).filter(r => r.active).map(r => ({ label: r.name, value: r.id })),
+]);
 const areaOptions = computed(() => [
   { label: "No area", value: "" },
   ...(areas.value ?? []).map(a => ({
@@ -68,6 +75,8 @@ watch(
     endDate.value = chore?.endDate ?? "";
     pausedUntil.value = chore?.pausedUntil ?? "";
     rotate.value = chore?.rotate ?? false;
+    claimable.value = chore?.claimable ?? false;
+    rewardId.value = chore?.reward?.id ?? "";
     error.value = null;
   },
   { immediate: true },
@@ -110,6 +119,8 @@ function handleSave() {
     endDate: endDate.value || null,
     pausedUntil: pausedUntil.value || null,
     rotate: rotate.value,
+    claimable: claimable.value,
+    rewardId: rewardId.value || null,
   });
   emit("close");
 }
@@ -188,6 +199,21 @@ function handleSave() {
         </div>
 
         <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Reward (optional)</label>
+          <USelect
+            v-model="rewardId"
+            :items="rewardOptions"
+            option-attribute="label"
+            value-attribute="value"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
+          <p class="text-xs text-muted">
+            Completing it queues this reward for a parent to approve — separate from points.
+          </p>
+        </div>
+
+        <div class="space-y-2">
           <label class="block text-sm font-medium text-highlighted">For</label>
           <p class="text-xs text-muted">
             Pick one or more — each person checks off their own copy and earns the points.
@@ -240,6 +266,16 @@ function handleSave() {
             </p>
           </div>
           <UCheckbox v-model="rotate" />
+        </div>
+
+        <div v-if="assigneeIds.length > 1" class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <label class="block text-sm font-medium text-highlighted">Up for grabs</label>
+            <p class="text-xs text-muted">
+              Anyone in the list can claim it — first to do it gets the credit.
+            </p>
+          </div>
+          <UCheckbox v-model="claimable" />
         </div>
 
         <div class="flex gap-4">

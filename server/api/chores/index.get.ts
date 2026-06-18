@@ -19,13 +19,14 @@ export default defineEventHandler(async (event) => {
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     include: {
       area: { select: { id: true, name: true, icon: true, order: true } },
+      reward: { select: { id: true, name: true } },
       assignments: {
         include: { user: { select: { id: true, name: true, avatar: true, color: true, todoOrder: true } } },
       },
       // Only TODAY's completions — doneEver (which needs history) only matters
       // for ONCE chores, fetched separately below so the board query stays
-      // bounded as completion history grows.
-      completions: { where: { localDate: date }, select: { userId: true } },
+      // bounded as completion history grows. user is for claimable "claimed by".
+      completions: { where: { localDate: date }, select: { userId: true, user: { select: { name: true } } } },
     },
   });
 
@@ -38,6 +39,7 @@ export default defineEventHandler(async (event) => {
       })
     : [];
   const everDoneOnce = new Set(everDone.map(e => `${e.choreId}:${e.userId}`));
+  const everDoneOnceByChore = new Set(everDone.map(e => e.choreId)); // any claimer (claimable ONCE)
 
   return chores.flatMap((c) => {
     const doneToday = new Set(c.completions.map(x => x.userId));
@@ -46,17 +48,28 @@ export default defineEventHandler(async (event) => {
       .map(a => a.user)
       .sort((a, b) => a.todoOrder - b.todoOrder || a.name.localeCompare(b.name));
     // A rotating chore shows only the on-duty assignee for the day; the others'
-    // copies are hidden until their turn comes round.
-    const onDuty = c.rotate && assignees.length > 1
+    // copies are hidden until their turn comes round. Claimable overrides
+    // rotation — the whole pool sees it until someone grabs it.
+    const onDuty = c.rotate && !c.claimable && assignees.length > 1
       ? [assignees[rotationIndex(c.recurrence, date, assignees.length)]!]
       : assignees;
 
+    // Claimable chores share ONE completion across the pool (first-come), so the
+    // done state and claimer are the same on every assignee's row.
+    const claimerName = c.claimable && c.completions.length > 0 ? (c.completions[0]!.user?.name ?? null) : null;
+    const claimerId = c.claimable && c.completions.length > 0 ? c.completions[0]!.userId : null;
+
     return onDuty.map((user) => {
+      const claimedToday = c.claimable ? c.completions.length > 0 : doneToday.has(user.id);
+      const doneEver = c.claimable
+        ? (c.completions.length > 0 || everDoneOnceByChore.has(c.id))
+        : (doneToday.has(user.id) || everDoneOnce.has(`${c.id}:${user.id}`));
+
       const { dueToday, done } = choreDayStatus({
         recurrence: c.recurrence,
         daysOfWeek: c.daysOfWeek,
-        doneEver: doneToday.has(user.id) || everDoneOnce.has(`${c.id}:${user.id}`),
-        doneToday: doneToday.has(user.id),
+        doneEver,
+        doneToday: claimedToday,
         localDate: date,
         startDate: c.startDate,
         endDate: c.endDate,
@@ -76,6 +89,10 @@ export default defineEventHandler(async (event) => {
         endDate: c.endDate,
         pausedUntil: c.pausedUntil,
         rotate: c.rotate,
+        claimable: c.claimable,
+        claimedBy: claimerName,
+        claimedById: claimerId,
+        reward: c.reward,
         assignee: user,
         assigneeIds: c.assignments.map(a => a.userId),
         dueToday,

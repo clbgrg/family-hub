@@ -119,8 +119,16 @@ const celebration = ref<{ name: string; pointsToday: number; streak: number; new
 function canToggle(assigneeId: string | undefined) {
   return isAdmin.value || user.value?.id === assigneeId;
 }
+function canToggleChore(chore: ChoreBoardItem) {
+  if (isAdmin.value)
+    return true;
+  // Up-for-grabs: only the claimer can undo their own claim.
+  if (chore.claimable && chore.done)
+    return user.value?.id === chore.claimedById;
+  return user.value?.id === chore.assignee?.id;
+}
 async function toggleChore(chore: ChoreBoardItem) {
-  if (!canToggle(chore.assignee?.id) || !chore.assignee)
+  if (!canToggleChore(chore) || !chore.assignee)
     return;
   const result = await setDone(chore.id, !chore.done, chore.assignee.id);
   if (result?.allDoneToday) {
@@ -297,14 +305,26 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
               >
                 <UCheckbox
                   :model-value="chore.done"
-                  :disabled="!canToggle(chore.assignee?.id)"
+                  :disabled="!canToggleChore(chore)"
                   @update:model-value="toggleChore(chore)"
                 />
                 <span class="truncate" :class="chore.done ? 'line-through' : ''">{{ chore.title }}</span>
+                <UIcon
+                  v-if="chore.reward"
+                  name="i-lucide-gift"
+                  class="size-3.5 shrink-0 text-primary"
+                  :title="`Reward: ${chore.reward.name}`"
+                />
+                <UIcon
+                  v-if="chore.claimable && !chore.done"
+                  name="i-lucide-hand"
+                  class="size-3.5 shrink-0 text-primary"
+                  title="Up for grabs"
+                />
                 <span class="shrink-0 text-xs text-muted">{{ recurrenceLabel(chore) }}</span>
                 <span class="ml-auto shrink-0 text-xs text-muted">+{{ chore.points }}</span>
                 <UButton
-                  v-if="!chore.done && canToggle(chore.assignee?.id)"
+                  v-if="!chore.done && canToggleChore(chore)"
                   icon="i-lucide-timer"
                   size="xs"
                   variant="ghost"

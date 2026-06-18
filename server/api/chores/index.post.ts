@@ -33,6 +33,8 @@ export default defineEventHandler(async (event) => {
   const endDate = dateOrNull(body?.endDate);
   const pausedUntil = dateOrNull(body?.pausedUntil);
   const rotate = body?.rotate === true;
+  const claimable = body?.claimable === true;
+  const rewardId = String(body?.rewardId ?? "").trim() || null;
 
   const maxOrder = await prisma.chore.aggregate({ _max: { order: true } });
 
@@ -49,6 +51,8 @@ export default defineEventHandler(async (event) => {
         endDate,
         pausedUntil,
         rotate,
+        claimable,
+        rewardId,
         order: ((maxOrder._max?.order) || 0) + 1,
         assignments: { create: assigneeIds.map(userId => ({ userId })) },
       },
@@ -57,7 +61,7 @@ export default defineEventHandler(async (event) => {
   }
   catch (error) {
     if ((error as { code?: string })?.code === "P2003") {
-      throw createError({ statusCode: 400, statusMessage: "assignee or area does not exist" });
+      throw createError({ statusCode: 400, statusMessage: "assignee, area, or reward does not exist" });
     }
     throw error;
   }
