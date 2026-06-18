@@ -33,6 +33,9 @@ const requireElevatedAdminMock = vi.fn(async () => ({
   user: { id: "test-admin", name: "Test Admin", role: "ADMIN" },
   elevatedUntil: Date.now() + 300_000,
 }));
+const requireUserSessionMock = vi.fn(async () => ({
+  user: { id: "test-user", name: "Test User", role: "MEMBER" },
+}));
 
 vi.stubGlobal("defineEventHandler", defineEventHandlerMock);
 vi.stubGlobal("readBody", readBodyMock);
@@ -42,6 +45,7 @@ vi.stubGlobal("getQuery", getQueryMock);
 vi.stubGlobal("setResponseHeaders", setResponseHeadersMock);
 vi.stubGlobal("requireAdmin", requireAdminMock);
 vi.stubGlobal("requireElevatedAdmin", requireElevatedAdminMock);
+vi.stubGlobal("requireUserSession", requireUserSessionMock);
 
 class EventSourceMock {
   static readonly CONNECTING = 0;

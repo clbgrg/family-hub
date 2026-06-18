@@ -22,7 +22,6 @@ const requestFetch = useRequestFetch();
 const today = isoToday();
 const { count: unreadNotes } = useUnreadMessages();
 const { startTimerFor } = useTaskTimer();
-const { pinnedNoteTitle, pinnedNoteBody } = useFamilyConfig();
 
 // Shared asyncData keys with the chores page, so a check-off here refreshes
 // the board there (and vice versa) — plus interactive setDone + celebration.
@@ -207,22 +206,7 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
     </div>
 
     <ClientOnly>
-      <div
-        v-if="pinnedNoteBody"
-        class="mx-4 mt-4 rounded-lg border border-primary/30 bg-primary/10 p-4"
-      >
-        <div class="flex items-start gap-3">
-          <UIcon name="i-lucide-pin" class="mt-0.5 size-5 shrink-0 text-primary" />
-          <div class="min-w-0">
-            <p v-if="pinnedNoteTitle" class="font-semibold text-highlighted">
-              {{ pinnedNoteTitle }}
-            </p>
-            <p class="whitespace-pre-wrap text-sm">
-              {{ pinnedNoteBody }}
-            </p>
-          </div>
-        </div>
-      </div>
+      <FamilyBulletin />
       <NuxtLink
         v-if="unreadNotes > 0"
         to="/messages"
