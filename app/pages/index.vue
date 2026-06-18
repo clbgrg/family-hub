@@ -340,7 +340,18 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
                   title="Up for grabs"
                 />
                 <span class="shrink-0 text-xs text-muted">{{ recurrenceLabel(chore) }}</span>
-                <span class="ml-auto shrink-0 text-xs text-muted">+{{ chore.points }}</span>
+                <UBadge
+                  v-if="chore.boost"
+                  color="primary"
+                  variant="soft"
+                  size="sm"
+                  icon="i-lucide-trending-up"
+                  class="ml-auto shrink-0"
+                  :title="`Neglected chore — boosted +${chore.boost}`"
+                >
+                  +{{ chore.boost }}
+                </UBadge>
+                <span class="shrink-0 text-xs text-muted" :class="{ 'ml-auto': !chore.boost }">+{{ chore.points }}</span>
                 <UButton
                   v-if="!chore.done && canToggleChore(chore)"
                   icon="i-lucide-timer"

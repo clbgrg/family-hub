@@ -8,6 +8,7 @@ const labelInput = ref("");
 const gradeInput = ref("");
 const pinnedTitle = ref("");
 const pinnedBody = ref("");
+const boostEnabled = ref(false);
 const saved = ref(false);
 
 // Seed inputs from the saved config. Only the initial load and a post-save
@@ -17,6 +18,7 @@ watchEffect(() => {
   gradeInput.value = config.value.gradeScale ?? "";
   pinnedTitle.value = config.value.pinnedNoteTitle ?? "";
   pinnedBody.value = config.value.pinnedNoteBody ?? "";
+  boostEnabled.value = config.value.autoBoostEnabled === "true";
 });
 
 async function onSave() {
@@ -25,6 +27,7 @@ async function onSave() {
     gradeScale: gradeInput.value.trim(),
     pinnedNoteTitle: pinnedTitle.value.trim(),
     pinnedNoteBody: pinnedBody.value.trim(),
+    autoBoostEnabled: boostEnabled.value ? "true" : "false",
   }));
   saved.value = true;
   setTimeout(() => {
@@ -80,6 +83,14 @@ async function onSave() {
       />
       <p class="text-xs text-muted">
         Shown to everyone at the top of the dashboard — a weekly verse, reminder, or family message.
+      </p>
+    </div>
+
+    <div class="space-y-2">
+      <label class="block text-sm font-medium text-highlighted">Automatic point-boosting</label>
+      <UCheckbox v-model="boostEnabled" label="Boost neglected chores automatically" />
+      <p class="text-xs text-muted">
+        When a recurring chore keeps getting skipped, its {{ pointsLabel }} climb a little each missed day (up to a cap) until someone does it — then it resets. Off by default.
       </p>
     </div>
 

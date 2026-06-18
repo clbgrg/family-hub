@@ -21,6 +21,8 @@ export type AnalyticsChore = {
   recurrence: "ONCE" | "DAILY" | "WEEKLY";
   area: { id: string; name: string; icon: string | null } | null;
   completions: number;
+  /** Auto point-boost the chore currently carries (0 = none / disabled). */
+  boost: number;
 };
 
 export type Analytics = {

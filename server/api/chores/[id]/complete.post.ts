@@ -54,6 +54,24 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Auto point-boost: a neglected recurring chore is worth more. Derive the
+  // bonus from the last completion strictly before today and freeze base+bonus
+  // into the completion row, so the credited points never drift afterwards and
+  // the next occurrence (now that it's been done) resets to base.
+  let awardPoints = chore.points;
+  if (chore.recurrence !== "ONCE" && await getBoolSetting("autoBoostEnabled")) {
+    const last = await prisma.choreCompletion.findFirst({
+      where: { choreId, localDate: { lt: localDate } },
+      orderBy: { localDate: "desc" },
+      select: { localDate: true },
+    });
+    awardPoints += computeBoost(
+      { recurrence: chore.recurrence, daysOfWeek: chore.daysOfWeek, startDate: chore.startDate, endDate: chore.endDate, pausedUntil: chore.pausedUntil, createdAt: chore.createdAt.toISOString().slice(0, 10) },
+      last?.localDate ?? null,
+      localDate,
+    );
+  }
+
   // Record the completion (idempotent per assignee). Track whether it's new so
   // a fixed reward is granted exactly once per occurrence.
   let createdNew = false;
@@ -63,7 +81,7 @@ export default defineEventHandler(async (event) => {
     });
     if (!existing) {
       await prisma.choreCompletion.create({
-        data: { choreId, userId: targetUserId, completedById: session.user.id, localDate, points: chore.points },
+        data: { choreId, userId: targetUserId, completedById: session.user.id, localDate, points: awardPoints },
       });
       createdNew = true;
     }
@@ -71,7 +89,7 @@ export default defineEventHandler(async (event) => {
   else {
     try {
       await prisma.choreCompletion.create({
-        data: { choreId, userId: targetUserId, completedById: session.user.id, localDate, points: chore.points },
+        data: { choreId, userId: targetUserId, completedById: session.user.id, localDate, points: awardPoints },
       });
       createdNew = true;
     }

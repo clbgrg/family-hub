@@ -35,6 +35,8 @@ export type ChoreBoardItem = {
   assigneeIds: string[];
   dueToday: boolean;
   done: boolean;
+  /** Auto point-boost a neglected chore carries on this date (0 = none). */
+  boost: number;
 };
 
 export type NewBadge = {

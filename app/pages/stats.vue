@@ -105,6 +105,16 @@ function areaLabel(a: { name: string; icon: string | null }) {
                   {{ recurrenceLabel(c) }} · {{ c.completions }}× in {{ analytics.windowDays }}d · {{ c.points }} {{ pointsLabel }}
                 </p>
               </div>
+              <UBadge
+                v-if="c.boost"
+                color="primary"
+                variant="soft"
+                size="sm"
+                icon="i-lucide-trending-up"
+                :title="`Auto-boosted +${c.boost} right now`"
+              >
+                +{{ c.boost }} now
+              </UBadge>
               <UButton
                 v-if="isAdmin"
                 size="xs"

@@ -18,11 +18,13 @@ export function useFamilyConfig() {
   // Pinned weekly family note shown at the top of the dashboard.
   const pinnedNoteTitle = computed(() => (config.value.pinnedNoteTitle ?? "").trim());
   const pinnedNoteBody = computed(() => (config.value.pinnedNoteBody ?? "").trim());
+  // Automatic point-boosting for neglected recurring chores (off by default).
+  const autoBoostEnabled = computed(() => config.value.autoBoostEnabled === "true");
 
   async function save(updates: Record<string, string>) {
     await $fetch("/api/settings", { method: "PUT", body: updates });
     await refresh();
   }
 
-  return { config, pointsLabel, gradeScale, pinnedNoteTitle, pinnedNoteBody, save, refresh };
+  return { config, pointsLabel, gradeScale, pinnedNoteTitle, pinnedNoteBody, autoBoostEnabled, save, refresh };
 }
