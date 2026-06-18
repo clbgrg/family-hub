@@ -7,6 +7,7 @@ export type SchoolItem = {
   title: string;
   description: string | null;
   points: number;
+  grade: string | null;
   dueDate: string;
   userId: string;
   done: boolean;
@@ -17,6 +18,7 @@ export type CreateSchoolItemInput = {
   title: string;
   description?: string;
   points: number;
+  grade?: string | null;
   dueDate: string;
   userIds: string[];
 };

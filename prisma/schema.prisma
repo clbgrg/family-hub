@@ -32,6 +32,7 @@ model User {
   calendarEvents CalendarEventUser[]
   choreAssignments ChoreAssignment[] @relation("ChoreAssignmentUser")
   choreCompletions ChoreCompletion[] @relation("ChoreCompletionUser")
+  choreCompletionsMarked ChoreCompletion[] @relation("ChoreCompletionMarkedBy")
   badges           UserBadge[]
   mealsCooking     Meal[]            @relation("MealCook")
   messages         Message[]
@@ -167,6 +168,22 @@ enum Role {
   MEMBER
 }
 
+// A configurable chore Area / zone ("🧼 Kitchen", "🛏️ Bedroom") used to group a
+// person's chores on the board. Family-configurable (managed in Settings) —
+// never hardcoded, so another family seeds their own areas.
+model Area {
+  id        String   @id @default(cuid())
+  name      String
+  icon      String? // emoji or icon name shown as the group header
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chores Chore[]
+
+  @@map("areas")
+}
+
 // A chore template assigned to one or more family members ("Make bed" for
 // both kids — each completes their own copy and earns the points; editing the
 // chore once applies to everyone). Completion is tracked as ChoreCompletion
@@ -181,9 +198,25 @@ model Chore {
   daysOfWeek  Int[]           @default([]) // for WEEKLY: 0=Sun .. 6=Sat
   order       Int             @default(0)
   active      Boolean         @default(true)
+  areaId      String?
+  // Scheduling window + pause (all client-local YYYY-MM-DD; null = unbounded).
+  startDate   String?
+  endDate     String?
+  pausedUntil String?
+  // Multi-assignee rotation: when true, only the on-duty assignee (by member
+  // order, derived from the date) is due each occurrence, instead of everyone.
+  rotate      Boolean         @default(false)
+  // Up-for-grabs: anyone in the assignee pool can claim it, first-come — a
+  // single shared completion per occurrence rather than one per assignee.
+  claimable   Boolean         @default(false)
+  // Optional fixed reward granted (as a pending redemption) on completion,
+  // independent of points. SetNull so deleting the reward just unlinks it.
+  rewardId    String?
 
   assignments ChoreAssignment[]
   completions ChoreCompletion[]
+  area        Area?           @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  reward      Reward?         @relation(fields: [rewardId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -213,6 +246,11 @@ model ChoreCompletion {
   chore       Chore    @relation(fields: [choreId], references: [id], onDelete: Cascade)
   userId      String
   user        User     @relation("ChoreCompletionUser", fields: [userId], references: [id], onDelete: Cascade)
+  // Who actually checked it off (the session user) — distinct from userId, the
+  // credited assignee. Lets history show "a parent marked this for the kid".
+  // SetNull so the completion (and its points) survive that parent's deletion.
+  completedById String?
+  completedBy   User?    @relation("ChoreCompletionMarkedBy", fields: [completedById], references: [id], onDelete: SetNull)
   localDate   String // client's local date "YYYY-MM-DD"
   points      Int
   completedAt DateTime @default(now())
@@ -282,6 +320,7 @@ model Reward {
   updatedAt  DateTime @updatedAt
 
   redemptions Redemption[]
+  chores      Chore[]
 
   @@map("rewards")
 }
@@ -399,6 +438,7 @@ model SchoolItem {
   title       String
   description String?
   points      Int      @default(0)
+  grade       String? // optional mark, e.g. "A" or "92%" (free-text or from the configured scale)
   dueDate     String // client-local "YYYY-MM-DD"
   userId      String
   user        User     @relation("SchoolItemUser", fields: [userId], references: [id], onDelete: Cascade)
@@ -440,4 +480,28 @@ model SchoolNote {
 
   @@unique([userId, date])
   @@map("school_notes")
+}
+
+// Household configuration as simple key/value strings (points label, grade
+// scale, …). One row per setting; defaults live in the app, so a missing key
+// just means "use the default". Admin-managed.
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
+}
+
+// A family document/media file. The bytes live on disk (filesDir / a Docker
+// volume); this row holds metadata + the generated on-disk name. The original
+// filename is shown to users; storedName is server-generated (no traversal).
+model Document {
+  id         String   @id @default(cuid())
+  name       String // original/display filename
+  storedName String // generated on-disk name
+  type       String // MIME type
+  size       Int // bytes
+  createdAt  DateTime @default(now())
+
+  @@map("documents")
 }

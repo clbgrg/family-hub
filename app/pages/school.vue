@@ -195,6 +195,13 @@ async function onItemDelete(id: string) {
                   </p>
                 </div>
                 <UBadge
+                  v-if="item.grade"
+                  color="primary"
+                  variant="soft"
+                >
+                  {{ item.grade }}
+                </UBadge>
+                <UBadge
                   v-if="item.points > 0"
                   color="neutral"
                   variant="soft"

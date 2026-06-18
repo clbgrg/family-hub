@@ -30,7 +30,10 @@ export default defineEventHandler(async (event) => {
 
   const chore = await prisma.chore.findUnique({
     where: { id: choreId },
-    include: { assignments: { select: { userId: true } } },
+    include: {
+      assignments: { select: { userId: true } },
+      reward: { select: { id: true, name: true } },
+    },
   });
   if (!chore) {
     throw createError({ statusCode: 404, statusMessage: "Chore not found" });
@@ -39,28 +42,58 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "That chore isn't assigned to that member" });
   }
 
-  // Record the completion (idempotent per assignee).
+  // Up-for-grabs: first claim wins. Reject if someone else already took it
+  // (per day for recurring; ever for ONCE); the same user re-tapping is fine.
+  if (chore.claimable) {
+    const existingClaim = await prisma.choreCompletion.findFirst({
+      where: chore.recurrence === "ONCE" ? { choreId } : { choreId, localDate },
+      select: { userId: true },
+    });
+    if (existingClaim && existingClaim.userId !== targetUserId) {
+      throw createError({ statusCode: 409, statusMessage: "Already claimed by someone else" });
+    }
+  }
+
+  // Record the completion (idempotent per assignee). Track whether it's new so
+  // a fixed reward is granted exactly once per occurrence.
+  let createdNew = false;
   if (chore.recurrence === "ONCE") {
     const existing = await prisma.choreCompletion.findFirst({
       where: { choreId, userId: targetUserId },
     });
     if (!existing) {
       await prisma.choreCompletion.create({
-        data: { choreId, userId: targetUserId, localDate, points: chore.points },
+        data: { choreId, userId: targetUserId, completedById: session.user.id, localDate, points: chore.points },
       });
+      createdNew = true;
     }
   }
   else {
     try {
       await prisma.choreCompletion.create({
-        data: { choreId, userId: targetUserId, localDate, points: chore.points },
+        data: { choreId, userId: targetUserId, completedById: session.user.id, localDate, points: chore.points },
       });
+      createdNew = true;
     }
     catch (error) {
       // P2002 = double-tap same day, fine
       if ((error as { code?: string })?.code !== "P2002")
         throw error;
     }
+  }
+
+  // Fixed reward: queue it as a pending redemption for a parent to approve.
+  // pointsCost 0 — it's earned by doing the chore, not bought with points.
+  if (createdNew && chore.reward) {
+    await prisma.redemption.create({
+      data: {
+        rewardId: chore.reward.id,
+        userId: targetUserId,
+        rewardName: chore.reward.name,
+        pointsCost: 0,
+        status: "PENDING",
+      },
+    });
   }
 
   const [{ newBadges, stats }, allDoneToday] = await Promise.all([

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { ChoreBoardItem, CreateChoreInput, NewBadge } from "~/composables/useChores";
 
+import { groupChoresByArea, recurrenceLabel } from "~/composables/useChores";
+
 const { user } = useUserSession();
 const isAdmin = computed(() => user.value?.role === "ADMIN");
 // Opening the add/edit dialog needs a fresh parent PIN (shared kiosk session);
@@ -8,6 +10,7 @@ const isAdmin = computed(() => user.value?.role === "ADMIN");
 const { gate } = useAdminGate();
 
 const { chores, pointsByUser, statsByUser, leaderboard, createChore, updateChore, deleteChore, setDone } = useChores();
+const { pointsLabel } = useFamilyConfig();
 
 // useRequestFetch forwards the cookie on SSR (plain $fetch would 401).
 const requestFetch = useRequestFetch();
@@ -22,12 +25,14 @@ const board = computed(() => {
   const due = (chores.value ?? []).filter(c => c.dueToday);
   return (users.value ?? []).map((u) => {
     const s = statsByUser.value[u.id];
+    const userChores = due.filter(c => c.assignee?.id === u.id);
     return {
       user: u,
       points: pointsByUser.value[u.id] ?? 0,
       streak: s?.streak ?? 0,
       badges: s?.badges ?? [],
-      chores: due.filter(c => c.assignee?.id === u.id),
+      chores: userChores,
+      choreGroups: groupChoresByArea(userChores),
     };
   });
 });
@@ -52,7 +57,12 @@ function startTimer(chore: ChoreBoardItem) {
 }
 
 function canToggle(chore: ChoreBoardItem) {
-  return isAdmin.value || user.value?.id === chore.assignee?.id;
+  if (isAdmin.value)
+    return true;
+  // Up-for-grabs: only the claimer can undo their own claim.
+  if (chore.claimable && chore.done)
+    return user.value?.id === chore.claimedById;
+  return user.value?.id === chore.assignee?.id;
 }
 function badgeTooltip(b: { label: string; description?: string | null; earnedAt?: string }) {
   const parts = [b.label];
@@ -127,7 +137,7 @@ async function onDelete(id: string) {
         >
           <span class="text-muted">{{ i + 1 }}.</span>
           {{ r.user!.name }}
-          <span class="font-medium">{{ r.pointsWeek }} pts</span>
+          <span class="font-medium">{{ r.pointsWeek }} {{ pointsLabel }}</span>
         </span>
       </div>
 
@@ -160,58 +170,103 @@ async function onDelete(id: string) {
                 variant="subtle"
                 size="lg"
               >
-                {{ group.points }} pts
+                {{ group.points }} {{ pointsLabel }}
               </UBadge>
             </div>
           </template>
 
-          <ul class="flex flex-col gap-1">
-            <li
-              v-for="chore in group.chores"
-              :key="`${chore.id}:${group.user.id}`"
-              class="flex items-center gap-3 rounded-lg p-2 hover:bg-elevated"
-              :class="chore.done ? 'opacity-60' : ''"
+          <div class="flex flex-col gap-3">
+            <div
+              v-for="grp in group.choreGroups"
+              :key="grp.area?.id ?? '__none__'"
             >
-              <UCheckbox
-                :model-value="chore.done"
-                :disabled="!canToggle(chore)"
-                size="xl"
-                @update:model-value="toggle(chore)"
-              />
-              <div class="min-w-0 flex-1">
-                <p class="truncate font-medium" :class="chore.done ? 'line-through' : ''">
-                  {{ chore.title }}
-                </p>
-                <p v-if="chore.description" class="truncate text-sm text-muted">
-                  {{ chore.description }}
-                </p>
+              <div
+                v-if="group.choreGroups.length > 1 || grp.area"
+                class="mb-1 flex items-center gap-1.5 px-2 text-xs font-semibold uppercase tracking-wide text-muted"
+              >
+                <span v-if="grp.area?.icon && !grp.area.icon.startsWith('i-')" class="text-sm">{{ grp.area.icon }}</span>
+                <UIcon
+                  v-else-if="grp.area"
+                  :name="grp.area.icon || 'i-lucide-folder'"
+                  class="size-3.5"
+                />
+                <span>{{ grp.area?.name ?? "Other" }}</span>
               </div>
-              <UBadge color="neutral" variant="soft">
-                +{{ chore.points }}
-              </UBadge>
-              <UButton
-                v-if="!chore.done && canToggle(chore)"
-                icon="i-lucide-timer"
-                size="xs"
-                variant="ghost"
-                color="neutral"
-                aria-label="Start a timer for this chore"
-                @click="startTimer(chore)"
-              />
-              <UButton
-                v-if="isAdmin"
-                icon="i-lucide-pencil"
-                size="xs"
-                variant="ghost"
-                color="neutral"
-                aria-label="Edit chore"
-                @click="editChore(chore)"
-              />
-            </li>
-            <li v-if="group.chores.length === 0" class="p-2 text-sm text-muted">
+              <ul class="flex flex-col gap-1">
+                <li
+                  v-for="chore in grp.chores"
+                  :key="`${chore.id}:${group.user.id}`"
+                  class="flex items-center gap-3 rounded-lg p-2 hover:bg-elevated"
+                  :class="chore.done ? 'opacity-60' : ''"
+                >
+                  <UCheckbox
+                    :model-value="chore.done"
+                    :disabled="!canToggle(chore)"
+                    size="xl"
+                    @update:model-value="toggle(chore)"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate font-medium" :class="chore.done ? 'line-through' : ''">
+                      {{ chore.title }}
+                    </p>
+                    <p v-if="chore.description" class="truncate text-sm text-muted">
+                      {{ chore.description }}
+                    </p>
+                  </div>
+                  <UTooltip v-if="chore.reward" :text="`Reward: ${chore.reward.name}`">
+                    <UIcon name="i-lucide-gift" class="size-4 shrink-0 text-primary" />
+                  </UTooltip>
+                  <UBadge
+                    v-if="chore.claimable && !chore.done"
+                    color="primary"
+                    variant="soft"
+                    size="sm"
+                  >
+                    Up for grabs
+                  </UBadge>
+                  <UBadge
+                    v-else-if="chore.claimable && chore.done"
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                  >
+                    claimed by {{ chore.claimedBy }}
+                  </UBadge>
+                  <UBadge
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                  >
+                    {{ recurrenceLabel(chore) }}
+                  </UBadge>
+                  <UBadge color="neutral" variant="soft">
+                    +{{ chore.points }}
+                  </UBadge>
+                  <UButton
+                    v-if="!chore.done && canToggle(chore)"
+                    icon="i-lucide-timer"
+                    size="xs"
+                    variant="ghost"
+                    color="neutral"
+                    aria-label="Start a timer for this chore"
+                    @click="startTimer(chore)"
+                  />
+                  <UButton
+                    v-if="isAdmin"
+                    icon="i-lucide-pencil"
+                    size="xs"
+                    variant="ghost"
+                    color="neutral"
+                    aria-label="Edit chore"
+                    @click="editChore(chore)"
+                  />
+                </li>
+              </ul>
+            </div>
+            <p v-if="group.chores.length === 0" class="p-2 text-sm text-muted">
               No chores today 🎉
-            </li>
-          </ul>
+            </p>
+          </div>
         </UCard>
       </div>
       <template #fallback>

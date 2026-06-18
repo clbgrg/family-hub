@@ -27,12 +27,13 @@ export default defineEventHandler(async (event) => {
 
   const points = Math.max(0, Number.parseInt(String(body?.points), 10) || 0);
   const description = String(body?.description ?? "").trim() || null;
+  const grade = String(body?.grade ?? "").trim() || null;
 
   try {
     return await prisma.$transaction(
       userIds.map(userId =>
         prisma.schoolItem.create({
-          data: { title, description, points, dueDate, userId },
+          data: { title, description, points, grade, dueDate, userId },
         }),
       ),
     );

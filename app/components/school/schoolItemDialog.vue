@@ -18,7 +18,14 @@ const description = ref("");
 const points = ref(0);
 const dueDate = ref("");
 const userIds = ref<string[]>([]);
+const grade = ref("");
 const error = ref<string | null>(null);
+
+const { gradeScale } = useFamilyConfig();
+const gradeOptions = computed(() => [
+  { label: "—", value: "" },
+  ...gradeScale.value.map(g => ({ label: g, value: g })),
+]);
 
 const watchSource = computed(() => ({ isOpen: props.isOpen, item: props.item }));
 watch(
@@ -29,6 +36,7 @@ watch(
     title.value = item?.title ?? "";
     description.value = item?.description ?? "";
     points.value = item?.points ?? 0;
+    grade.value = item?.grade ?? "";
     dueDate.value = item?.dueDate ?? isoToday();
     userIds.value = item ? [item.userId] : (props.users[0] ? [props.users[0].id] : []);
     error.value = null;
@@ -65,6 +73,7 @@ function handleSave() {
     title: title.value.trim(),
     description: description.value.trim(),
     points: Math.max(0, Number(points.value) || 0),
+    grade: grade.value.trim() || null,
     dueDate: dueDate.value,
     userIds: userIds.value,
   });
@@ -141,6 +150,26 @@ function handleSave() {
               :ui="{ base: 'w-full' }"
             />
           </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Grade (optional)</label>
+          <USelect
+            v-if="gradeScale.length"
+            v-model="grade"
+            :items="gradeOptions"
+            option-attribute="label"
+            value-attribute="value"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
+          <UInput
+            v-else
+            v-model="grade"
+            placeholder="e.g. A or 92%"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
         </div>
 
         <div class="space-y-2">

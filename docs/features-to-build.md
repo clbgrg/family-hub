@@ -2,6 +2,8 @@
 
 > **Audited against upstream commit `ffcd435` (2026-04-02).** Findings folded into the tables below. The one structural surprise: **Skylite-UX has no authentication** — see Priority 0.
 
+> **Status (2026-06): the app is feature-complete and running; the tables below are the original pre-build plan, kept for history.** Priority 0–3 are all built and on `main`. A later June 2026 batch (branch `feat/areas-history-scheduling`, pushed, unmerged) added: chore **areas/zones**; **who-marked + a unified activity history**; advanced chore **scheduling** (start/end window, vacation pause, deterministic rotation, up-for-grabs/claimable, per-chore fixed rewards); a **stats** page (who does what / what's neglected) + manual point-boost; **household config** (configurable points label + grade scale, plus school-item grades); and a family **documents library** (upload/download/delete on a Docker volume). Deferred from that batch: dashboard configuration (per-device toggle) and message attachments. See `CLAUDE.md` for the current state.
+
 ## Priority 0 — Authentication (prerequisite, not optional)
 
 Upstream ships *User Management* (profiles) but **no login/auth**: no password or PIN on the `User` model, no sessions, no auth middleware, no login page (`index.vue` has a literal `// TODO: Authenticate user or route to login page`). Everything below that says "per-person," "own chores," "parent approves," or "admin vs member" depends on identity that doesn't exist yet.

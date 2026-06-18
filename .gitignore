@@ -30,6 +30,7 @@ logs
 # Family Hub — runtime data & backups (never commit)
 backups/
 /photos/
+/files/
 *.sql.bak
 
 # Committed-by-upstream coverage artifact — regenerated per run

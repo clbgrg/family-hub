@@ -1082,6 +1082,26 @@ onMounted(async () => {
           class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
         >
           <h2 class="text-lg font-semibold text-highlighted mb-4">
+            Family preferences
+          </h2>
+          <SettingsFamilyPreferences />
+        </div>
+
+        <div
+          v-if="isAdmin && isUnlocked"
+          class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
+        >
+          <h2 class="text-lg font-semibold text-highlighted mb-4">
+            Chore areas
+          </h2>
+          <SettingsAreaManager />
+        </div>
+
+        <div
+          v-if="isAdmin && isUnlocked"
+          class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
+        >
+          <h2 class="text-lg font-semibold text-highlighted mb-4">
             Badges
           </h2>
           <SettingsBadgeManager />

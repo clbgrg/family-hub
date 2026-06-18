@@ -31,6 +31,25 @@ export default defineEventHandler(async (event) => {
       ? body.daysOfWeek.filter((d: unknown) => Number.isInteger(d) && (d as number) >= 0 && (d as number) <= 6)
       : [];
   }
+  if ("areaId" in body)
+    data.areaId = String(body.areaId ?? "").trim() || null;
+
+  const dateOrNull = (v: unknown) => {
+    const s = String(v ?? "").trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+  };
+  if ("startDate" in body)
+    data.startDate = dateOrNull(body.startDate);
+  if ("endDate" in body)
+    data.endDate = dateOrNull(body.endDate);
+  if ("pausedUntil" in body)
+    data.pausedUntil = dateOrNull(body.pausedUntil);
+  if (typeof body?.rotate === "boolean")
+    data.rotate = body.rotate;
+  if (typeof body?.claimable === "boolean")
+    data.claimable = body.claimable;
+  if ("rewardId" in body)
+    data.rewardId = String(body.rewardId ?? "").trim() || null;
 
   const rawAssignees: unknown = body?.assigneeIds;
   let assigneeIds: string[] | null = null;
@@ -62,7 +81,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, statusMessage: "Chore not found" });
     }
     if (code === "P2003") {
-      throw createError({ statusCode: 400, statusMessage: "assignee does not exist" });
+      throw createError({ statusCode: 400, statusMessage: "assignee, area, or reward does not exist" });
     }
     throw error;
   }

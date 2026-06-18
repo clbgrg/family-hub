@@ -1,6 +1,6 @@
 # Settings Panel Spec
 
-> ℹ️ **Status:** this was the target design; most of it is now **built** (Phase 8 + Phase 9): Family Profiles with admin/member roles + PINs, Your Account (sign out / change PIN), Calendar/Integrations (admin-gated), screensaver photo upload, and Network & Access (QR code). Deliberately not built: per-feature toggles beyond roles, display/sleep scheduling in-UI (Pi cron instead — `docs/pi-hardware.md`), and parental controls beyond admin/member gating.
+> ℹ️ **Status:** this was the target design; most of it is now **built** (Phase 8 + Phase 9): Family Profiles with admin/member roles + PINs, Your Account (sign out / change PIN), Calendar/Integrations (admin-gated), screensaver photo upload, and Network & Access (QR code). **June batch 3 added a "Family preferences" section (configurable points label + grade scale + chore-area management) and a Documents library.** Deliberately not built: per-feature toggles beyond roles, display/sleep scheduling in-UI (Pi cron instead — `docs/pi-hardware.md`), and parental controls beyond admin/member gating.
 
 The settings tab gives parents full control over all features. Recommended structure:
 
@@ -22,6 +22,16 @@ The settings tab gives parents full control over all features. Recommended struc
 - Set recurrence: one-time, daily, weekly, or custom days
 - Set chore reset time (default: midnight)
 - Enable or disable streak tracking
+- *(June batch 3)* Group chores into **areas/zones**; set a start/end window or a vacation pause; **rotate** a chore between assignees; mark a chore **up for grabs** (first-come); attach a **fixed reward**
+
+## Family Preferences *(built — June batch 3)*
+- **Points label** — rename "points" to anything (Stars, Bucks, $); applied across the app
+- **Grade scale** — comma-separated grades offered on school items (e.g. `A,B,C,D,F`)
+- **Chore areas** — manage the zones (🧼 Kitchen, 🛏️ Bedroom) that group chores on the board
+
+## Documents *(built — June batch 3)*
+- Upload family documents/media (images, PDF, text, common office types; 25 MB cap)
+- Browse and download; admin upload/delete. Bytes stored on a Docker volume (`FILES_DIR`)
 
 ## Rewards Store
 - Create rewards with names, point costs, and optional photos

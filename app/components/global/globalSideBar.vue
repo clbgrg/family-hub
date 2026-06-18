@@ -106,6 +106,30 @@ onBeforeUnmount(() => {
       aria-label="Meal Planner"
     />
     <UButton
+      :class="isActivePath('/documents') ? 'text-primary' : 'text-default'"
+      to="/documents"
+      variant="ghost"
+      icon="i-lucide-folder"
+      size="xl"
+      aria-label="Documents"
+    />
+    <UButton
+      :class="isActivePath('/stats') ? 'text-primary' : 'text-default'"
+      to="/stats"
+      variant="ghost"
+      icon="i-lucide-chart-column"
+      size="xl"
+      aria-label="Stats"
+    />
+    <UButton
+      :class="isActivePath('/history') ? 'text-primary' : 'text-default'"
+      to="/history"
+      variant="ghost"
+      icon="i-lucide-history"
+      size="xl"
+      aria-label="History"
+    />
+    <UButton
       :class="isActivePath('/settings') ? 'text-primary' : 'text-default'"
       to="/settings"
       variant="ghost"

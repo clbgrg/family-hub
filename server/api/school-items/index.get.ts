@@ -31,6 +31,7 @@ export default defineEventHandler(async (event) => {
     title: i.title,
     description: i.description,
     points: i.points,
+    grade: i.grade,
     dueDate: i.dueDate,
     userId: i.userId,
     done: i.completions.length > 0,

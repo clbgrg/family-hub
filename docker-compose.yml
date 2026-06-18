@@ -33,6 +33,8 @@ services:
       # Screensaver photos — drop images here (gitignored). On the Pi this can
       # point at a USB drive's photo folder.
       - ./photos:/app/photos
+      # Family documents (gitignored). FILES_DIR can repoint this at a USB drive.
+      - ./files:/app/files
     networks:
       - family-hub
 
