@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import type { CreateSavedMealInput } from "~/composables/useSavedMeals";
+import type { CreateSavedMealInput, SavedMeal } from "~/composables/useSavedMeals";
 
 const props = defineProps<{
   isOpen: boolean;
+  // When provided, the dialog edits this meal instead of creating a new one.
+  meal?: SavedMeal | null;
 }>();
 
 const emit = defineEmits<{
@@ -20,9 +22,9 @@ watch(
   (open) => {
     if (!open)
       return;
-    title.value = "";
-    notes.value = "";
-    ingredients.value = "";
+    title.value = props.meal?.title ?? "";
+    notes.value = props.meal?.notes ?? "";
+    ingredients.value = props.meal?.ingredients ?? "";
     errorMsg.value = null;
   },
   { immediate: true },
@@ -54,7 +56,7 @@ function handleSave() {
     >
       <div class="flex items-center justify-between border-b border-default p-4">
         <h3 class="text-base font-semibold leading-6">
-          Save a meal
+          {{ meal ? "Edit meal" : "Save a meal" }}
         </h3>
         <UButton
           color="neutral"
@@ -115,7 +117,7 @@ function handleSave() {
           Cancel
         </UButton>
         <UButton color="primary" @click="handleSave">
-          Save meal
+          {{ meal ? "Save changes" : "Save meal" }}
         </UButton>
       </div>
     </div>

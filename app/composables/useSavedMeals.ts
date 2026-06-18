@@ -36,6 +36,18 @@ export function useSavedMeals() {
     }
   }
 
+  async function updateSavedMeal(id: string, input: CreateSavedMealInput) {
+    try {
+      await $fetch(`/api/saved-meals/${id}`, { method: "PUT", body: input });
+      await refresh();
+    }
+    catch (err) {
+      error.value = "Failed to update saved meal";
+      consola.error("useSavedMeals update:", err);
+      throw err;
+    }
+  }
+
   async function deleteSavedMeal(id: string) {
     try {
       await $fetch(`/api/saved-meals/${id}`, { method: "DELETE" });
@@ -48,5 +60,5 @@ export function useSavedMeals() {
     }
   }
 
-  return { savedMeals, error: readonly(error), refresh, createSavedMeal, deleteSavedMeal };
+  return { savedMeals, error: readonly(error), refresh, createSavedMeal, updateSavedMeal, deleteSavedMeal };
 }
