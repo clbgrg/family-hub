@@ -43,6 +43,7 @@ model User {
   schoolItems             SchoolItem[]           @relation("SchoolItemUser")
   schoolItemCompletions   SchoolItemCompletion[] @relation("SchoolItemCompletionUser")
   messageRead             MessageRead?
+  pinnedNotes             PinnedNote[]
 
   @@map("users")
 }
@@ -381,6 +382,20 @@ model MessageRead {
   lastReadAt DateTime @default(now())
 
   @@map("message_reads")
+}
+
+// Family Bulletin: persistent pinned notes shown at the top of the dashboard.
+// Any member can add / edit / delete (family-trust, like the message board);
+// global — everyone sees the same set. No expiry (unlike Message).
+model PinnedNote {
+  id        String   @id @default(cuid())
+  body      String
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pinned_notes")
 }
 
 // A badge a user has earned, keyed by the badge's slug. Permanent once earned —

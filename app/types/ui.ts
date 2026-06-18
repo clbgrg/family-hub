@@ -113,6 +113,18 @@ export type FontPreference = (typeof FONT_PREFERENCES)[number]["value"];
 
 export type TodoSortMode = "date" | "priority" | "alpha";
 
+// Site-wide visual theme (per-device). Applied as `data-theme` on <html>;
+// "default" removes the attribute and uses the standard light/dark tokens.
+export type ThemeName = "default" | "birthday" | "minecraft" | "christmas" | "halloween";
+
+export const THEME_OPTIONS: { value: ThemeName; label: string }[] = [
+  { value: "default", label: "Default" },
+  { value: "birthday", label: "Birthday 🎉" },
+  { value: "minecraft", label: "Minecraft ⛏️" },
+  { value: "christmas", label: "Christmas 🎄" },
+  { value: "halloween", label: "Halloween 🎃" },
+];
+
 export type ClientPreferences = {
   colorMode?: "light" | "dark" | "system";
   notifications?: boolean;
@@ -126,6 +138,8 @@ export type ClientPreferences = {
   screensaverIdleMinutes?: number;
   // School page: hide the parents' (admin) rows/columns — kids are the students.
   schoolStudentsOnly?: boolean;
+  // Site-wide visual theme for this device.
+  theme?: ThemeName;
 };
 
 export const MAIN_VIEW_OPTIONS: { path: string; label: string }[] = [
@@ -145,6 +159,7 @@ export const defaultClientPreferences: ClientPreferences = {
   screensaverEnabled: true,
   screensaverIdleMinutes: 5,
   schoolStudentsOnly: true,
+  theme: "default",
 };
 
 export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [

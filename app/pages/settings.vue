@@ -7,7 +7,7 @@ import type {
   Integration,
   User,
 } from "~/types/database";
-import type { ConnectionTestResult, FontPreference } from "~/types/ui";
+import type { ConnectionTestResult, FontPreference, ThemeName } from "~/types/ui";
 
 import SettingsBadgeManager from "~/components/settings/settingsBadgeManager.vue";
 import SettingsCalendarSelectDialog from "~/components/settings/settingsCalendarSelectDialog.vue";
@@ -20,7 +20,7 @@ import {
   createIntegrationService,
   integrationRegistry,
 } from "~/types/integrations";
-import { FONT_OPTIONS, getFontStack, MAIN_VIEW_OPTIONS } from "~/types/ui";
+import { FONT_OPTIONS, getFontStack, MAIN_VIEW_OPTIONS, THEME_OPTIONS } from "~/types/ui";
 
 const { users, loading, error, createUser, deleteUser, updateUser, reorderUser }
   = useUsers();
@@ -85,6 +85,13 @@ const selectedFont = computed({
   get: () => preferences.value?.font ?? "system",
   set(value: FontPreference) {
     updatePreferences({ font: value });
+  },
+});
+
+const selectedTheme = computed({
+  get: () => preferences.value?.theme ?? "default",
+  set(value: ThemeName) {
+    updatePreferences({ theme: value });
   },
 });
 
@@ -1292,6 +1299,24 @@ onMounted(async () => {
                   </span>
                 </template>
               </USelect>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-medium text-highlighted">
+                  Theme
+                </p>
+                <p class="text-sm text-muted">
+                  A festive site-wide skin for this device
+                </p>
+              </div>
+              <USelect
+                v-model="selectedTheme"
+                :items="THEME_OPTIONS"
+                value-attribute="value"
+                option-attribute="label"
+                :ui="{ content: 'min-w-fit' }"
+                aria-label="Select theme"
+              />
             </div>
             <div class="flex items-center justify-between">
               <div>

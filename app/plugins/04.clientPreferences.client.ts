@@ -18,6 +18,11 @@ export default defineNuxtPlugin(() => {
       }
       const fontStack = getFontStack(prefs?.font);
       document.documentElement.style.setProperty("--app-font-sans", fontStack);
+
+      // Apply the saved theme before first paint so there's no flash of the
+      // default skin. "default" (or unset) leaves the standard tokens.
+      if (prefs?.theme && prefs.theme !== "default")
+        document.documentElement.dataset.theme = prefs.theme;
     }
   }
   catch (err) {

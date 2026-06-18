@@ -22,7 +22,6 @@ const requestFetch = useRequestFetch();
 const today = isoToday();
 const { count: unreadNotes } = useUnreadMessages();
 const { startTimerFor } = useTaskTimer();
-const { pinnedNoteTitle, pinnedNoteBody } = useFamilyConfig();
 
 // Shared asyncData keys with the chores page, so a check-off here refreshes
 // the board there (and vice versa) — plus interactive setDone + celebration.
@@ -86,8 +85,8 @@ function eventsFor(userId: string): DashEvent[] {
 // One column per family member — a personal to-do list of their day. The
 // auto-fit grid keeps columns side by side while they fit and wraps/stacks
 // them when the screen gets tight.
-const columns = computed(() =>
-  (users.value ?? []).map((u) => {
+const columns = computed(() => {
+  const cols = (users.value ?? []).map((u) => {
     const userChores = (chores.value ?? []).filter(c => c.dueToday && c.assignee?.id === u.id);
     return {
       user: u,
@@ -98,8 +97,14 @@ const columns = computed(() =>
       schoolItems: dashSchoolItems(u.id),
       school: schoolByUser.value[u.id] ?? "",
     };
-  }),
-);
+  });
+  // Float the signed-in member's own column to the front (handy on a personal
+  // phone; a no-op on the shared kiosk where everyone is the admin session).
+  const meId = user.value?.id;
+  if (meId)
+    cols.sort((a, b) => Number(b.user.id === meId) - Number(a.user.id === meId));
+  return cols;
+});
 
 // Tap a column header to fold it into its accordion header (handy when a
 // column runs long on the kiosk).
@@ -162,10 +167,10 @@ const mealBySlot = computed(() => {
   for (const m of meals.value ?? []) map[m.slot] = m;
   return map;
 });
-const slots: { key: MealSlot; label: string }[] = [
-  { key: "BREAKFAST", label: "Breakfast" },
-  { key: "LUNCH", label: "Lunch" },
-  { key: "DINNER", label: "Dinner" },
+const slots: { key: MealSlot; label: string; icon: string }[] = [
+  { key: "BREAKFAST", label: "Breakfast", icon: "i-lucide-coffee" },
+  { key: "LUNCH", label: "Lunch", icon: "i-lucide-sandwich" },
+  { key: "DINNER", label: "Dinner", icon: "i-lucide-utensils" },
 ];
 
 function eventTime(e: DashEvent) {
@@ -186,32 +191,22 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
 
 <template>
   <div class="flex w-full flex-col">
-    <div class="sticky top-0 z-40 border-b border-default bg-default py-5 sm:px-4">
-      <h1 class="text-2xl font-bold">
-        Today
-      </h1>
-      <p class="text-muted">
-        {{ longDate }}
-      </p>
+    <div class="sticky top-0 z-40 flex items-center gap-3 border-b border-default bg-default bg-gradient-to-r from-primary/10 to-transparent px-4 py-5">
+      <div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary shadow-sm">
+        <UIcon name="i-lucide-sun" class="size-6" />
+      </div>
+      <div class="min-w-0">
+        <h1 class="text-2xl font-bold">
+          Today
+        </h1>
+        <p class="text-muted">
+          {{ longDate }}
+        </p>
+      </div>
     </div>
 
     <ClientOnly>
-      <div
-        v-if="pinnedNoteBody"
-        class="mx-4 mt-4 rounded-lg border border-primary/30 bg-primary/10 p-4"
-      >
-        <div class="flex items-start gap-3">
-          <UIcon name="i-lucide-pin" class="mt-0.5 size-5 shrink-0 text-primary" />
-          <div class="min-w-0">
-            <p v-if="pinnedNoteTitle" class="font-semibold text-highlighted">
-              {{ pinnedNoteTitle }}
-            </p>
-            <p class="whitespace-pre-wrap text-sm">
-              {{ pinnedNoteBody }}
-            </p>
-          </div>
-        </div>
-      </div>
+      <FamilyBulletin />
       <NuxtLink
         v-if="unreadNotes > 0"
         to="/messages"
@@ -227,12 +222,13 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
       </NuxtLink>
 
       <!-- Family strip: meals + whole-family events -->
-      <div class="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-default px-4 py-3 text-sm">
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-default bg-gradient-to-r from-warning/8 to-transparent px-4 py-3 text-sm">
         <span
           v-for="s in slots"
           :key="s.key"
           class="flex items-center gap-1.5"
         >
+          <UIcon :name="s.icon" class="size-4 shrink-0 text-warning" />
           <span class="text-muted">{{ s.label }}:</span>
           <span class="font-medium">{{ mealBySlot[s.key]?.title || "—" }}</span>
         </span>
@@ -261,7 +257,7 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
           <button
             type="button"
             class="flex w-full items-center gap-2 rounded-t-lg border-b border-default p-3 text-left"
-            :style="col.user.color ? { backgroundColor: `${col.user.color}1a` } : {}"
+            :style="col.user.color ? { background: `linear-gradient(135deg, ${col.user.color}2e, ${col.user.color}0a)` } : {}"
             @click="toggleCollapsed(col.user.id)"
           >
             <UAvatar
@@ -376,7 +372,7 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
                 :disabled="!canToggle(item.userId)"
                 @update:model-value="toggleSchoolItem(item)"
               />
-              <UIcon name="i-lucide-graduation-cap" class="size-3.5 shrink-0 text-primary" />
+              <UIcon name="i-lucide-graduation-cap" class="size-3.5 shrink-0 text-success" />
               <span class="truncate" :class="item.done ? 'line-through' : ''">{{ item.title }}</span>
               <span
                 class="ml-auto shrink-0 text-xs"
@@ -397,7 +393,7 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
 
             <!-- Free-text school note -->
             <p v-if="col.school" class="mt-1 flex items-start gap-1.5 text-sm">
-              <UIcon name="i-lucide-graduation-cap" class="mt-0.5 size-4 shrink-0 text-primary" />
+              <UIcon name="i-lucide-graduation-cap" class="mt-0.5 size-4 shrink-0 text-success" />
               <span class="whitespace-pre-wrap">{{ col.school }}</span>
             </p>
 
