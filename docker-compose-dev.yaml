@@ -4,7 +4,7 @@ services:
       context: .
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql://skylite:password@skylite-ux-db:5432/skylite
+      - DATABASE_URL=postgresql://skylite:${POSTGRES_PASSWORD:-password}@skylite-ux-db:5432/skylite
       - NUXT_PUBLIC_TZ=America/Chicago
       - NUXT_PUBLIC_LOG_LEVEL=warn
     depends_on:
@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
     environment:
       - POSTGRES_USER=skylite
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
       - POSTGRES_DB=skylite
     volumes:
       - postgres-data:/var/lib/postgresql/data
