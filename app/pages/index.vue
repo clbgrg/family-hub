@@ -3,6 +3,8 @@ import type { ChoreBoardItem, NewBadge } from "~/composables/useChores";
 import type { Meal, MealSlot } from "~/composables/useMeals";
 import type { SchoolItem } from "~/composables/useSchoolItems";
 
+import { groupChoresByArea, recurrenceLabel } from "~/composables/useChores";
+
 type DashUser = { id: string; name: string; avatar: string | null; color: string | null };
 type DashEvent = {
   id: string;
@@ -84,14 +86,18 @@ function eventsFor(userId: string): DashEvent[] {
 // auto-fit grid keeps columns side by side while they fit and wraps/stacks
 // them when the screen gets tight.
 const columns = computed(() =>
-  (users.value ?? []).map(u => ({
-    user: u,
-    stats: statsByUser.value[u.id],
-    events: eventsFor(u.id),
-    chores: (chores.value ?? []).filter(c => c.dueToday && c.assignee?.id === u.id),
-    schoolItems: dashSchoolItems(u.id),
-    school: schoolByUser.value[u.id] ?? "",
-  })),
+  (users.value ?? []).map((u) => {
+    const userChores = (chores.value ?? []).filter(c => c.dueToday && c.assignee?.id === u.id);
+    return {
+      user: u,
+      stats: statsByUser.value[u.id],
+      events: eventsFor(u.id),
+      chores: userChores,
+      choreGroups: groupChoresByArea(userChores),
+      schoolItems: dashSchoolItems(u.id),
+      school: schoolByUser.value[u.id] ?? "",
+    };
+  }),
 );
 
 // Tap a column header to fold it into its accordion header (handy when a
@@ -266,30 +272,48 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
               <span class="ml-auto shrink-0 text-xs text-muted">{{ eventTime(e) }}</span>
             </div>
 
-            <!-- Chores due today -->
-            <div
-              v-for="chore in col.chores"
-              :key="`${chore.id}:${col.user.id}`"
-              class="flex items-center gap-2 text-sm"
-              :class="chore.done ? 'text-muted' : ''"
+            <!-- Chores due today, grouped by area -->
+            <template
+              v-for="grp in col.choreGroups"
+              :key="grp.area?.id ?? '__none__'"
             >
-              <UCheckbox
-                :model-value="chore.done"
-                :disabled="!canToggle(chore.assignee?.id)"
-                @update:model-value="toggleChore(chore)"
-              />
-              <span class="truncate" :class="chore.done ? 'line-through' : ''">{{ chore.title }}</span>
-              <span class="ml-auto shrink-0 text-xs text-muted">+{{ chore.points }}</span>
-              <UButton
-                v-if="!chore.done && canToggle(chore.assignee?.id)"
-                icon="i-lucide-timer"
-                size="xs"
-                variant="ghost"
-                color="neutral"
-                aria-label="Start a timer for this chore"
-                @click="startTimerFor({ kind: 'chore', id: chore.id, userId: col.user.id, title: chore.title, assigneeName: col.user.name })"
-              />
-            </div>
+              <div
+                v-if="col.choreGroups.length > 1 || grp.area"
+                class="mt-1 flex items-center gap-1 text-xs font-semibold text-muted"
+              >
+                <span v-if="grp.area?.icon && !grp.area.icon.startsWith('i-')">{{ grp.area.icon }}</span>
+                <UIcon
+                  v-else-if="grp.area"
+                  :name="grp.area.icon || 'i-lucide-folder'"
+                  class="size-3"
+                />
+                <span>{{ grp.area?.name ?? "Other" }}</span>
+              </div>
+              <div
+                v-for="chore in grp.chores"
+                :key="`${chore.id}:${col.user.id}`"
+                class="flex items-center gap-2 text-sm"
+                :class="chore.done ? 'text-muted' : ''"
+              >
+                <UCheckbox
+                  :model-value="chore.done"
+                  :disabled="!canToggle(chore.assignee?.id)"
+                  @update:model-value="toggleChore(chore)"
+                />
+                <span class="truncate" :class="chore.done ? 'line-through' : ''">{{ chore.title }}</span>
+                <span class="shrink-0 text-xs text-muted">{{ recurrenceLabel(chore) }}</span>
+                <span class="ml-auto shrink-0 text-xs text-muted">+{{ chore.points }}</span>
+                <UButton
+                  v-if="!chore.done && canToggle(chore.assignee?.id)"
+                  icon="i-lucide-timer"
+                  size="xs"
+                  variant="ghost"
+                  color="neutral"
+                  aria-label="Start a timer for this chore"
+                  @click="startTimerFor({ kind: 'chore', id: chore.id, userId: col.user.id, title: chore.title, assigneeName: col.user.name })"
+                />
+              </div>
+            </template>
 
             <!-- School items -->
             <div

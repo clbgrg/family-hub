@@ -9,6 +9,8 @@ export type ChoreAssignee = {
   color: string | null;
 };
 
+export type AreaInfo = { id: string; name: string; icon: string | null; order: number };
+
 // One board row per (chore × assignee): a chore assigned to both kids shows
 // as two rows, each with its own done state. `id` therefore repeats — use
 // `${id}:${assignee.id}` as the render key.
@@ -20,6 +22,11 @@ export type ChoreBoardItem = {
   recurrence: ChoreRecurrence;
   daysOfWeek: number[];
   order: number;
+  area: AreaInfo | null;
+  startDate: string | null;
+  endDate: string | null;
+  pausedUntil: string | null;
+  rotate: boolean;
   assignee: ChoreAssignee | null;
   assigneeIds: string[];
   dueToday: boolean;
@@ -63,7 +70,50 @@ export type CreateChoreInput = {
   recurrence: ChoreRecurrence;
   daysOfWeek?: number[];
   assigneeIds: string[];
+  areaId?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  pausedUntil?: string | null;
+  rotate?: boolean;
 };
+
+export type AreaGroup<T> = { area: AreaInfo | null; chores: T[] };
+
+/** Short schedule tag for a chore row: "Daily" | "Weekly" | "One-time". */
+export function recurrenceLabel(chore: { recurrence: ChoreRecurrence }): string {
+  switch (chore.recurrence) {
+    case "ONCE":
+      return "One-time";
+    case "WEEKLY":
+      return "Weekly";
+    default:
+      return "Daily";
+  }
+}
+
+/**
+ * Group board rows by Area, preserving area order with un-areaed chores in a
+ * trailing "Other" group (area: null). Empty groups are omitted.
+ */
+export function groupChoresByArea<T extends { area: AreaInfo | null }>(chores: T[]): AreaGroup<T>[] {
+  const groups = new Map<string, AreaGroup<T>>();
+  for (const c of chores) {
+    const key = c.area?.id ?? "__none__";
+    let g = groups.get(key);
+    if (!g) {
+      g = { area: c.area ?? null, chores: [] };
+      groups.set(key, g);
+    }
+    g.chores.push(c);
+  }
+  return [...groups.values()].sort((a, b) => {
+    if (!a.area)
+      return b.area ? 1 : 0;
+    if (!b.area)
+      return -1;
+    return a.area.order - b.area.order || a.area.name.localeCompare(b.area.name);
+  });
+}
 
 /**
  * Client-local date "YYYY-MM-DD" — the server is UTC, so done-today logic

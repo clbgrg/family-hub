@@ -127,8 +127,10 @@ export async function isAllDoneToday(userId: string, localDate: string): Promise
   const chores = await prisma.chore.findMany({
     where: { active: true, assignments: { some: { userId } } },
     include: {
-      // Only THIS user's TODAY completions — assignees complete independently,
-      // and doneEver (which needs history) only matters for ONCE chores below.
+      // All assignees (id/order/name) so a rotating chore can tell whose turn
+      // it is; plus only THIS user's TODAY completions (assignees complete
+      // independently; doneEver only matters for ONCE chores below).
+      assignments: { include: { user: { select: { id: true, name: true, todoOrder: true } } } },
       completions: { where: { userId, localDate }, select: { localDate: true } },
     },
   });
@@ -144,13 +146,29 @@ export async function isAllDoneToday(userId: string, localDate: string): Promise
   const everDoneOnce = new Set(everDone.map(e => e.choreId));
 
   const todays = chores
-    .map(c => choreDayStatus({
-      recurrence: c.recurrence,
-      daysOfWeek: c.daysOfWeek,
-      doneEver: c.completions.length > 0 || everDoneOnce.has(c.id),
-      doneToday: c.completions.length > 0,
-      localDate,
-    }))
+    .map((c) => {
+      // On a rotating chore, this user is only "due" when it's their turn.
+      if (c.rotate) {
+        const assignees = c.assignments
+          .map(a => a.user)
+          .sort((a, b) => a.todoOrder - b.todoOrder || a.name.localeCompare(b.name));
+        if (assignees.length > 1) {
+          const onDuty = assignees[rotationIndex(c.recurrence, localDate, assignees.length)]!;
+          if (onDuty.id !== userId)
+            return { dueToday: false, done: true };
+        }
+      }
+      return choreDayStatus({
+        recurrence: c.recurrence,
+        daysOfWeek: c.daysOfWeek,
+        doneEver: c.completions.length > 0 || everDoneOnce.has(c.id),
+        doneToday: c.completions.length > 0,
+        localDate,
+        startDate: c.startDate,
+        endDate: c.endDate,
+        pausedUntil: c.pausedUntil,
+      });
+    })
     .filter(s => s.dueToday);
 
   return todays.length >= 1 && todays.every(s => s.done);

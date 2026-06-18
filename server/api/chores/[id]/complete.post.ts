@@ -46,14 +46,14 @@ export default defineEventHandler(async (event) => {
     });
     if (!existing) {
       await prisma.choreCompletion.create({
-        data: { choreId, userId: targetUserId, localDate, points: chore.points },
+        data: { choreId, userId: targetUserId, completedById: session.user.id, localDate, points: chore.points },
       });
     }
   }
   else {
     try {
       await prisma.choreCompletion.create({
-        data: { choreId, userId: targetUserId, localDate, points: chore.points },
+        data: { choreId, userId: targetUserId, completedById: session.user.id, localDate, points: chore.points },
       });
     }
     catch (error) {

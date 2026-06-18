@@ -19,7 +19,21 @@ const points = ref(5);
 const assigneeIds = ref<string[]>([]);
 const recurrence = ref<ChoreRecurrence>("DAILY");
 const daysOfWeek = ref<number[]>([]);
+const areaId = ref("");
+const startDate = ref("");
+const endDate = ref("");
+const pausedUntil = ref("");
+const rotate = ref(false);
 const error = ref<string | null>(null);
+
+const { areas } = useAreas();
+const areaOptions = computed(() => [
+  { label: "No area", value: "" },
+  ...(areas.value ?? []).map(a => ({
+    label: a.icon && !a.icon.startsWith("i-") ? `${a.icon} ${a.name}` : a.name,
+    value: a.id,
+  })),
+]);
 
 const recurrenceOptions = [
   { label: "Every day", value: "DAILY" },
@@ -49,6 +63,11 @@ watch(
       : (props.users[0] ? [props.users[0].id] : []);
     recurrence.value = chore?.recurrence ?? "DAILY";
     daysOfWeek.value = chore?.daysOfWeek ? [...chore.daysOfWeek] : [];
+    areaId.value = chore?.area?.id ?? "";
+    startDate.value = chore?.startDate ?? "";
+    endDate.value = chore?.endDate ?? "";
+    pausedUntil.value = chore?.pausedUntil ?? "";
+    rotate.value = chore?.rotate ?? false;
     error.value = null;
   },
   { immediate: true },
@@ -86,6 +105,11 @@ function handleSave() {
     recurrence: recurrence.value,
     daysOfWeek: daysOfWeek.value,
     assigneeIds: assigneeIds.value,
+    areaId: areaId.value || null,
+    startDate: startDate.value || null,
+    endDate: endDate.value || null,
+    pausedUntil: pausedUntil.value || null,
+    rotate: rotate.value,
   });
   emit("close");
 }
@@ -152,6 +176,18 @@ function handleSave() {
         </div>
 
         <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Area (optional)</label>
+          <USelect
+            v-model="areaId"
+            :items="areaOptions"
+            option-attribute="label"
+            value-attribute="value"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
+        </div>
+
+        <div class="space-y-2">
           <label class="block text-sm font-medium text-highlighted">For</label>
           <p class="text-xs text-muted">
             Pick one or more — each person checks off their own copy and earns the points.
@@ -194,6 +230,50 @@ function handleSave() {
               @click="toggleDay(d.value)"
             />
           </div>
+        </div>
+
+        <div v-if="assigneeIds.length > 1" class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <label class="block text-sm font-medium text-highlighted">Rotate between assignees</label>
+            <p class="text-xs text-muted">
+              One person's turn at a time (daily or weekly) instead of everyone.
+            </p>
+          </div>
+          <UCheckbox v-model="rotate" />
+        </div>
+
+        <div class="flex gap-4">
+          <div class="flex-1 space-y-2">
+            <label class="block text-sm font-medium text-highlighted">Start date</label>
+            <UInput
+              v-model="startDate"
+              type="date"
+              class="w-full"
+              :ui="{ base: 'w-full' }"
+            />
+          </div>
+          <div class="flex-1 space-y-2">
+            <label class="block text-sm font-medium text-highlighted">End date</label>
+            <UInput
+              v-model="endDate"
+              type="date"
+              class="w-full"
+              :ui="{ base: 'w-full' }"
+            />
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Pause until</label>
+          <UInput
+            v-model="pausedUntil"
+            type="date"
+            class="w-full"
+            :ui="{ base: 'w-full' }"
+          />
+          <p class="text-xs text-muted">
+            Hidden from the board until this date — handy for vacations.
+          </p>
         </div>
       </div>
 

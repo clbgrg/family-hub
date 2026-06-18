@@ -106,6 +106,14 @@ onBeforeUnmount(() => {
       aria-label="Meal Planner"
     />
     <UButton
+      :class="isActivePath('/history') ? 'text-primary' : 'text-default'"
+      to="/history"
+      variant="ghost"
+      icon="i-lucide-history"
+      size="xl"
+      aria-label="History"
+    />
+    <UButton
       :class="isActivePath('/settings') ? 'text-primary' : 'text-default'"
       to="/settings"
       variant="ghost"

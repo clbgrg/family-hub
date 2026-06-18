@@ -18,8 +18,9 @@ export default defineEventHandler(async (event) => {
     where: { active: true },
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     include: {
+      area: { select: { id: true, name: true, icon: true, order: true } },
       assignments: {
-        include: { user: { select: { id: true, name: true, avatar: true, color: true } } },
+        include: { user: { select: { id: true, name: true, avatar: true, color: true, todoOrder: true } } },
       },
       // Only TODAY's completions — doneEver (which needs history) only matters
       // for ONCE chores, fetched separately below so the board query stays
@@ -40,13 +41,26 @@ export default defineEventHandler(async (event) => {
 
   return chores.flatMap((c) => {
     const doneToday = new Set(c.completions.map(x => x.userId));
-    return c.assignments.map(({ user }) => {
+    // Stable assignee order (family member order) for rotation.
+    const assignees = c.assignments
+      .map(a => a.user)
+      .sort((a, b) => a.todoOrder - b.todoOrder || a.name.localeCompare(b.name));
+    // A rotating chore shows only the on-duty assignee for the day; the others'
+    // copies are hidden until their turn comes round.
+    const onDuty = c.rotate && assignees.length > 1
+      ? [assignees[rotationIndex(c.recurrence, date, assignees.length)]!]
+      : assignees;
+
+    return onDuty.map((user) => {
       const { dueToday, done } = choreDayStatus({
         recurrence: c.recurrence,
         daysOfWeek: c.daysOfWeek,
         doneEver: doneToday.has(user.id) || everDoneOnce.has(`${c.id}:${user.id}`),
         doneToday: doneToday.has(user.id),
         localDate: date,
+        startDate: c.startDate,
+        endDate: c.endDate,
+        pausedUntil: c.pausedUntil,
       });
 
       return {
@@ -57,6 +71,11 @@ export default defineEventHandler(async (event) => {
         recurrence: c.recurrence,
         daysOfWeek: c.daysOfWeek,
         order: c.order,
+        area: c.area,
+        startDate: c.startDate,
+        endDate: c.endDate,
+        pausedUntil: c.pausedUntil,
+        rotate: c.rotate,
         assignee: user,
         assigneeIds: c.assignments.map(a => a.userId),
         dueToday,
