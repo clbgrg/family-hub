@@ -210,6 +210,9 @@ model Chore {
   // Up-for-grabs: anyone in the assignee pool can claim it, first-come — a
   // single shared completion per occurrence rather than one per assignee.
   claimable   Boolean         @default(false)
+  // Eligible for the random "punishment" chore wheel — a curated subset of
+  // chores the wheel spins among (not all chores).
+  wheelEligible Boolean       @default(false)
   // Optional fixed reward granted (as a pending redemption) on completion,
   // independent of points. SetNull so deleting the reward just unlinks it.
   rewardId    String?
@@ -302,6 +305,9 @@ model SavedMeal {
   title       String
   notes       String?
   ingredients String?
+  // Usual days for this template (0=Sun .. 6=Sat); pre-fills the planner day
+  // when the saved meal is dropped onto / picked into the week.
+  defaultDays Int[]    @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

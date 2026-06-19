@@ -25,6 +25,7 @@ const endDate = ref("");
 const pausedUntil = ref("");
 const rotate = ref(false);
 const claimable = ref(false);
+const wheelEligible = ref(false);
 const rewardId = ref("");
 const error = ref<string | null>(null);
 
@@ -76,6 +77,7 @@ watch(
     pausedUntil.value = chore?.pausedUntil ?? "";
     rotate.value = chore?.rotate ?? false;
     claimable.value = chore?.claimable ?? false;
+    wheelEligible.value = chore?.wheelEligible ?? false;
     rewardId.value = chore?.reward?.id ?? "";
     error.value = null;
   },
@@ -120,6 +122,7 @@ function handleSave() {
     pausedUntil: pausedUntil.value || null,
     rotate: rotate.value,
     claimable: claimable.value,
+    wheelEligible: wheelEligible.value,
     rewardId: rewardId.value || null,
   });
   emit("close");
@@ -276,6 +279,16 @@ function handleSave() {
             </p>
           </div>
           <UCheckbox v-model="claimable" />
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <label class="block text-sm font-medium text-highlighted">On the chore wheel 🎯</label>
+            <p class="text-xs text-muted">
+              Include this chore in the random “punishment” wheel anyone can spin.
+            </p>
+          </div>
+          <UCheckbox v-model="wheelEligible" />
         </div>
 
         <div class="flex gap-4">

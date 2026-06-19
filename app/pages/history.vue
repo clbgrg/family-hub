@@ -46,15 +46,26 @@ function timeAgo(ts: string) {
       <h1 class="text-2xl font-bold">
         History
       </h1>
-      <USelect
-        v-if="isAdmin"
-        v-model="selectedUserId"
-        :items="userOptions"
-        option-attribute="label"
-        value-attribute="value"
-        class="w-44"
-        :ui="{ base: 'w-full' }"
-      />
+      <div v-if="isAdmin" class="flex items-center gap-2">
+        <UButton
+          v-if="selectedUserId"
+          icon="i-lucide-arrow-left"
+          size="sm"
+          variant="soft"
+          color="neutral"
+          @click="selectedUserId = ''"
+        >
+          Back to Everyone
+        </UButton>
+        <USelect
+          v-model="selectedUserId"
+          :items="userOptions"
+          option-attribute="label"
+          value-attribute="value"
+          class="w-44"
+          :ui="{ base: 'w-full' }"
+        />
+      </div>
     </div>
 
     <ClientOnly>
@@ -63,6 +74,7 @@ function timeAgo(ts: string) {
           :user-id="selectedUserId"
           :date="today"
           :points-label="pointsLabel"
+          @select-user="selectedUserId = $event"
         />
       </div>
       <div v-if="events.length" class="flex flex-col gap-1 p-4">

@@ -21,9 +21,40 @@
   --ui-radius: 0.25rem;
 }
 
+/*
+ * Nuxt UI's `default` utilities (bg-default / text-default / border-default)
+ * read the UNSUFFIXED tokens (--ui-bg / --ui-text / --ui-border), but this file
+ * and the theme blocks below override the `-default`-SUFFIXED tokens. Bridge
+ * them so every theme — and real dark mode — recolors default surfaces too, not
+ * just muted/elevated/accented ones. The indirection resolves per element, so
+ * the themed/dark value flows through automatically.
+ */
+:root {
+  --ui-bg: var(--ui-bg-default);
+  --ui-text: var(--ui-text-default);
+  --ui-border: var(--ui-border-default);
+}
+
 html,
 body {
   font-family: var(--app-font-sans);
+  /* Page surface follows the active theme/mode tokens, so dark themes
+     (Halloween, Space, New Year's) and dark mode actually darken the page —
+     not just the individual cards. Components still set their own bg-* where
+     needed; this just fills the shell behind them. */
+  background-color: var(--ui-bg-default);
+  color: var(--ui-text-default);
+}
+
+/* Smooth the recolor when switching theme / light-dark (Pi-friendly: only the
+   color properties, and never for users who prefer reduced motion). */
+@media (prefers-reduced-motion: no-preference) {
+  html,
+  body {
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
 }
 
 .dark {
@@ -77,6 +108,11 @@ body {
   --ui-border-default: #f7c8e0;
   --ui-border-muted: #fbdcec;
   --ui-border-accented: #f3a9cf;
+  --ui-text-dimmed: #c98aad;
+  --ui-text-muted: #a85585;
+  --ui-text-toned: #84355f;
+  --ui-text-default: #5c1d3f;
+  --ui-text-highlighted: #3d0f29;
   --ui-radius: 0.75rem;
 }
 
@@ -114,6 +150,11 @@ body {
   --ui-border-default: #1b5e3a;
   --ui-border-muted: #cfe6d6;
   --ui-border-accented: #14512f;
+  --ui-text-dimmed: #8aa893;
+  --ui-text-muted: #547a5f;
+  --ui-text-toned: #3a5a45;
+  --ui-text-default: #1f3a2a;
+  --ui-text-highlighted: #11261a;
   --ui-radius: 0.375rem;
 }
 
@@ -131,6 +172,150 @@ body {
   --ui-text-muted: #b9a9d6;
   --ui-text-toned: #d6c9ee;
   --ui-text-default: #ece5f7;
+  --ui-text-highlighted: #ffffff;
+  --ui-radius: 0.5rem;
+}
+
+/* 💝 Valentine's — romantic rose + pink, soft rounded. */
+[data-theme="valentines"] {
+  --ui-primary: #e11d48;
+  --ui-bg-default: #fff1f5;
+  --ui-bg-muted: #ffe4ec;
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: #fecdd8;
+  --ui-border-default: #f9a8c4;
+  --ui-border-muted: #fcd9e4;
+  --ui-border-accented: #f472a6;
+  --ui-text-dimmed: #b08099;
+  --ui-text-muted: #8a4d6b;
+  --ui-text-toned: #6b2f4f;
+  --ui-text-default: #4a1733;
+  --ui-text-highlighted: #2e0c1f;
+  --ui-radius: 0.75rem;
+}
+
+/* ☘️ St. Patrick's — lucky greens. */
+[data-theme="stpatricks"] {
+  --ui-primary: #15803d;
+  --ui-bg-default: #f0fdf4;
+  --ui-bg-muted: #dcfce7;
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: #bbf7d0;
+  --ui-border-default: #4ade80;
+  --ui-border-muted: #bbf7d0;
+  --ui-border-accented: #16a34a;
+  --ui-text-dimmed: #6b9e7e;
+  --ui-text-muted: #3f7d5a;
+  --ui-text-toned: #2c5e42;
+  --ui-text-default: #14432a;
+  --ui-text-highlighted: #0a2e1a;
+  --ui-radius: 0.375rem;
+}
+
+/* 🐰 Easter — soft pastel lavender, very rounded. */
+[data-theme="easter"] {
+  --ui-primary: #9333ea;
+  --ui-bg-default: #faf5ff;
+  --ui-bg-muted: #f3e8ff;
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: #e9d5ff;
+  --ui-border-default: #d8b4fe;
+  --ui-border-muted: #ede9fe;
+  --ui-border-accented: #c084fc;
+  --ui-text-dimmed: #a78bbf;
+  --ui-text-muted: #7c5e96;
+  --ui-text-toned: #5b3d75;
+  --ui-text-default: #3b1d54;
+  --ui-text-highlighted: #2a0f3f;
+  --ui-radius: 1rem;
+}
+
+/* 🎆 Independence — red, white & blue. */
+[data-theme="independence"] {
+  --ui-primary: #1e3a8a;
+  --ui-bg-default: #f8fafc;
+  --ui-bg-muted: #eff6ff;
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: #dbeafe;
+  --ui-border-default: #b91c1c;
+  --ui-border-muted: #fecaca;
+  --ui-border-accented: #1e3a8a;
+  --ui-text-dimmed: #8a97b5;
+  --ui-text-muted: #4b5b85;
+  --ui-text-toned: #2c3c66;
+  --ui-text-default: #16244a;
+  --ui-text-highlighted: #0b1530;
+  --ui-radius: 0.375rem;
+}
+
+/* 🦃 Thanksgiving — warm autumn orange + brown. */
+[data-theme="thanksgiving"] {
+  --ui-primary: #c2410c;
+  --ui-bg-default: #fef6ec;
+  --ui-bg-muted: #fcebd5;
+  --ui-bg-elevated: #fffaf3;
+  --ui-bg-accented: #f7dcb8;
+  --ui-border-default: #d8a26a;
+  --ui-border-muted: #f0d9bb;
+  --ui-border-accented: #b45309;
+  --ui-text-dimmed: #b08a63;
+  --ui-text-muted: #8a6234;
+  --ui-text-toned: #6b4824;
+  --ui-text-default: #4a2f16;
+  --ui-text-highlighted: #331f0d;
+  --ui-radius: 0.375rem;
+}
+
+/* 🥂 New Year's — black-tie with gold (dark). */
+[data-theme="newyears"] {
+  --ui-primary: #d4af37;
+  --ui-bg-default: #0c0a09;
+  --ui-bg-muted: #1c1917;
+  --ui-bg-elevated: #292524;
+  --ui-bg-accented: #44403c;
+  --ui-border-default: #57534e;
+  --ui-border-muted: #292524;
+  --ui-border-accented: #d4af37;
+  --ui-text-dimmed: #a8a29e;
+  --ui-text-muted: #d6d3d1;
+  --ui-text-toned: #e7e5e4;
+  --ui-text-default: #f5f5f4;
+  --ui-text-highlighted: #ffffff;
+  --ui-radius: 0.25rem;
+}
+
+/* ❄️ Winter — icy blues + white. */
+[data-theme="winter"] {
+  --ui-primary: #0284c7;
+  --ui-bg-default: #f0f9ff;
+  --ui-bg-muted: #e0f2fe;
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: #bae6fd;
+  --ui-border-default: #7dd3fc;
+  --ui-border-muted: #e0f2fe;
+  --ui-border-accented: #38bdf8;
+  --ui-text-dimmed: #7d97ad;
+  --ui-text-muted: #4a6b87;
+  --ui-text-toned: #335067;
+  --ui-text-default: #1c3447;
+  --ui-text-highlighted: #0c2030;
+  --ui-radius: 0.5rem;
+}
+
+/* 🪐 Space — deep cosmos navy + violet, neon (dark). */
+[data-theme="space"] {
+  --ui-primary: #8b5cf6;
+  --ui-bg-default: #0b1020;
+  --ui-bg-muted: #131a30;
+  --ui-bg-elevated: #1b2440;
+  --ui-bg-accented: #28335a;
+  --ui-border-default: #2f3a63;
+  --ui-border-muted: #1e2747;
+  --ui-border-accented: #4b5a93;
+  --ui-text-dimmed: #7e87b0;
+  --ui-text-muted: #a9b1d6;
+  --ui-text-toned: #c7cdec;
+  --ui-text-default: #e6e9f7;
   --ui-text-highlighted: #ffffff;
   --ui-radius: 0.5rem;
 }

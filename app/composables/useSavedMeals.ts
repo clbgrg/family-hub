@@ -5,12 +5,15 @@ export type SavedMeal = {
   title: string;
   notes: string | null;
   ingredients: string | null;
+  // Usual days for this template (0=Sun .. 6=Sat).
+  defaultDays: number[];
 };
 
 export type CreateSavedMealInput = {
   title: string;
   notes?: string;
   ingredients?: string;
+  defaultDays?: number[];
 };
 
 /** The saved-meals repository (shared asyncData key). */

@@ -48,6 +48,8 @@ export default defineEventHandler(async (event) => {
     data.rotate = body.rotate;
   if (typeof body?.claimable === "boolean")
     data.claimable = body.claimable;
+  if (typeof body?.wheelEligible === "boolean")
+    data.wheelEligible = body.wheelEligible;
   if ("rewardId" in body)
     data.rewardId = String(body.rewardId ?? "").trim() || null;
 

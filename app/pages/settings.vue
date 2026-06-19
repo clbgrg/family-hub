@@ -95,6 +95,13 @@ const selectedTheme = computed({
   },
 });
 
+const decorEnabled = computed({
+  get: () => preferences.value?.themeDecorEnabled !== false,
+  set(value: boolean) {
+    updatePreferences({ themeDecorEnabled: value });
+  },
+});
+
 const selectedDefaultView = computed({
   get: () => preferences.value?.defaultView ?? "/calendar",
   set(value: string) {
@@ -1316,6 +1323,21 @@ onMounted(async () => {
                 option-attribute="label"
                 :ui="{ content: 'min-w-fit' }"
                 aria-label="Select theme"
+              />
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-medium text-highlighted">
+                  Theme decorations
+                </p>
+                <p class="text-sm text-muted">
+                  Festive animations (snow, balloons…) for the active theme
+                </p>
+              </div>
+              <USwitch
+                v-model="decorEnabled"
+                color="primary"
+                aria-label="Toggle theme decorations"
               />
             </div>
             <div class="flex items-center justify-between">

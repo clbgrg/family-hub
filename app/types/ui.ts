@@ -115,14 +115,39 @@ export type TodoSortMode = "date" | "priority" | "alpha";
 
 // Site-wide visual theme (per-device). Applied as `data-theme` on <html>;
 // "default" removes the attribute and uses the standard light/dark tokens.
-export type ThemeName = "default" | "birthday" | "minecraft" | "christmas" | "halloween";
+export type ThemeName
+  = | "default"
+    | "auto"
+    | "birthday"
+    | "valentines"
+    | "stpatricks"
+    | "easter"
+    | "independence"
+    | "halloween"
+    | "thanksgiving"
+    | "christmas"
+    | "newyears"
+    | "winter"
+    | "space"
+    | "minecraft";
 
 export const THEME_OPTIONS: { value: ThemeName; label: string }[] = [
   { value: "default", label: "Default" },
+  { value: "auto", label: "Auto (Seasonal) ✨" },
+  // Holidays, roughly in calendar order…
   { value: "birthday", label: "Birthday 🎉" },
-  { value: "minecraft", label: "Minecraft ⛏️" },
-  { value: "christmas", label: "Christmas 🎄" },
+  { value: "valentines", label: "Valentine's 💝" },
+  { value: "stpatricks", label: "St. Patrick's ☘️" },
+  { value: "easter", label: "Easter 🐰" },
+  { value: "independence", label: "Independence 🎆" },
   { value: "halloween", label: "Halloween 🎃" },
+  { value: "thanksgiving", label: "Thanksgiving 🦃" },
+  { value: "christmas", label: "Christmas 🎄" },
+  { value: "newyears", label: "New Year's 🥂" },
+  // …seasons + fun.
+  { value: "winter", label: "Winter ❄️" },
+  { value: "space", label: "Space 🪐" },
+  { value: "minecraft", label: "Minecraft ⛏️" },
 ];
 
 export type ClientPreferences = {
@@ -140,6 +165,8 @@ export type ClientPreferences = {
   schoolStudentsOnly?: boolean;
   // Site-wide visual theme for this device.
   theme?: ThemeName;
+  // Ambient per-theme decorations (snow, balloons, …) on this device. On by default.
+  themeDecorEnabled?: boolean;
 };
 
 export const MAIN_VIEW_OPTIONS: { path: string; label: string }[] = [
@@ -160,6 +187,7 @@ export const defaultClientPreferences: ClientPreferences = {
   screensaverIdleMinutes: 5,
   schoolStudentsOnly: true,
   theme: "default",
+  themeDecorEnabled: true,
 };
 
 export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [

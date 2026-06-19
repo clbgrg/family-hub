@@ -2,8 +2,10 @@
 import type { ChoreBoardItem, NewBadge } from "~/composables/useChores";
 import type { Meal, MealSlot } from "~/composables/useMeals";
 import type { SchoolItem } from "~/composables/useSchoolItems";
+import type { ThemeName } from "~/types/ui";
 
 import { groupChoresByArea, recurrenceLabel } from "~/composables/useChores";
+import { THEME_OPTIONS } from "~/types/ui";
 
 type DashUser = { id: string; name: string; avatar: string | null; color: string | null };
 type DashEvent = {
@@ -22,6 +24,13 @@ const requestFetch = useRequestFetch();
 const today = isoToday();
 const { count: unreadNotes } = useUnreadMessages();
 const { startTimerFor } = useTaskTimer();
+
+// Quick theme switcher in the dashboard header (full control also in Settings → Appearance).
+const { preferences, updatePreferences } = useClientPreferences();
+const selectedTheme = computed({
+  get: () => preferences.value?.theme ?? "default",
+  set: (v: ThemeName) => updatePreferences({ theme: v }),
+});
 
 // Shared asyncData keys with the chores page, so a check-off here refreshes
 // the board there (and vice versa) — plus interactive setDone + celebration.
@@ -203,6 +212,16 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
           {{ longDate }}
         </p>
       </div>
+      <USelect
+        v-model="selectedTheme"
+        :items="THEME_OPTIONS"
+        value-attribute="value"
+        option-attribute="label"
+        size="sm"
+        class="ml-auto w-40 shrink-0"
+        :ui="{ content: 'min-w-fit' }"
+        aria-label="Quick theme switch"
+      />
     </div>
 
     <ClientOnly>

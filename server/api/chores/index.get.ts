@@ -118,6 +118,7 @@ export default defineEventHandler(async (event) => {
         pausedUntil: c.pausedUntil,
         rotate: c.rotate,
         claimable: c.claimable,
+        wheelEligible: c.wheelEligible,
         claimedBy: claimerName,
         claimedById: claimerId,
         reward: c.reward,

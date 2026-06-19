@@ -28,6 +28,8 @@ export type ChoreBoardItem = {
   pausedUntil: string | null;
   rotate: boolean;
   claimable: boolean;
+  /** On the random "punishment" chore wheel (admin-curated subset). */
+  wheelEligible: boolean;
   claimedBy: string | null;
   claimedById: string | null;
   reward: { id: string; name: string } | null;
@@ -82,6 +84,7 @@ export type CreateChoreInput = {
   pausedUntil?: string | null;
   rotate?: boolean;
   claimable?: boolean;
+  wheelEligible?: boolean;
   rewardId?: string | null;
 };
 

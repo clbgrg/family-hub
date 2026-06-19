@@ -1,0 +1,176 @@
+<script setup lang="ts">
+export type WheelChore = { id: string; title: string; points: number };
+
+const props = defineProps<{
+  open: boolean;
+  chores: WheelChore[];
+}>();
+const emit = defineEmits<{ (e: "close"): void }>();
+
+// Distinct, cheerful slice colors (cycled).
+const PALETTE = ["#ef4444", "#f59e0b", "#22c55e", "#0ea5e9", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
+
+const rotation = ref(0);
+const spinning = ref(false);
+const result = ref<WheelChore | null>(null);
+const pendingIdx = ref(0);
+
+const n = computed(() => props.chores.length);
+const seg = computed(() => (n.value ? 360 / n.value : 360));
+
+// Point on the wheel (viewBox 0..200, center 100,100) at `r` from center and
+// `angleDeg` measured clockwise from the top (12 o'clock = 0°).
+function polar(r: number, angleDeg: number): [number, number] {
+  const a = ((angleDeg - 90) * Math.PI) / 180;
+  return [100 + r * Math.cos(a), 100 + r * Math.sin(a)];
+}
+
+const slices = computed(() =>
+  props.chores.map((c, i) => {
+    const a0 = i * seg.value;
+    const a1 = (i + 1) * seg.value;
+    const [x0, y0] = polar(95, a0);
+    const [x1, y1] = polar(95, a1);
+    const large = seg.value > 180 ? 1 : 0;
+    const d = n.value === 1
+      ? "M 100 5 A 95 95 0 1 1 99.99 5 Z"
+      : `M 100 100 L ${x0.toFixed(2)} ${y0.toFixed(2)} A 95 95 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`;
+    const [lx, ly] = polar(60, a0 + seg.value / 2);
+    return { id: c.id, title: c.title, color: PALETTE[i % PALETTE.length]!, d, lx, ly };
+  }),
+);
+
+function reducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function finish() {
+  spinning.value = false;
+  result.value = props.chores[pendingIdx.value] ?? null;
+  if (!reducedMotion()) {
+    import("canvas-confetti")
+      .then(m => m.default({ particleCount: 90, spread: 95, origin: { y: 0.4 } }))
+      .catch(() => {});
+  }
+}
+
+function spin() {
+  if (spinning.value || n.value === 0)
+    return;
+  result.value = null;
+  pendingIdx.value = Math.floor(Math.random() * n.value);
+  if (reducedMotion()) {
+    finish();
+    return;
+  }
+  spinning.value = true;
+  // Land slice `idx` under the top pointer: rotate so its centre sits at 0°,
+  // plus several full turns and a little within-slice jitter for natural feel.
+  const base = Math.ceil((rotation.value + 1) / 360) * 360;
+  const land = 360 - (pendingIdx.value * seg.value + seg.value / 2);
+  const jitter = (Math.random() - 0.5) * seg.value * 0.7;
+  rotation.value = base + 360 * 5 + land - jitter;
+}
+
+function onTransitionEnd() {
+  if (spinning.value)
+    finish();
+}
+
+watch(() => props.open, (o) => {
+  if (o)
+    result.value = null;
+});
+</script>
+
+<template>
+  <div
+    v-if="open"
+    class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+    @click="emit('close')"
+  >
+    <div class="w-[420px] max-w-full rounded-lg border border-default bg-default p-5 shadow-lg" @click.stop>
+      <div class="mb-3 flex items-center justify-between">
+        <h3 class="text-base font-semibold text-highlighted">
+          🎯 Chore Wheel
+        </h3>
+        <UButton
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-x"
+          aria-label="Close"
+          @click="emit('close')"
+        />
+      </div>
+
+      <div v-if="n === 0" class="py-8 text-center text-sm text-muted">
+        No chores are on the wheel yet. An admin can mark chores “on the wheel” in the chore editor.
+      </div>
+
+      <template v-else>
+        <div class="relative mx-auto aspect-square w-72 max-w-full">
+          <!-- Pointer (fixed at the top, pointing into the wheel). -->
+          <div class="absolute left-1/2 top-0 z-10 -translate-x-1/2">
+            <div class="size-0 border-x-8 border-t-[16px] border-x-transparent border-t-primary" />
+          </div>
+          <svg
+            viewBox="0 0 200 200"
+            class="w-full drop-shadow"
+            :style="{
+              transform: `rotate(${rotation}deg)`,
+              transformOrigin: 'center',
+              transition: spinning ? 'transform 4.2s cubic-bezier(0.17, 0.67, 0.21, 1)' : 'none',
+            }"
+            @transitionend="onTransitionEnd"
+          >
+            <path
+              v-for="s in slices"
+              :key="s.id"
+              :d="s.d"
+              :fill="s.color"
+              stroke="white"
+              stroke-width="1"
+            />
+            <text
+              v-for="s in slices"
+              :key="`t${s.id}`"
+              :x="s.lx"
+              :y="s.ly"
+              text-anchor="middle"
+              dominant-baseline="middle"
+              class="fill-white text-[7px] font-semibold"
+            >{{ s.title.length > 12 ? `${s.title.slice(0, 11)}…` : s.title }}</text>
+            <circle
+              cx="100"
+              cy="100"
+              r="10"
+              fill="white"
+              stroke="#00000022"
+            />
+          </svg>
+        </div>
+
+        <p v-if="result" class="mt-4 text-center">
+          <span class="text-sm text-muted">The wheel landed on…</span><br>
+          <span class="text-xl font-bold text-highlighted">{{ result.title }}</span>
+        </p>
+        <p v-else class="mt-4 text-center text-sm text-muted">
+          Give it a spin to pick a random chore!
+        </p>
+
+        <div class="mt-4 flex justify-center">
+          <UButton
+            size="lg"
+            color="primary"
+            icon="i-lucide-rotate-cw"
+            :loading="spinning"
+            :disabled="spinning"
+            @click="spin"
+          >
+            {{ result ? "Spin again" : "Spin the wheel" }}
+          </UButton>
+        </div>
+      </template>
+    </div>
+  </div>
+</template>

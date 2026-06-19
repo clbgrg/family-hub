@@ -9,6 +9,10 @@ import TaskTimerOverlay from "~/components/global/taskTimerOverlay.vue";
 const dock = false;
 const { isLoading, loadingMessage, setLoading } = useGlobalLoading();
 
+// Owns the site-wide theme: resolves the effective (incl. auto-seasonal) theme,
+// applies `data-theme`, and drives the ambient decorations below.
+const { effectiveTheme, decorEnabled } = useTheme();
+
 setLoading(true);
 
 onNuxtReady(() => {
@@ -44,6 +48,7 @@ onNuxtReady(() => {
     </div>
 
     <ClientOnly>
+      <ThemeDecor :theme="effectiveTheme" :enabled="decorEnabled" />
       <GlobalScreensaver />
       <AdminGateModal />
       <TaskTimerOverlay />

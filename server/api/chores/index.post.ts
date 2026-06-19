@@ -34,6 +34,7 @@ export default defineEventHandler(async (event) => {
   const pausedUntil = dateOrNull(body?.pausedUntil);
   const rotate = body?.rotate === true;
   const claimable = body?.claimable === true;
+  const wheelEligible = body?.wheelEligible === true;
   const rewardId = String(body?.rewardId ?? "").trim() || null;
 
   const maxOrder = await prisma.chore.aggregate({ _max: { order: true } });
@@ -52,6 +53,7 @@ export default defineEventHandler(async (event) => {
         pausedUntil,
         rotate,
         claimable,
+        wheelEligible,
         rewardId,
         order: ((maxOrder._max?.order) || 0) + 1,
         assignments: { create: assigneeIds.map(userId => ({ userId })) },

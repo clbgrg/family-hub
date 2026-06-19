@@ -7,6 +7,7 @@ const { pointsLabel, gradeScale, config, save } = useFamilyConfig();
 const labelInput = ref("");
 const gradeInput = ref("");
 const boostEnabled = ref(false);
+const seasonalEnabled = ref(false);
 const saved = ref(false);
 
 // Seed inputs from the saved config. Only the initial load and a post-save
@@ -15,6 +16,7 @@ watchEffect(() => {
   labelInput.value = config.value.pointsLabel ?? "";
   gradeInput.value = config.value.gradeScale ?? "";
   boostEnabled.value = config.value.autoBoostEnabled === "true";
+  seasonalEnabled.value = config.value.autoSeasonalTheme === "true";
 });
 
 async function onSave() {
@@ -22,6 +24,7 @@ async function onSave() {
     pointsLabel: labelInput.value.trim(),
     gradeScale: gradeInput.value.trim(),
     autoBoostEnabled: boostEnabled.value ? "true" : "false",
+    autoSeasonalTheme: seasonalEnabled.value ? "true" : "false",
   }));
   saved.value = true;
   setTimeout(() => {
@@ -65,6 +68,14 @@ async function onSave() {
       <UCheckbox v-model="boostEnabled" label="Boost neglected chores automatically" />
       <p class="text-xs text-muted">
         When a recurring chore keeps getting skipped, its {{ pointsLabel }} climb a little each missed day (up to a cap) until someone does it — then it resets. Off by default.
+      </p>
+    </div>
+
+    <div class="space-y-2">
+      <label class="block text-sm font-medium text-highlighted">Auto-seasonal themes</label>
+      <UCheckbox v-model="seasonalEnabled" label="Match the theme to the season automatically" />
+      <p class="text-xs text-muted">
+        When on, devices left on the <span class="font-medium">Default</span> theme automatically switch to the matching holiday skin around its date — Halloween in late October, Christmas in December, and so on. Anyone can still pick a specific theme on their own device to override it. Off by default.
       </p>
     </div>
 

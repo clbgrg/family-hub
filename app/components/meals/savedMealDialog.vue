@@ -12,10 +12,27 @@ const emit = defineEmits<{
   (e: "save", data: CreateSavedMealInput): void;
 }>();
 
+const WEEKDAYS = [
+  { value: 1, label: "Mon" },
+  { value: 2, label: "Tue" },
+  { value: 3, label: "Wed" },
+  { value: 4, label: "Thu" },
+  { value: 5, label: "Fri" },
+  { value: 6, label: "Sat" },
+  { value: 0, label: "Sun" },
+] as const;
+
 const title = ref("");
 const notes = ref("");
 const ingredients = ref("");
+const days = ref<number[]>([]);
 const errorMsg = ref<string | null>(null);
+
+function toggleDay(d: number) {
+  days.value = days.value.includes(d)
+    ? days.value.filter(x => x !== d)
+    : [...days.value, d];
+}
 
 watch(
   () => props.isOpen,
@@ -25,6 +42,7 @@ watch(
     title.value = props.meal?.title ?? "";
     notes.value = props.meal?.notes ?? "";
     ingredients.value = props.meal?.ingredients ?? "";
+    days.value = [...(props.meal?.defaultDays ?? [])];
     errorMsg.value = null;
   },
   { immediate: true },
@@ -39,6 +57,7 @@ function handleSave() {
     title: title.value.trim(),
     notes: notes.value.trim(),
     ingredients: ingredients.value.trim(),
+    defaultDays: [...days.value].sort((a, b) => a - b),
   });
   emit("close");
 }
@@ -104,6 +123,25 @@ function handleSave() {
           />
           <p class="text-xs text-muted">
             Carried onto the planner when you drop this meal on a day.
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Usual days (optional)</label>
+          <div class="flex flex-wrap gap-1">
+            <UButton
+              v-for="d in WEEKDAYS"
+              :key="d.value"
+              size="xs"
+              :variant="days.includes(d.value) ? 'solid' : 'soft'"
+              :color="days.includes(d.value) ? 'primary' : 'neutral'"
+              @click="toggleDay(d.value)"
+            >
+              {{ d.label }}
+            </UButton>
+          </div>
+          <p class="text-xs text-muted">
+            The days this meal is usually served — quick-add it to a week from the planner.
           </p>
         </div>
       </div>

@@ -45,6 +45,21 @@ const ranking = computed(() => {
     .filter(r => r.user && r.pointsWeek > 0);
 });
 
+// Random "punishment" chore wheel — the curated subset flagged wheelEligible
+// (derived from the already-loaded board; de-duped across assignee rows).
+const wheelOpen = ref(false);
+const wheelChores = computed(() => {
+  const seen = new Set<string>();
+  const out: { id: string; title: string; points: number }[] = [];
+  for (const c of chores.value ?? []) {
+    if (c.wheelEligible && !seen.has(c.id)) {
+      seen.add(c.id);
+      out.push({ id: c.id, title: c.title, points: c.points });
+    }
+  }
+  return out;
+});
+
 const dialogOpen = ref(false);
 const editing = ref<ChoreBoardItem | null>(null);
 const celebration = ref<{ name: string; pointsToday: number; streak: number; newBadges: NewBadge[] } | null>(null);
@@ -115,13 +130,30 @@ async function onDelete(id: string) {
   <div class="flex w-full flex-col">
     <div class="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-default bg-default py-5 sm:px-4">
       <GlobalDateHeader />
-      <UButton
-        v-if="isAdmin"
-        icon="i-lucide-plus"
-        label="Add chore"
-        @click="addChore"
-      />
+      <div class="flex items-center gap-2">
+        <UButton
+          v-if="wheelChores.length"
+          icon="i-lucide-disc-3"
+          color="primary"
+          variant="soft"
+          label="Spin"
+          title="Spin the chore wheel"
+          @click="wheelOpen = true"
+        />
+        <UButton
+          v-if="isAdmin"
+          icon="i-lucide-plus"
+          label="Add chore"
+          @click="addChore"
+        />
+      </div>
     </div>
+
+    <ChoreWheel
+      :open="wheelOpen"
+      :chores="wheelChores"
+      @close="wheelOpen = false"
+    />
 
     <ClientOnly>
       <!-- Weekly leaderboard -->

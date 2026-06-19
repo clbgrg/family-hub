@@ -46,6 +46,27 @@ export default defineNuxtConfig({
     "nuxt-auth-utils",
   ],
 
+  // Iconify icons (via @nuxt/ui's @nuxt/icon). This app runs LAN-only/offline on
+  // the Pi, so icons must never depend on the public Iconify API:
+  //   - serverBundle "local": embed installed @iconify-json collections into the
+  //     server build (already the default when collections are present; explicit
+  //     here so it can't regress).
+  //   - clientBundle.scan: also embed every statically-used icon into the client
+  //     bundle, so they paint instantly with no runtime round-trip. DB-driven
+  //     names (badge/area icons) that can't be scanned still resolve via the
+  //     same-origin /api/_nuxt_icon route (works offline).
+  //   - fallbackToApi false: never reach out to api.iconify.design (would hang
+  //     offline). All icons used here are lucide, which is bundled.
+  icon: {
+    serverBundle: "local",
+    clientBundle: {
+      scan: true,
+      includeCustomCollections: true,
+      sizeLimitKb: 1024,
+    },
+    fallbackToApi: false,
+  },
+
   fonts: {
     families: [
       {

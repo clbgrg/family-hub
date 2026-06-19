@@ -18,6 +18,7 @@ describe("pUT /api/saved-meals/[id]", () => {
     title: "Test Meal",
     notes: null,
     ingredients: null,
+    defaultDays: [],
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -37,7 +38,7 @@ describe("pUT /api/saved-meals/[id]", () => {
 
       expect(prisma.savedMeal.update).toHaveBeenCalledWith({
         where: { id: "meal-1" },
-        data: { title: "Taco Tuesday", notes: "recipe link", ingredients: "beef\nshells" },
+        data: { title: "Taco Tuesday", notes: "recipe link", ingredients: "beef\nshells", defaultDays: [] },
       });
       expect(response).toEqual(updated);
     });
@@ -54,7 +55,23 @@ describe("pUT /api/saved-meals/[id]", () => {
 
       expect(prisma.savedMeal.update).toHaveBeenCalledWith({
         where: { id: "meal-1" },
-        data: { title: "Plain", notes: null, ingredients: null },
+        data: { title: "Plain", notes: null, ingredients: null, defaultDays: [] },
+      });
+    });
+
+    it("normalizes defaultDays (dedups, sorts, drops invalid)", async () => {
+      prisma.savedMeal.update.mockResolvedValue(createBaseSavedMeal({ defaultDays: [1, 3] }));
+
+      const event = createMockH3Event({
+        params: { id: "meal-1" },
+        body: { title: "Taco", defaultDays: [3, 1, 1, 9, -1, 2.5] },
+      });
+
+      await handler(event);
+
+      expect(prisma.savedMeal.update).toHaveBeenCalledWith({
+        where: { id: "meal-1" },
+        data: { title: "Taco", notes: null, ingredients: null, defaultDays: [1, 3] },
       });
     });
   });

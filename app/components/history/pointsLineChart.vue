@@ -7,6 +7,9 @@ const props = defineProps<{
   pointsLabel?: string;
 }>();
 
+// Click a member in the legend to filter the whole history to them (admins).
+const emit = defineEmits<{ selectUser: [userId: string] }>();
+
 type Series = { userId: string; name: string; color: string | null; points: number[] };
 type SeriesResponse = { since: string; days: number; dates: string[]; series: Series[] };
 
@@ -240,13 +243,16 @@ function onLeave() {
       </div>
 
       <div v-if="lines.length > 1" class="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-        <span
+        <button
           v-for="l in lines"
           :key="`lg${l.key}`"
-          class="flex items-center gap-1 text-xs text-muted"
+          type="button"
+          class="flex items-center gap-1 rounded text-xs text-muted transition hover:text-default"
+          :title="`Show only ${l.name}`"
+          @click="emit('selectUser', l.key)"
         >
           <span class="size-2 rounded-full" :style="{ backgroundColor: l.color }" />{{ l.name }}
-        </span>
+        </button>
       </div>
     </div>
     <p v-else class="py-8 text-center text-sm text-muted">

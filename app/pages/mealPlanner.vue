@@ -97,6 +97,23 @@ async function onSavedMealSave(data: CreateSavedMealInput) {
     await createSavedMeal(data);
 }
 
+const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function dayAbbr(d: number) {
+  return DAY_ABBR[d] ?? "";
+}
+
+// Quick-add a saved meal to its usual days in the week being viewed (dinner by
+// default — tweak any cell afterward). weekStart is a Sunday, so a weekday
+// index maps straight onto days[d].
+async function quickAddToWeek(meal: SavedMeal) {
+  for (const d of meal.defaultDays) {
+    const date = days.value[d];
+    if (!date)
+      continue;
+    await upsertMeal({ date, slot: "DINNER", title: meal.title, notes: meal.notes ?? "", ingredients: meal.ingredients ?? "" });
+  }
+}
+
 const generating = ref(false);
 const genResult = ref("");
 async function onGenerate() {
@@ -239,7 +256,20 @@ async function onGenerate() {
                   <p v-if="m.ingredients" class="truncate text-xs text-muted">
                     {{ m.ingredients.split("\n").length }} ingredient{{ m.ingredients.split("\n").length === 1 ? "" : "s" }}
                   </p>
+                  <p v-if="m.defaultDays.length" class="truncate text-xs text-primary">
+                    {{ m.defaultDays.map(dayAbbr).join(", ") }}
+                  </p>
                 </div>
+                <UButton
+                  v-if="isAdmin && m.defaultDays.length"
+                  icon="i-lucide-calendar-plus"
+                  size="xs"
+                  variant="ghost"
+                  color="primary"
+                  class="opacity-0 transition group-hover:opacity-100"
+                  :aria-label="`Add ${m.title} to this week`"
+                  @click="quickAddToWeek(m)"
+                />
                 <UButton
                   v-if="isAdmin"
                   icon="i-lucide-pencil"

@@ -1,5 +1,9 @@
 import prisma from "~/lib/prisma";
 
+// Explicit import (not the Nitro auto-import): vitest doesn't inject server
+// auto-imports, so the endpoint would throw at test runtime otherwise.
+import { normalizeWeekdays } from "../../utils/weekdays";
+
 /**
  * Save a meal to the repository. Admin only (parents plan meals, matching the
  * planner's PUT). Duplicate titles are allowed — the family may well have two
@@ -19,6 +23,7 @@ export default defineEventHandler(async (event) => {
       title,
       notes: String(body?.notes ?? "").trim() || null,
       ingredients: String(body?.ingredients ?? "").trim() || null,
+      defaultDays: normalizeWeekdays(body?.defaultDays),
     },
   });
 });
