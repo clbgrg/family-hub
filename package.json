@@ -1,7 +1,7 @@
 {
   "name": "skylite-ux",
   "type": "module",
-  "version": "2026.6.12",
+  "version": "2026.6.11",
   "private": true,
   "engines": {
     "node": ">=22.12.0"
