@@ -127,6 +127,19 @@ export function groupChoresByArea<T extends { area: AreaInfo | null }>(chores: T
 }
 
 /**
+ * Float the signed-in member's own row to the front of a per-person board, so
+ * on a personal phone you see yourself first. A no-op on the shared kiosk
+ * (everyone is the admin session) or when `meId` is undefined. Sorts in place —
+ * callers pass a freshly-mapped array — and returns it; the stable sort keeps
+ * everyone else in their existing order.
+ */
+export function sortMeFirst<T extends { user: { id: string } }>(rows: T[], meId: string | undefined): T[] {
+  if (meId)
+    rows.sort((a, b) => Number(b.user.id === meId) - Number(a.user.id === meId));
+  return rows;
+}
+
+/**
  * Client-local date "YYYY-MM-DD" — the server is UTC, so done-today logic
  *  must key off the client's day (mirrors useTodos' clientDate pattern).
  */

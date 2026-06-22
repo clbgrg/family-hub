@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ChoreBoardItem, CreateChoreInput, NewBadge } from "~/composables/useChores";
 
-import { groupChoresByArea, recurrenceLabel } from "~/composables/useChores";
+import { groupChoresByArea, recurrenceLabel, sortMeFirst } from "~/composables/useChores";
 
 const { user } = useUserSession();
 const isAdmin = computed(() => user.value?.role === "ADMIN");
@@ -23,7 +23,7 @@ const { data: users } = await useAsyncData(
 // Group today's due chores under each family member, with their stats.
 const board = computed(() => {
   const due = (chores.value ?? []).filter(c => c.dueToday);
-  return (users.value ?? []).map((u) => {
+  const groups = (users.value ?? []).map((u) => {
     const s = statsByUser.value[u.id];
     const userChores = due.filter(c => c.assignee?.id === u.id);
     return {
@@ -35,6 +35,7 @@ const board = computed(() => {
       choreGroups: groupChoresByArea(userChores),
     };
   });
+  return sortMeFirst(groups, user.value?.id);
 });
 
 // Weekly-points ranking with member info.

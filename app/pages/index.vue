@@ -4,7 +4,7 @@ import type { Meal, MealSlot } from "~/composables/useMeals";
 import type { SchoolItem } from "~/composables/useSchoolItems";
 import type { ThemeName } from "~/types/ui";
 
-import { groupChoresByArea, recurrenceLabel } from "~/composables/useChores";
+import { groupChoresByArea, recurrenceLabel, sortMeFirst } from "~/composables/useChores";
 import { THEME_OPTIONS } from "~/types/ui";
 
 type DashUser = { id: string; name: string; avatar: string | null; color: string | null };
@@ -107,12 +107,7 @@ const columns = computed(() => {
       school: schoolByUser.value[u.id] ?? "",
     };
   });
-  // Float the signed-in member's own column to the front (handy on a personal
-  // phone; a no-op on the shared kiosk where everyone is the admin session).
-  const meId = user.value?.id;
-  if (meId)
-    cols.sort((a, b) => Number(b.user.id === meId) - Number(a.user.id === meId));
-  return cols;
+  return sortMeFirst(cols, user.value?.id);
 });
 
 // Tap a column header to fold it into its accordion header (handy when a

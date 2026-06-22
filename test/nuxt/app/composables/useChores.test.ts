@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { AreaInfo } from "~/composables/useChores";
-import { groupChoresByArea, recurrenceLabel } from "~/composables/useChores";
+import { groupChoresByArea, recurrenceLabel, sortMeFirst } from "~/composables/useChores";
 
 const kitchen: AreaInfo = { id: "k", name: "Kitchen", icon: "🧼", order: 0 };
 const bedroom: AreaInfo = { id: "b", name: "Bedroom", icon: "🛏️", order: 1 };
@@ -43,5 +43,29 @@ describe("groupChoresByArea", () => {
   it("preserves chore order within a group", () => {
     const groups = groupChoresByArea([row("a", kitchen), row("b", kitchen), row("c", kitchen)]);
     expect(groups[0]!.chores.map(c => c.id)).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("sortMeFirst", () => {
+  const rows = () => [
+    { user: { id: "a" }, label: "Ann" },
+    { user: { id: "b" }, label: "Bob" },
+    { user: { id: "c" }, label: "Cas" },
+  ];
+
+  it("floats the signed-in member to the front, keeping everyone else in order", () => {
+    expect(sortMeFirst(rows(), "c").map(r => r.user.id)).toEqual(["c", "a", "b"]);
+  });
+
+  it("is a no-op when the signed-in member is already first", () => {
+    expect(sortMeFirst(rows(), "a").map(r => r.user.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("is a no-op when meId is undefined (shared kiosk / not signed in)", () => {
+    expect(sortMeFirst(rows(), undefined).map(r => r.user.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("leaves order unchanged when meId matches nobody", () => {
+    expect(sortMeFirst(rows(), "zzz").map(r => r.user.id)).toEqual(["a", "b", "c"]);
   });
 });
