@@ -281,16 +281,6 @@ function handleSave() {
           <UCheckbox v-model="claimable" />
         </div>
 
-        <div class="flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <label class="block text-sm font-medium text-highlighted">On the chore wheel 🎯</label>
-            <p class="text-xs text-muted">
-              Include this chore in the random “punishment” wheel anyone can spin.
-            </p>
-          </div>
-          <UCheckbox v-model="wheelEligible" />
-        </div>
-
         <div class="flex gap-4">
           <div class="flex-1 space-y-2">
             <label class="block text-sm font-medium text-highlighted">Start date</label>

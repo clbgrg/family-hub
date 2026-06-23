@@ -46,20 +46,9 @@ const ranking = computed(() => {
     .filter(r => r.user && r.pointsWeek > 0);
 });
 
-// Random "punishment" chore wheel — the curated subset flagged wheelEligible
-// (derived from the already-loaded board; de-duped across assignee rows).
+// The chore "punishment wheel" now manages its own family-shared list
+// (useWheelChores, in the ChoreWheel component) — just toggle it open here.
 const wheelOpen = ref(false);
-const wheelChores = computed(() => {
-  const seen = new Set<string>();
-  const out: { id: string; title: string; points: number }[] = [];
-  for (const c of chores.value ?? []) {
-    if (c.wheelEligible && !seen.has(c.id)) {
-      seen.add(c.id);
-      out.push({ id: c.id, title: c.title, points: c.points });
-    }
-  }
-  return out;
-});
 
 const dialogOpen = ref(false);
 const editing = ref<ChoreBoardItem | null>(null);
@@ -133,7 +122,6 @@ async function onDelete(id: string) {
       <GlobalDateHeader />
       <div class="flex items-center gap-2">
         <UButton
-          v-if="wheelChores.length"
           icon="i-lucide-disc-3"
           color="primary"
           variant="soft"
@@ -152,7 +140,6 @@ async function onDelete(id: string) {
 
     <ChoreWheel
       :open="wheelOpen"
-      :chores="wheelChores"
       @close="wheelOpen = false"
     />
 
