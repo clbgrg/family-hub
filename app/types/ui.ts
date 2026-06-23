@@ -73,7 +73,7 @@ export type GlobalFloatingActionButtonProps = {
   disabled?: boolean;
 };
 
-const SYSTEM_FONT_STACK = "ui-sans-serif, system-ui, sans-serif";
+const SYSTEM_FONT_STACK = "ui-sans-serif, system-ui, sans-serif, \"Noto Color Emoji\"";
 
 const FONT_PREFERENCES = [
   { value: "system", label: "System", stack: SYSTEM_FONT_STACK },
@@ -135,27 +135,29 @@ export type ThemeName
     | "fantasy"
     | "minecraft";
 
-export const THEME_OPTIONS: { value: ThemeName; label: string }[] = [
-  { value: "default", label: "Default" },
-  { value: "auto", label: "Auto (Seasonal) ✨" },
+// Lucide icons (not emoji) so theme labels render on every device, incl. the
+// Pi kiosk that has no color-emoji font.
+export const THEME_OPTIONS: { value: ThemeName; label: string; icon: string }[] = [
+  { value: "default", label: "Default", icon: "i-lucide-palette" },
+  { value: "auto", label: "Auto (Seasonal)", icon: "i-lucide-sparkles" },
   // Holidays, roughly in calendar order…
-  { value: "birthday", label: "Birthday 🎉" },
-  { value: "valentines", label: "Valentine's 💝" },
-  { value: "stpatricks", label: "St. Patrick's ☘️" },
-  { value: "easter", label: "Easter 🐰" },
-  { value: "independence", label: "Independence 🎆" },
-  { value: "halloween", label: "Halloween 🎃" },
-  { value: "thanksgiving", label: "Thanksgiving 🦃" },
-  { value: "christmas", label: "Christmas 🎄" },
-  { value: "newyears", label: "New Year's 🥂" },
+  { value: "birthday", label: "Birthday", icon: "i-lucide-party-popper" },
+  { value: "valentines", label: "Valentine's", icon: "i-lucide-heart" },
+  { value: "stpatricks", label: "St. Patrick's", icon: "i-lucide-clover" },
+  { value: "easter", label: "Easter", icon: "i-lucide-egg" },
+  { value: "independence", label: "Independence", icon: "i-lucide-flag" },
+  { value: "halloween", label: "Halloween", icon: "i-lucide-ghost" },
+  { value: "thanksgiving", label: "Thanksgiving", icon: "i-lucide-drumstick" },
+  { value: "christmas", label: "Christmas", icon: "i-lucide-tree-pine" },
+  { value: "newyears", label: "New Year's", icon: "i-lucide-party-popper" },
   // …seasons + fun.
-  { value: "winter", label: "Winter ❄️" },
-  { value: "space", label: "Space 🪐" },
-  { value: "nature", label: "Nature 🌲" },
-  { value: "ocean", label: "Ocean 🌊" },
-  { value: "adventure", label: "Adventure ⛰️" },
-  { value: "fantasy", label: "Fantasy ✨" },
-  { value: "minecraft", label: "Minecraft ⛏️" },
+  { value: "winter", label: "Winter", icon: "i-lucide-snowflake" },
+  { value: "space", label: "Space", icon: "i-lucide-rocket" },
+  { value: "nature", label: "Nature", icon: "i-lucide-trees" },
+  { value: "ocean", label: "Ocean", icon: "i-lucide-waves" },
+  { value: "adventure", label: "Adventure", icon: "i-lucide-mountain" },
+  { value: "fantasy", label: "Fantasy", icon: "i-lucide-wand-sparkles" },
+  { value: "minecraft", label: "Minecraft", icon: "i-lucide-pickaxe" },
 ];
 
 export type ClientPreferences = {

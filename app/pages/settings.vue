@@ -1340,6 +1340,11 @@ onMounted(async () => {
                 aria-label="Toggle theme decorations"
               />
             </div>
+            <div class="border-t border-default pt-3">
+              <ClientOnly>
+                <SettingsThemeBackgroundManager />
+              </ClientOnly>
+            </div>
             <div class="flex items-center justify-between">
               <div>
                 <p class="font-medium text-highlighted">

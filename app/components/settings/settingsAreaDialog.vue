@@ -16,6 +16,34 @@ const name = ref("");
 const icon = ref("");
 const errorMsg = ref<string | null>(null);
 
+// Curated Lucide icons for areas — real SVG icons that render on every device
+// (no emoji tofu). Leaving the icon blank auto-picks one from the area name.
+const ICON_CHOICES = [
+  "i-lucide-utensils",
+  "i-lucide-bath",
+  "i-lucide-washing-machine",
+  "i-lucide-bed-double",
+  "i-lucide-sofa",
+  "i-lucide-trees",
+  "i-lucide-car",
+  "i-lucide-trash-2",
+  "i-lucide-paw-print",
+  "i-lucide-spray-can",
+  "i-lucide-refrigerator",
+  "i-lucide-baby",
+  "i-lucide-gamepad-2",
+  "i-lucide-briefcase",
+  "i-lucide-graduation-cap",
+  "i-lucide-dumbbell",
+  "i-lucide-flower-2",
+  "i-lucide-wrench",
+  "i-lucide-warehouse",
+  "i-lucide-door-open",
+];
+function pickIcon(choice: string) {
+  icon.value = icon.value === choice ? "" : choice;
+}
+
 const watchSource = computed(() => ({ isOpen: props.isOpen, area: props.area }));
 watch(
   watchSource,
@@ -81,28 +109,39 @@ function handleSave() {
         </div>
 
         <div class="space-y-2">
-          <label class="block text-sm font-medium text-highlighted">Icon (optional)</label>
+          <label class="block text-sm font-medium text-highlighted">Icon</label>
           <div class="flex items-center gap-2">
             <span v-if="icon && !icon.startsWith('i-')" class="text-2xl leading-none">{{ icon }}</span>
             <UIcon
               v-else
               :name="icon || areaIconFor(name)"
-              class="size-6 text-primary"
+              class="size-7 text-primary"
             />
-            <UInput
-              v-model="icon"
-              placeholder="🧼 or i-lucide-utensils"
-              class="flex-1"
-              :ui="{ base: 'w-full' }"
+            <span class="text-sm text-muted">{{ icon ? "Selected icon" : "Auto (from name)" }}</span>
+            <UButton
+              v-if="icon"
+              size="xs"
+              variant="ghost"
+              color="neutral"
+              label="Use auto"
+              class="ml-auto"
+              @click="icon = ''"
+            />
+          </div>
+          <div class="grid grid-cols-8 gap-1">
+            <UButton
+              v-for="choice in ICON_CHOICES"
+              :key="choice"
+              :icon="choice"
+              size="sm"
+              :color="icon === choice ? 'primary' : 'neutral'"
+              :variant="icon === choice ? 'solid' : 'soft'"
+              :aria-label="choice"
+              @click="pickIcon(choice)"
             />
           </div>
           <p class="text-xs text-muted">
-            An emoji (🧼, 🛏️, 🪥) or any
-            <a
-              href="https://lucide.dev/icons"
-              target="_blank"
-              class="underline"
-            >Lucide</a> name. Leave blank to auto-pick an icon from the name.
+            Pick an icon, or leave it on Auto to choose one from the area name.
           </p>
         </div>
       </div>

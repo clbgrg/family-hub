@@ -2,7 +2,7 @@
 @import "@nuxt/ui";
 
 :root {
-  --app-font-sans: ui-sans-serif, system-ui, sans-serif;
+  --app-font-sans: ui-sans-serif, system-ui, sans-serif, "Noto Color Emoji";
   --ui-text-dimmed: var(--ui-color-neutral-400);
   --ui-text-muted: var(--ui-color-neutral-500);
   --ui-text-toned: var(--ui-color-neutral-600);
@@ -122,6 +122,19 @@ body {
   background-repeat: no-repeat;
 }
 
+/* Readability scrim painted over a custom uploaded background (the bundled SVG
+   art bakes its own scrim into --theme-bg-image, so this is only rendered when a
+   custom image is active). Sits above .theme-bg, behind all content; uses the
+   theme's own surface color so it adapts to light/dark themes. */
+.theme-bg-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--ui-bg-default);
+  opacity: 0.4;
+}
+
 /*
  * Site-wide themes (per-device, via `data-theme` on <html> — set by
  * useClientPreferences / the boot plugin). Each block overrides the Nuxt UI
@@ -163,7 +176,7 @@ body {
   --ui-text-muted: #4a4a4a;
   --ui-text-highlighted: #000000;
   --ui-radius: 0rem;
-  --app-font-sans: "IBM Plex Mono", ui-monospace, monospace;
+  --app-font-sans: "IBM Plex Mono", ui-monospace, monospace, "Noto Color Emoji";
 }
 
 /* Blocky, hard-edged borders for the Minecraft skin. */

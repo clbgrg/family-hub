@@ -99,6 +99,15 @@ export default defineNuxtConfig({
         provider: "google",
         global: true,
       },
+      // Color-emoji fallback so emoji used as UI (theme decor, labels, area
+      // icons) render on devices with NO system emoji font — notably the Pi OS
+      // Lite kiosk and many tablets, where they'd otherwise show as "[]" tofu.
+      // Self-hosted at build by @nuxt/fonts (offline-safe on the LAN).
+      {
+        name: "Noto Color Emoji",
+        provider: "google",
+        global: true,
+      },
     ],
   },
 
