@@ -122,6 +122,19 @@ body {
   background-repeat: no-repeat;
 }
 
+/* Readability scrim painted over a custom uploaded background (the bundled SVG
+   art bakes its own scrim into --theme-bg-image, so this is only rendered when a
+   custom image is active). Sits above .theme-bg, behind all content; uses the
+   theme's own surface color so it adapts to light/dark themes. */
+.theme-bg-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--ui-bg-default);
+  opacity: 0.4;
+}
+
 /*
  * Site-wide themes (per-device, via `data-theme` on <html> — set by
  * useClientPreferences / the boot plugin). Each block overrides the Nuxt UI

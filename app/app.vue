@@ -22,7 +22,7 @@ onNuxtReady(() => {
 
 <template>
   <UApp>
-    <ThemeBackground />
+    <ThemeBackground :theme="effectiveTheme" />
 
     <GlobalAppLoading
       :is-loading="isLoading"
