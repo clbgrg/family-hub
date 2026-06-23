@@ -91,6 +91,38 @@ body {
 }
 
 /*
+ * Immersive theme backgrounds + chart palette. `.theme-bg` is a fixed,
+ * full-viewport layer (rendered by <ThemeBackground>) that paints the active
+ * theme's `--theme-bg-image` behind the app at z-index -1 — above the solid
+ * body color, behind all content. The default theme leaves it transparent.
+ * Each theme's `--theme-bg-image` bakes a readability scrim over any bundled
+ * SVG art. Charts read `--chart-*` (a member's own color still wins) so they
+ * recolor per theme.
+ */
+:root {
+  --theme-bg-image: none;
+  --chart-1: #0ea5e9;
+  --chart-2: #22c55e;
+  --chart-3: #f59e0b;
+  --chart-4: #ec4899;
+  --chart-5: #8b5cf6;
+  --chart-6: #ef4444;
+  --chart-7: #14b8a6;
+  --chart-8: #eab308;
+}
+
+.theme-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--theme-bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/*
  * Site-wide themes (per-device, via `data-theme` on <html> — set by
  * useClientPreferences / the boot plugin). Each block overrides the Nuxt UI
  * design tokens, so every component and the dashboard's token-based accents
@@ -318,4 +350,163 @@ body {
   --ui-text-default: #e6e9f7;
   --ui-text-highlighted: #ffffff;
   --ui-radius: 0.5rem;
+}
+
+/* 🌲 Nature — fresh forest greens + earth, light. */
+[data-theme="nature"] {
+  --ui-primary: #4d7c0f;
+  --ui-bg-default: #f3f8ec;
+  --ui-bg-muted: #e7f1d8;
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: #d6e9c0;
+  --ui-border-default: #a7c982;
+  --ui-border-muted: #dcecca;
+  --ui-border-accented: #76a73e;
+  --ui-text-dimmed: #88a06f;
+  --ui-text-muted: #5b7740;
+  --ui-text-toned: #41592c;
+  --ui-text-default: #2a3d1a;
+  --ui-text-highlighted: #18260e;
+  --ui-radius: 0.5rem;
+}
+
+/* 🌊 Ocean — deep underwater teal + blue (dark). */
+[data-theme="ocean"] {
+  --ui-primary: #22d3ee;
+  --ui-bg-default: #062539;
+  --ui-bg-muted: #0a3550;
+  --ui-bg-elevated: #0e425f;
+  --ui-bg-accented: #145571;
+  --ui-border-default: #1d6b86;
+  --ui-border-muted: #0f3f59;
+  --ui-border-accented: #2a8aa6;
+  --ui-text-dimmed: #6ea3b8;
+  --ui-text-muted: #9fc8d8;
+  --ui-text-toned: #c2e2ee;
+  --ui-text-default: #e6f6fb;
+  --ui-text-highlighted: #ffffff;
+  --ui-radius: 0.75rem;
+}
+
+/* ⛰️ Adventure — warm dawn over mountains, light. */
+[data-theme="adventure"] {
+  --ui-primary: #ea580c;
+  --ui-bg-default: #fbf3ea;
+  --ui-bg-muted: #f6e6d6;
+  --ui-bg-elevated: #fffaf4;
+  --ui-bg-accented: #f0d6bd;
+  --ui-border-default: #d9b08c;
+  --ui-border-muted: #efddca;
+  --ui-border-accented: #b9774a;
+  --ui-text-dimmed: #a98a6f;
+  --ui-text-muted: #815f42;
+  --ui-text-toned: #61452e;
+  --ui-text-default: #432c1a;
+  --ui-text-highlighted: #2c1a0d;
+  --ui-radius: 0.375rem;
+}
+
+/* ✨ Fantasy — magical twilight, jewel tones, glow (dark). */
+[data-theme="fantasy"] {
+  --ui-primary: #c084fc;
+  --ui-bg-default: #160b2b;
+  --ui-bg-muted: #221141;
+  --ui-bg-elevated: #2c1852;
+  --ui-bg-accented: #3a2168;
+  --ui-border-default: #4a2f7e;
+  --ui-border-muted: #2a1850;
+  --ui-border-accented: #6d44b0;
+  --ui-text-dimmed: #9b86c4;
+  --ui-text-muted: #c3b1e6;
+  --ui-text-toned: #ddccf5;
+  --ui-text-default: #f1e9ff;
+  --ui-text-highlighted: #ffffff;
+  --ui-radius: 0.75rem;
+}
+
+/*
+ * Per-theme immersive backgrounds. Aesthetic themes layer a readability scrim
+ * over bundled SVG art; holiday/seasonal themes use lightweight gradient glows
+ * (no image weight). Only the active [data-theme] rule loads its SVG.
+ */
+[data-theme="space"] {
+  --theme-bg-image: linear-gradient(rgba(11, 14, 34, 0.55), rgba(16, 8, 31, 0.7)), url("/themes/space.svg");
+}
+[data-theme="fantasy"] {
+  --theme-bg-image: linear-gradient(rgba(22, 11, 43, 0.5), rgba(15, 29, 58, 0.65)), url("/themes/fantasy.svg");
+}
+[data-theme="ocean"] {
+  --theme-bg-image: linear-gradient(rgba(6, 37, 57, 0.45), rgba(4, 32, 47, 0.7)), url("/themes/ocean.svg");
+}
+[data-theme="nature"] {
+  --theme-bg-image: linear-gradient(rgba(243, 248, 236, 0.55), rgba(243, 248, 236, 0.8)), url("/themes/nature.svg");
+}
+[data-theme="adventure"] {
+  --theme-bg-image: linear-gradient(rgba(251, 243, 234, 0.5), rgba(251, 243, 234, 0.8)), url("/themes/adventure.svg");
+}
+[data-theme="birthday"] {
+  --theme-bg-image:
+    radial-gradient(60% 50% at 15% 0%, rgba(236, 72, 153, 0.16), transparent),
+    radial-gradient(60% 50% at 100% 100%, rgba(245, 158, 11, 0.14), transparent);
+}
+[data-theme="valentines"] {
+  --theme-bg-image:
+    radial-gradient(60% 50% at 10% 0%, rgba(225, 29, 72, 0.16), transparent),
+    radial-gradient(55% 45% at 100% 100%, rgba(244, 114, 182, 0.16), transparent);
+}
+[data-theme="stpatricks"] {
+  --theme-bg-image:
+    radial-gradient(60% 50% at 12% 0%, rgba(21, 128, 61, 0.16), transparent),
+    radial-gradient(55% 45% at 100% 100%, rgba(74, 222, 128, 0.16), transparent);
+}
+[data-theme="easter"] {
+  --theme-bg-image:
+    radial-gradient(60% 50% at 12% 0%, rgba(147, 51, 234, 0.14), transparent),
+    radial-gradient(55% 45% at 100% 100%, rgba(240, 171, 252, 0.18), transparent);
+}
+[data-theme="independence"] {
+  --theme-bg-image:
+    radial-gradient(55% 45% at 8% 0%, rgba(30, 58, 138, 0.16), transparent),
+    radial-gradient(55% 45% at 100% 100%, rgba(185, 28, 28, 0.14), transparent);
+}
+[data-theme="halloween"] {
+  --theme-bg-image:
+    radial-gradient(60% 50% at 85% 0%, rgba(249, 115, 22, 0.2), transparent),
+    radial-gradient(60% 55% at 0% 100%, rgba(124, 58, 237, 0.28), transparent);
+}
+[data-theme="thanksgiving"] {
+  --theme-bg-image:
+    radial-gradient(60% 50% at 12% 0%, rgba(194, 65, 12, 0.16), transparent),
+    radial-gradient(55% 45% at 100% 100%, rgba(180, 83, 9, 0.16), transparent);
+}
+[data-theme="christmas"] {
+  --theme-bg-image:
+    radial-gradient(60% 50% at 12% 0%, rgba(27, 94, 58, 0.18), transparent),
+    radial-gradient(55% 45% at 100% 100%, rgba(193, 18, 31, 0.14), transparent);
+}
+[data-theme="newyears"] {
+  --theme-bg-image:
+    radial-gradient(60% 55% at 50% 0%, rgba(212, 175, 55, 0.22), transparent),
+    radial-gradient(60% 50% at 100% 100%, rgba(168, 85, 247, 0.18), transparent);
+}
+[data-theme="winter"] {
+  --theme-bg-image:
+    radial-gradient(60% 50% at 15% 0%, rgba(2, 132, 199, 0.14), transparent),
+    radial-gradient(55% 45% at 100% 100%, rgba(125, 211, 252, 0.2), transparent);
+}
+
+/* Brighter chart lines for the dark themes (better contrast on dark bg). */
+[data-theme="space"],
+[data-theme="ocean"],
+[data-theme="fantasy"],
+[data-theme="halloween"],
+[data-theme="newyears"] {
+  --chart-1: #38bdf8;
+  --chart-2: #4ade80;
+  --chart-3: #fbbf24;
+  --chart-4: #f472b6;
+  --chart-5: #a78bfa;
+  --chart-6: #fb7185;
+  --chart-7: #2dd4bf;
+  --chart-8: #facc15;
 }

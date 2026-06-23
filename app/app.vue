@@ -22,6 +22,8 @@ onNuxtReady(() => {
 
 <template>
   <UApp>
+    <ThemeBackground />
+
     <GlobalAppLoading
       :is-loading="isLoading"
       :loading-message="loadingMessage || ''"

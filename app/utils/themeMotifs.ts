@@ -26,6 +26,10 @@ export const THEME_MOTIFS: Partial<Record<ThemeName, ThemeMotif>> = {
   newyears: { emojis: ["🎉", "🥂", "✨", "🎊"], colors: ["#d4af37", "#ffffff", "#a855f7"], motion: "rise" },
   winter: { emojis: ["❄️", "⛄", "🌨️", "🧣"], colors: ["#0284c7", "#7dd3fc", "#ffffff"], motion: "fall" },
   space: { emojis: ["🪐", "⭐", "🚀", "🌙", "✨"], colors: ["#8b5cf6", "#22d3ee", "#ffffff"], motion: "twinkle" },
+  nature: { emojis: ["🌲", "🍃", "🦋", "🌿"], colors: ["#4d7c0f", "#84cc16", "#a3e635"], motion: "float" },
+  ocean: { emojis: ["🌊", "🐚", "🐠", "🫧"], colors: ["#0891b2", "#22d3ee", "#7dd3fc"], motion: "float" },
+  adventure: { emojis: ["⛰️", "🧭", "🏕️", "🍂"], colors: ["#ea580c", "#a98467", "#fbbf24"], motion: "fall" },
+  fantasy: { emojis: ["✨", "🔮", "🦄", "🌙"], colors: ["#a855f7", "#f0abfc", "#34d399"], motion: "twinkle" },
 };
 
 function prefersReducedMotion(): boolean {

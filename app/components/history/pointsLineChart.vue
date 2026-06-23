@@ -31,10 +31,11 @@ const { data } = useAsyncData(
 
 const dates = computed(() => data.value.dates);
 
-// Fallback line colors for members without a custom color.
-const PALETTE = ["#0ea5e9", "#22c55e", "#f59e0b", "#ec4899", "#8b5cf6", "#ef4444", "#14b8a6", "#eab308"];
+// Fallback line color for members without a custom color: the active theme's
+// chart palette (var(--chart-N)), so charts recolor per theme. A member's own
+// color always wins.
 function colorFor(s: Series, i: number) {
-  return s.color || PALETTE[i % PALETTE.length]!;
+  return s.color || `var(--chart-${(i % 8) + 1})`;
 }
 
 // Cumulative running total — a smoother "over time" line than spiky per-day.
@@ -51,7 +52,7 @@ const lines = computed(() => {
   const series = data.value.series;
   if (combined.value && series.length > 1) {
     const totalDaily = dates.value.map((_, i) => series.reduce((sum, s) => sum + (s.points[i] ?? 0), 0));
-    return [{ key: "__total__", name: "Family total", color: "#0ea5e9", values: cumulative(totalDaily) }];
+    return [{ key: "__total__", name: "Family total", color: "var(--chart-1)", values: cumulative(totalDaily) }];
   }
   return series.map((s, i) => ({ key: s.userId, name: s.name, color: colorFor(s, i), values: cumulative(s.points) }));
 });
