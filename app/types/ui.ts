@@ -129,6 +129,10 @@ export type ThemeName
     | "newyears"
     | "winter"
     | "space"
+    | "nature"
+    | "ocean"
+    | "adventure"
+    | "fantasy"
     | "minecraft";
 
 export const THEME_OPTIONS: { value: ThemeName; label: string }[] = [
@@ -147,6 +151,10 @@ export const THEME_OPTIONS: { value: ThemeName; label: string }[] = [
   // …seasons + fun.
   { value: "winter", label: "Winter ❄️" },
   { value: "space", label: "Space 🪐" },
+  { value: "nature", label: "Nature 🌲" },
+  { value: "ocean", label: "Ocean 🌊" },
+  { value: "adventure", label: "Adventure ⛰️" },
+  { value: "fantasy", label: "Fantasy ✨" },
   { value: "minecraft", label: "Minecraft ⛏️" },
 ];
 

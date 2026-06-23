@@ -24,6 +24,8 @@ export type CalendarEvent = {
   color?: string | string[];
   location?: string;
   ical_event?: ICalEvent;
+  /** Reminder offsets in minutes before start (0 = at start time). */
+  reminders?: number[];
   integrationId?: string;
   calendarId?: string;
   sourceCalendars?: SourceCalendar[];

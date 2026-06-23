@@ -96,6 +96,7 @@ export default defineEventHandler(async (event) => {
         color: true,
         location: true,
         ical_event: true,
+        reminders: true,
         users: {
           include: {
             user: {
@@ -124,6 +125,7 @@ export default defineEventHandler(async (event) => {
       color: event.color as string | string[] | undefined,
       location: event.location || undefined,
       ical_event: event.ical_event as ICalEvent | undefined,
+      reminders: event.reminders,
       users: event.users.map(ce => ce.user),
     }));
 

@@ -52,7 +52,7 @@ async function onDelete(id: string) {
         <span v-if="a.icon && !a.icon.startsWith('i-')" class="text-xl leading-none">{{ a.icon }}</span>
         <UIcon
           v-else
-          :name="a.icon || 'i-lucide-folder'"
+          :name="a.icon || areaIconFor(a.name)"
           class="size-6 text-primary"
         />
         <p class="min-w-0 flex-1 truncate font-medium">

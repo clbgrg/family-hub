@@ -25,6 +25,7 @@ describe("pUT /api/calendar-events/[id]", () => {
     color: null,
     location: null,
     ical_event: null,
+    reminders: [],
     users: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -61,6 +62,7 @@ describe("pUT /api/calendar-events/[id]", () => {
           color: null,
           location: null,
           ical_event: null,
+          reminders: [],
           users: {
             deleteMany: {},
             create: [],
@@ -87,6 +89,7 @@ describe("pUT /api/calendar-events/[id]", () => {
           color: "#FF0000",
           location: "New Location",
           ical_event: null,
+          reminders: [],
           users: {
             deleteMany: {},
             create: [],
@@ -114,6 +117,7 @@ describe("pUT /api/calendar-events/[id]", () => {
           color: null,
           location: null,
           ical_event: null,
+          reminders: [],
           users: {
             deleteMany: {},
             create: [],
@@ -139,6 +143,7 @@ describe("pUT /api/calendar-events/[id]", () => {
           color: null,
           location: null,
           ical_event: null,
+          reminders: [],
           users: {
             deleteMany: {},
             create: [{ userId: "user-1" }, { userId: "user-2" }],
@@ -174,6 +179,7 @@ describe("pUT /api/calendar-events/[id]", () => {
               interval: 1,
             },
           } as ICalEvent,
+          reminders: [],
           users: {
             deleteMany: {},
             create: [],
@@ -295,6 +301,7 @@ describe("pUT /api/calendar-events/[id]", () => {
         color: null,
         location: null,
         ical_event: null,
+        reminders: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -309,6 +316,7 @@ describe("pUT /api/calendar-events/[id]", () => {
         color: null,
         location: null,
         ical_event: null,
+        reminders: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       });
