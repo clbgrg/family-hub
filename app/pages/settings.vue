@@ -1176,7 +1176,7 @@ onMounted(async () => {
                   Notifications
                 </p>
                 <p class="text-sm text-muted">
-                  Enable notifications (Coming Soon™)
+                  In-app alerts for event reminders and reward requests (this device)
                 </p>
               </div>
               <USwitch

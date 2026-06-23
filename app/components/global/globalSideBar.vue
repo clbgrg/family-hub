@@ -89,6 +89,7 @@ onBeforeUnmount(() => {
         </span>
       </ClientOnly>
     </div>
+    <GlobalAlertsBell />
     <UButton
       :class="isActivePath('/shoppingLists') ? 'text-primary' : 'text-default'"
       to="/shoppingLists"
