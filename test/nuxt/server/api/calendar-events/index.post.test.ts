@@ -32,6 +32,7 @@ describe("pOST /api/calendar-events", () => {
     color: null,
     location: null,
     ical_event: null,
+    reminders: [],
     users: {
       create: [],
     },
@@ -206,6 +207,7 @@ describe("pOST /api/calendar-events", () => {
         color: null,
         location: null,
         ical_event: null,
+        reminders: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -236,6 +238,7 @@ describe("pOST /api/calendar-events", () => {
         color: null,
         location: null,
         ical_event: null,
+        reminders: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -267,6 +270,7 @@ describe("pOST /api/calendar-events", () => {
         color: null,
         location: null,
         ical_event: null,
+        reminders: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -307,6 +311,7 @@ describe("pOST /api/calendar-events", () => {
             interval: 1,
           },
         },
+        reminders: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       });

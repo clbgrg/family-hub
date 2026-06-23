@@ -136,6 +136,9 @@ model CalendarEvent {
   color       Json?
   location    String?
   ical_event  Json?
+  // Per-event reminder offsets in minutes-before-start (0 = at start time).
+  // Delivered as in-app alerts; empty = no reminders.
+  reminders   Int[]    @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

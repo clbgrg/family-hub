@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
   try {
     const id = getRouterParam(event, "id");
     const body = await readBody(event);
-    const { title, description, start, end, allDay, color, location, ical_event, users } = body;
+    const { title, description, start, end, allDay, color, location, ical_event, reminders, users } = body;
 
     if (!id) {
       throw createError({
@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
         color: color || null,
         location: location || null,
         ical_event: ical_event || null,
+        reminders: Array.isArray(reminders) ? reminders.filter((m: unknown): m is number => typeof m === "number") : [],
         users: {
           deleteMany: {},
           create: users?.map((user: { id: string }) => ({
@@ -60,6 +61,7 @@ export default defineEventHandler(async (event) => {
       color: calendarEvent.color as string | string[] | undefined,
       location: calendarEvent.location,
       ical_event: calendarEvent.ical_event,
+      reminders: calendarEvent.reminders,
       users: (calendarEvent.users || []).map(ce => ce.user),
     };
   }

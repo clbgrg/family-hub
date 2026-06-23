@@ -25,6 +25,7 @@ describe("gET /api/calendar-events", () => {
     color: null,
     location: null,
     ical_event: null,
+    reminders: [],
     users: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -74,6 +75,7 @@ describe("gET /api/calendar-events", () => {
           color: true,
           location: true,
           ical_event: true,
+          reminders: true,
           users: {
             include: {
               user: {

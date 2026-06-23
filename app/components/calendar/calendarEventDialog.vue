@@ -178,6 +178,21 @@ const calendarAccordionItems = computed(() => {
   ];
 });
 
+// In-app reminder offsets (minutes before start) for this event.
+const REMINDER_OPTIONS = [
+  { value: 0, label: "At start" },
+  { value: 10, label: "10 min" },
+  { value: 30, label: "30 min" },
+  { value: 60, label: "1 hour" },
+  { value: 1440, label: "1 day" },
+];
+const reminders = ref<number[]>([]);
+function toggleReminder(minutes: number) {
+  reminders.value = reminders.value.includes(minutes)
+    ? reminders.value.filter(m => m !== minutes)
+    : [...reminders.value, minutes].sort((a, b) => a - b);
+}
+
 const isRecurring = ref(false);
 const recurrenceType = ref<"daily" | "weekly" | "monthly" | "yearly">("weekly");
 const recurrenceInterval = ref(1);
@@ -1001,6 +1016,7 @@ watch(
       }
       allDay.value = newEvent.allDay || false;
       location.value = newEvent.location || "";
+      reminders.value = newEvent.reminders ?? [];
       const eventToUse = originalEvent.users ? originalEvent : newEvent;
       selectedUsers.value = eventToUse.users?.map(user => user.id) || [];
       error.value = null;
@@ -1046,6 +1062,7 @@ function resetForm() {
 
   allDay.value = false;
   location.value = "";
+  reminders.value = [];
   selectedUsers.value = [];
   error.value = null;
 
@@ -1483,6 +1500,7 @@ function buildEventData(start: Date, end: Date): CalendarEvent {
     color: props.event?.color || DEFAULT_LOCAL_EVENT_COLOR,
     users: selectedUserObjects,
     ical_event: icalEvent,
+    reminders: reminders.value,
     ...(selectedIntegrationId.value
       && selectedIntegrationId.value !== "local" && {
       integrationId: selectedIntegrationId.value,
@@ -1971,6 +1989,25 @@ function handleDelete() {
             :ui="{ base: 'w-full' }"
             :disabled="isReadOnly"
           />
+        </div>
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-highlighted">Reminders</label>
+          <div class="flex flex-wrap gap-2">
+            <UButton
+              v-for="opt in REMINDER_OPTIONS"
+              :key="opt.value"
+              size="xs"
+              :color="reminders.includes(opt.value) ? 'primary' : 'neutral'"
+              :variant="reminders.includes(opt.value) ? 'solid' : 'soft'"
+              :disabled="isReadOnly"
+              @click="toggleReminder(opt.value)"
+            >
+              {{ opt.label }}
+            </UButton>
+          </div>
+          <p class="text-xs text-muted">
+            In-app alerts before the event starts.
+          </p>
         </div>
         <div class="space-y-2">
           <label class="block text-sm font-medium text-highlighted">Users</label>
