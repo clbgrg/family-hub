@@ -320,7 +320,7 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
                 <span v-if="grp.area?.icon && !grp.area.icon.startsWith('i-')">{{ grp.area.icon }}</span>
                 <UIcon
                   v-else-if="grp.area"
-                  :name="grp.area.icon || 'i-lucide-folder'"
+                  :name="grp.area.icon || areaIconFor(grp.area.name)"
                   class="size-3"
                 />
                 <span>{{ grp.area?.name ?? "Other" }}</span>

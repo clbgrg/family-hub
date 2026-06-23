@@ -85,8 +85,8 @@ function handleSave() {
           <div class="flex items-center gap-2">
             <span v-if="icon && !icon.startsWith('i-')" class="text-2xl leading-none">{{ icon }}</span>
             <UIcon
-              v-else-if="icon"
-              :name="icon"
+              v-else
+              :name="icon || areaIconFor(name)"
               class="size-6 text-primary"
             />
             <UInput
@@ -102,7 +102,7 @@ function handleSave() {
               href="https://lucide.dev/icons"
               target="_blank"
               class="underline"
-            >Lucide</a> name.
+            >Lucide</a> name. Leave blank to auto-pick an icon from the name.
           </p>
         </div>
       </div>
