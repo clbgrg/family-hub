@@ -162,7 +162,9 @@ async function onDelete(id: string) {
         v-if="ranking.length"
         class="flex items-center gap-4 overflow-x-auto border-b border-default px-4 py-2 text-sm"
       >
-        <span class="font-semibold whitespace-nowrap">🏆 This week</span>
+        <span class="flex items-center gap-1 font-semibold whitespace-nowrap">
+          <UIcon name="i-lucide-trophy" class="size-4 text-primary" /> This week
+        </span>
         <span
           v-for="(r, i) in ranking"
           :key="r.userId"

@@ -55,8 +55,9 @@ function areaLabel(a: { name: string; icon: string | null }) {
       <div class="grid gap-4 p-4 sm:grid-cols-2">
         <UCard>
           <template #header>
-            <h2 class="font-semibold">
-              🏆 Most chores done
+            <h2 class="flex items-center gap-1.5 font-semibold">
+              <UIcon name="i-lucide-trophy" class="size-4 text-primary" />
+              Most chores done
             </h2>
           </template>
           <div v-if="analytics.perUser.some(u => u.completions > 0)" class="flex flex-col gap-2">
@@ -152,8 +153,9 @@ function areaLabel(a: { name: string; icon: string | null }) {
 
         <UCard class="sm:col-span-2">
           <template #header>
-            <h2 class="font-semibold">
-              ⏰ Missed chores
+            <h2 class="flex items-center gap-1.5 font-semibold">
+              <UIcon name="i-lucide-alarm-clock" class="size-4 text-primary" />
+              Missed chores
             </h2>
           </template>
           <div v-if="missed.items.length" class="flex flex-col gap-2">

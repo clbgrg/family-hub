@@ -2,7 +2,7 @@
 @import "@nuxt/ui";
 
 :root {
-  --app-font-sans: ui-sans-serif, system-ui, sans-serif;
+  --app-font-sans: ui-sans-serif, system-ui, sans-serif, "Noto Color Emoji";
   --ui-text-dimmed: var(--ui-color-neutral-400);
   --ui-text-muted: var(--ui-color-neutral-500);
   --ui-text-toned: var(--ui-color-neutral-600);
@@ -163,7 +163,7 @@ body {
   --ui-text-muted: #4a4a4a;
   --ui-text-highlighted: #000000;
   --ui-radius: 0rem;
-  --app-font-sans: "IBM Plex Mono", ui-monospace, monospace;
+  --app-font-sans: "IBM Plex Mono", ui-monospace, monospace, "Noto Color Emoji";
 }
 
 /* Blocky, hard-edged borders for the Minecraft skin. */
