@@ -179,6 +179,9 @@ export type ClientPreferences = {
   theme?: ThemeName;
   // Ambient per-theme decorations (snow, balloons, …) on this device. On by default.
   themeDecorEnabled?: boolean;
+  // On-screen keyboard for touchscreen kiosks. On by default; turn off on a
+  // device that has a real keyboard.
+  virtualKeyboardEnabled?: boolean;
 };
 
 // Screensaver photo rotation cadence (seconds); 0 = never auto-rotate.
@@ -213,6 +216,7 @@ export const defaultClientPreferences: ClientPreferences = {
   schoolStudentsOnly: true,
   theme: "default",
   themeDecorEnabled: true,
+  virtualKeyboardEnabled: true,
 };
 
 export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [

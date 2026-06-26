@@ -102,6 +102,13 @@ const decorEnabled = computed({
   },
 });
 
+const virtualKeyboardEnabled = computed({
+  get: () => preferences.value?.virtualKeyboardEnabled !== false,
+  set(value: boolean) {
+    updatePreferences({ virtualKeyboardEnabled: value });
+  },
+});
+
 const selectedDefaultView = computed({
   get: () => preferences.value?.defaultView ?? "/calendar",
   set(value: string) {
@@ -1193,6 +1200,24 @@ onMounted(async () => {
                 unchecked-icon="i-lucide-alarm-clock-off"
                 size="xl"
                 aria-label="Toggle notifications"
+              />
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-medium text-highlighted">
+                  On-screen keyboard
+                </p>
+                <p class="text-sm text-muted">
+                  Show a touch keyboard when a text field is selected (this device)
+                </p>
+              </div>
+              <USwitch
+                v-model="virtualKeyboardEnabled"
+                color="primary"
+                checked-icon="i-lucide-keyboard"
+                unchecked-icon="i-lucide-keyboard-off"
+                size="xl"
+                aria-label="Toggle on-screen keyboard"
               />
             </div>
             <div class="flex items-center justify-between">

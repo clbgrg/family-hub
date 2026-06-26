@@ -1,0 +1,29 @@
+# Family Hub — exit-fullscreen touch button, as a systemd USER service.
+#
+# OPTIONAL: the primary launch path is the kiosk .xinitrc (family-hub.xinitrc),
+# which already starts the button alongside Chromium. Use this unit instead only
+# if you run a systemd-managed graphical session that exposes DISPLAY to the
+# user bus (e.g. a Wayland/labwc session via XWayland, or X started by a display
+# manager). It will NOT have a DISPLAY under a bare console + startx setup.
+#
+# Install:
+#   mkdir -p ~/.config/systemd/user ~/.config/family-hub
+#   cp scripts/kiosk/fullscreen-exit.py        ~/family-hub-kiosk/
+#   cp scripts/kiosk/fsexit.env.example        ~/.config/family-hub/fsexit.env
+#   cp scripts/kiosk/fullscreen-exit.service   ~/.config/systemd/user/
+#   systemctl --user enable --now fullscreen-exit.service
+
+[Unit]
+Description=Family Hub kiosk exit-fullscreen touch button
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+EnvironmentFile=-%h/.config/family-hub/fsexit.env
+ExecStart=/usr/bin/python3 %h/family-hub-kiosk/fullscreen-exit.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target
