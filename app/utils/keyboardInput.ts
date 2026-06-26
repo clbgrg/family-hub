@@ -94,6 +94,35 @@ export function pressEnter(el: TextEl): { close: boolean } {
   return { close: true };
 }
 
+// A field whose value can be stepped up/down (a native number input). Used to
+// show +/- on the numeric keypad.
+export function isSteppable(el: Element | null | undefined): boolean {
+  return !!el && el.tagName === "INPUT" && (el as HTMLInputElement).type === "number";
+}
+
+/**
+ * Increment/decrement a number input EXACTLY like its native up/down arrows:
+ * `stepUp()`/`stepDown()` apply the browser's own step/min/max logic, then an
+ * `input` event drives the same v-model update path as a real arrow press —
+ * one source of truth, no business logic duplicated.
+ */
+export function stepElement(el: TextEl, dir: 1 | -1): boolean {
+  if (!isSteppable(el))
+    return false;
+  const input = el as HTMLInputElement;
+  try {
+    if (dir > 0)
+      input.stepUp();
+    else
+      input.stepDown();
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    return true;
+  }
+  catch {
+    return false;
+  }
+}
+
 export function isTextField(el: Element | null | undefined): el is TextEl {
   if (!el)
     return false;

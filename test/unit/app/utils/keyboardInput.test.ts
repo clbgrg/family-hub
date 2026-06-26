@@ -4,6 +4,7 @@ import {
   applyCase,
   computeBackspace,
   computeInsert,
+  isSteppable,
   isTextField,
   layoutForInput,
 } from "../../../../app/utils/keyboardInput";
@@ -81,5 +82,18 @@ describe("isTextField", () => {
     expect(isTextField(el("INPUT", "range"))).toBe(false);
     expect(isTextField(el("BUTTON"))).toBe(false);
     expect(isTextField(null)).toBe(false);
+  });
+});
+
+describe("isSteppable", () => {
+  const el = (tagName: string, type?: string) => ({ tagName, type }) as unknown as Element;
+  it("is true only for a number input", () => {
+    expect(isSteppable(el("INPUT", "number"))).toBe(true);
+  });
+  it("is false for other inputs, textarea, and null", () => {
+    expect(isSteppable(el("INPUT", "text"))).toBe(false);
+    expect(isSteppable(el("INPUT", "tel"))).toBe(false);
+    expect(isSteppable(el("TEXTAREA"))).toBe(false);
+    expect(isSteppable(null)).toBe(false);
   });
 });

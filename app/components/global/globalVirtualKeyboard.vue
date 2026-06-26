@@ -3,11 +3,21 @@ import {
   applyCase,
   backspaceElement,
   insertIntoElement,
+  isSteppable,
   liftIntoView,
   pressEnter,
+  stepElement,
 } from "~/utils/keyboardInput";
 
 const { visible, target, layout, hide } = useVirtualKeyboard();
+
+// Show +/- on the numeric keypad when editing a number input; they reuse the
+// field's native up/down-arrow stepping (same logic as the spinner arrows).
+const canStep = computed(() => isSteppable(target.value));
+function step(dir: 1 | -1) {
+  if (target.value)
+    stepElement(target.value, dir);
+}
 
 const shift = ref(false);
 const caps = ref(false);
@@ -92,28 +102,49 @@ onBeforeUnmount(() => liftCleanup?.());
     <div
       ref="kbEl"
       data-no-keyboard
-      class="fixed inset-x-0 bottom-0 z-[250] select-none border-t border-default bg-default/95 p-2 shadow-2xl backdrop-blur sm:mx-auto sm:max-w-3xl sm:rounded-t-2xl"
+      class="fixed inset-x-0 bottom-0 z-[250] select-none border-t border-default bg-default/95 p-3 shadow-2xl backdrop-blur sm:mx-auto sm:max-w-4xl sm:rounded-t-2xl"
     >
-      <div class="mx-auto flex max-w-3xl flex-col gap-1.5">
+      <div class="mx-auto flex max-w-4xl flex-col gap-2">
         <!-- Numeric layout -->
         <template v-if="layout === 'numeric'">
           <div
             v-for="(row, i) in NUMERIC_ROWS"
             :key="`n${i}`"
-            class="flex justify-center gap-1.5"
+            class="flex justify-center gap-2"
           >
             <button
               v-for="k in row"
               :key="k"
               type="button"
-              class="vk-key w-24 max-w-[28%]"
+              class="vk-key w-28 max-w-[30%]"
               @pointerdown.prevent
               @click="type(k)"
             >
               {{ k }}
             </button>
           </div>
-          <div class="flex justify-center gap-1.5">
+          <!-- Step the value up/down (number fields only) — reuses native arrow stepping. -->
+          <div v-if="canStep" class="flex justify-center gap-2">
+            <button
+              type="button"
+              class="vk-key vk-key-wide"
+              aria-label="Decrease value"
+              @pointerdown.prevent
+              @click="step(-1)"
+            >
+              <UIcon name="i-lucide-minus" class="size-6" />
+            </button>
+            <button
+              type="button"
+              class="vk-key vk-key-wide vk-key-primary"
+              aria-label="Increase value"
+              @pointerdown.prevent
+              @click="step(1)"
+            >
+              <UIcon name="i-lucide-plus" class="size-6" />
+            </button>
+          </div>
+          <div class="flex justify-center gap-2">
             <button
               type="button"
               class="vk-key vk-key-wide"
@@ -121,7 +152,7 @@ onBeforeUnmount(() => liftCleanup?.());
               @pointerdown.prevent
               @click="backspace"
             >
-              <UIcon name="i-lucide-delete" class="size-5" />
+              <UIcon name="i-lucide-delete" class="size-6" />
             </button>
             <button
               type="button"
@@ -130,7 +161,7 @@ onBeforeUnmount(() => liftCleanup?.());
               @pointerdown.prevent
               @click="enter"
             >
-              <UIcon name="i-lucide-corner-down-left" class="size-5" />
+              <UIcon name="i-lucide-corner-down-left" class="size-6" />
             </button>
             <button
               type="button"
@@ -139,7 +170,7 @@ onBeforeUnmount(() => liftCleanup?.());
               @pointerdown.prevent
               @click="hide"
             >
-              <UIcon name="i-lucide-chevron-down" class="size-5" />
+              <UIcon name="i-lucide-chevron-down" class="size-6" />
             </button>
           </div>
         </template>
@@ -149,18 +180,18 @@ onBeforeUnmount(() => liftCleanup?.());
           <div
             v-for="(row, i) in QWERTY_ROWS"
             :key="`q${i}`"
-            class="flex gap-1.5"
+            class="flex gap-2"
           >
             <button
               v-if="i === 3"
               type="button"
-              class="vk-key shrink-0 basis-16"
+              class="vk-key shrink-0 basis-20"
               :class="shift ? 'vk-key-active' : ''"
               aria-label="Shift"
               @pointerdown.prevent
               @click="toggleShift"
             >
-              <UIcon name="i-lucide-arrow-big-up" class="size-5" />
+              <UIcon name="i-lucide-arrow-big-up" class="size-6" />
             </button>
             <button
               v-for="k in row"
@@ -175,30 +206,30 @@ onBeforeUnmount(() => liftCleanup?.());
             <button
               v-if="i === 3"
               type="button"
-              class="vk-key shrink-0 basis-16"
+              class="vk-key shrink-0 basis-20"
               aria-label="Backspace"
               @pointerdown.prevent
               @click="backspace"
             >
-              <UIcon name="i-lucide-delete" class="size-5" />
+              <UIcon name="i-lucide-delete" class="size-6" />
             </button>
           </div>
-          <div class="flex gap-1.5">
+          <div class="flex gap-2">
             <button
               type="button"
-              class="vk-key shrink-0 basis-16"
+              class="vk-key shrink-0 basis-20"
               :class="caps ? 'vk-key-active' : ''"
               aria-label="Caps lock"
               @pointerdown.prevent
               @click="toggleCaps"
             >
-              <UIcon name="i-lucide-arrow-big-up-dash" class="size-5" />
+              <UIcon name="i-lucide-arrow-big-up-dash" class="size-6" />
             </button>
             <button
               v-for="p in ['.', ',', '@']"
               :key="p"
               type="button"
-              class="vk-key shrink-0 basis-12"
+              class="vk-key shrink-0 basis-14"
               @pointerdown.prevent
               @click="type(p)"
             >
@@ -217,7 +248,7 @@ onBeforeUnmount(() => liftCleanup?.());
               v-for="p in ['-', '\'']"
               :key="p"
               type="button"
-              class="vk-key shrink-0 basis-12"
+              class="vk-key shrink-0 basis-14"
               @pointerdown.prevent
               @click="type(p)"
             >
@@ -225,21 +256,21 @@ onBeforeUnmount(() => liftCleanup?.());
             </button>
             <button
               type="button"
-              class="vk-key vk-key-primary shrink-0 basis-20"
+              class="vk-key vk-key-primary shrink-0 basis-24"
               aria-label="Enter"
               @pointerdown.prevent
               @click="enter"
             >
-              <UIcon name="i-lucide-corner-down-left" class="size-5" />
+              <UIcon name="i-lucide-corner-down-left" class="size-6" />
             </button>
             <button
               type="button"
-              class="vk-key shrink-0 basis-16"
+              class="vk-key shrink-0 basis-20"
               aria-label="Close keyboard"
               @pointerdown.prevent
               @click="hide"
             >
-              <UIcon name="i-lucide-chevron-down" class="size-5" />
+              <UIcon name="i-lucide-chevron-down" class="size-6" />
             </button>
           </div>
         </template>
@@ -253,22 +284,28 @@ onBeforeUnmount(() => liftCleanup?.());
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.75rem;
-  padding: 0.5rem 0.25rem;
-  border-radius: 0.5rem;
-  font-size: 1.05rem;
+  min-height: 3.5rem;
+  padding: 0.7rem 0.5rem;
+  border-radius: 0.7rem;
+  font-size: 1.4rem;
   font-weight: 500;
   background: var(--ui-bg-elevated);
   color: var(--ui-text-highlighted);
   border: 1px solid var(--ui-border);
   touch-action: manipulation;
 }
+@media (min-width: 640px) {
+  .vk-key {
+    min-height: 4rem;
+    font-size: 1.6rem;
+  }
+}
 .vk-key:active {
   background: var(--ui-bg-accented);
 }
 .vk-key-wide {
   flex: 1 1 0;
-  max-width: 8rem;
+  max-width: 11rem;
 }
 .vk-key-primary {
   background: var(--ui-primary);
