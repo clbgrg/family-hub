@@ -65,7 +65,6 @@ async function onCellBlur(userId: string, date: string, e: FocusEvent) {
 // --- Assignments (structured, check-off, gamified like chores) ---
 const dialogOpen = ref(false);
 const editing = ref<SchoolItem | null>(null);
-const { startTimerFor } = useTaskTimer();
 
 function isOverdue(item: SchoolItem) {
   return !item.done && item.dueDate < today;
@@ -208,15 +207,6 @@ async function onItemDelete(id: string) {
                 >
                   +{{ item.points }}
                 </UBadge>
-                <UButton
-                  v-if="!item.done && canEdit(item.userId)"
-                  icon="i-lucide-timer"
-                  size="xs"
-                  variant="ghost"
-                  color="neutral"
-                  aria-label="Start a timer for this assignment"
-                  @click="startTimerFor({ kind: 'school', id: item.id, title: item.title })"
-                />
                 <UButton
                   v-if="isAdmin"
                   icon="i-lucide-pencil"

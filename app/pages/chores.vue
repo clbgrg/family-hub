@@ -53,13 +53,6 @@ const wheelOpen = ref(false);
 const dialogOpen = ref(false);
 const editing = ref<ChoreBoardItem | null>(null);
 const celebration = ref<{ name: string; pointsToday: number; streak: number; newBadges: NewBadge[] } | null>(null);
-const { startTimerFor } = useTaskTimer();
-
-function startTimer(chore: ChoreBoardItem) {
-  if (!chore.assignee)
-    return;
-  startTimerFor({ kind: "chore", id: chore.id, userId: chore.assignee.id, title: chore.title, assigneeName: chore.assignee.name });
-}
 
 function canToggle(chore: ChoreBoardItem) {
   if (isAdmin.value)
@@ -274,15 +267,6 @@ async function onDelete(id: string) {
                   <UBadge color="neutral" variant="soft">
                     +{{ chore.points }}
                   </UBadge>
-                  <UButton
-                    v-if="!chore.done && canToggle(chore)"
-                    icon="i-lucide-timer"
-                    size="xs"
-                    variant="ghost"
-                    color="neutral"
-                    aria-label="Start a timer for this chore"
-                    @click="startTimer(chore)"
-                  />
                   <UButton
                     v-if="isAdmin"
                     icon="i-lucide-pencil"

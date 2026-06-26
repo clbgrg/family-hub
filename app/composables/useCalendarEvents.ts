@@ -1,6 +1,6 @@
 import { consola } from "consola";
 
-import type { CalendarEvent } from "~/types/calendar";
+import type { CalendarEvent, RecurrenceScope } from "~/types/calendar";
 
 export function useCalendarEvents() {
   const loading = ref(false);
@@ -51,7 +51,10 @@ export function useCalendarEvents() {
     }
   };
 
-  const updateEvent = async (id: string, updates: Partial<CalendarEvent>) => {
+  const updateEvent = async (
+    id: string,
+    updates: Partial<CalendarEvent> & { scope?: RecurrenceScope },
+  ) => {
     try {
       const updatedEvent = await $fetch<CalendarEvent>(
         `/api/calendar-events/${id}`,
@@ -72,9 +75,9 @@ export function useCalendarEvents() {
     }
   };
 
-  const deleteEvent = async (id: string) => {
+  const deleteEvent = async (id: string, scope: RecurrenceScope = "all") => {
     try {
-      await $fetch(`/api/calendar-events/${id}`, {
+      await $fetch(`/api/calendar-events/${id}?scope=${scope}`, {
         method: "DELETE",
       });
 

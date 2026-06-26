@@ -132,6 +132,8 @@ describe("pOST /api/calendar-events", () => {
             color: null,
           },
         })) || [],
+        parentId: null,
+        recurrenceId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -208,6 +210,8 @@ describe("pOST /api/calendar-events", () => {
         location: null,
         ical_event: null,
         reminders: [],
+        parentId: null,
+        recurrenceId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -239,6 +243,8 @@ describe("pOST /api/calendar-events", () => {
         location: null,
         ical_event: null,
         reminders: [],
+        parentId: null,
+        recurrenceId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -271,6 +277,8 @@ describe("pOST /api/calendar-events", () => {
         location: null,
         ical_event: null,
         reminders: [],
+        parentId: null,
+        recurrenceId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -312,6 +320,8 @@ describe("pOST /api/calendar-events", () => {
           },
         },
         reminders: [],
+        parentId: null,
+        recurrenceId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });

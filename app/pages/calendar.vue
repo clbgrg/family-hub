@@ -2,6 +2,7 @@
 import type {
   CalendarEvent,
   IntegrationTarget,
+  RecurrenceScope,
   SourceCalendar,
 } from "~/types/calendar";
 import type { Integration } from "~/types/database";
@@ -319,7 +320,7 @@ async function handleEventAdd(event: CalendarEvent) {
   }
 }
 
-async function handleEventUpdate(event: CalendarEvent) {
+async function handleEventUpdate(event: CalendarEvent, scope: RecurrenceScope = "all") {
   try {
     const writableSources
       = event.sourceCalendars?.filter(source => source.canEdit) || [];
@@ -363,6 +364,7 @@ async function handleEventUpdate(event: CalendarEvent) {
               location: event.location,
               ical_event: event.ical_event,
               users: event.users,
+              scope,
             });
           }
           catch (error) {
@@ -462,6 +464,7 @@ async function handleEventUpdate(event: CalendarEvent) {
           location: event.location,
           ical_event: event.ical_event,
           users: event.users,
+          scope,
         });
 
         showSuccess("Event Updated", "Local event updated successfully");
@@ -510,9 +513,14 @@ async function handleEventUpdate(event: CalendarEvent) {
   }
 }
 
-async function handleEventDelete(eventId: string) {
+async function handleEventDelete(eventId: string, scope: RecurrenceScope = "all") {
   try {
-    const event = allEvents.value.find(e => e.id === eventId);
+    // eventId is the full occurrence id for recurring events; match it directly,
+    // falling back to a base-id match for safety.
+    const baseId = eventId.includes("-") ? eventId.split("-")[0] : eventId;
+    const event = allEvents.value.find(
+      e => e.id === eventId || (e.id.includes("-") ? e.id.split("-")[0] : e.id) === baseId,
+    );
 
     if (!event) {
       showError("Event Not Found", "The event could not be found.");
@@ -549,7 +557,7 @@ async function handleEventDelete(eventId: string) {
             }
 
             const { deleteEvent } = useCalendarEvents();
-            await deleteEvent(localCalendar.eventId);
+            await deleteEvent(localCalendar.eventId, scope);
           }
           catch (error) {
             if (cachedEvents.value && previousEvents.length > 0) {
@@ -671,7 +679,7 @@ async function handleEventDelete(eventId: string) {
 
       try {
         const { deleteEvent } = useCalendarEvents();
-        await deleteEvent(eventId);
+        await deleteEvent(eventId, scope);
         showSuccess("Event Deleted", "Local event deleted successfully");
       }
       catch (error) {

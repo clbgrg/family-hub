@@ -9,7 +9,7 @@ import {
   subWeeks,
 } from "date-fns";
 
-import type { CalendarEvent, CalendarView } from "~/types/calendar";
+import type { CalendarEvent, CalendarView, RecurrenceScope } from "~/types/calendar";
 import type { Integration } from "~/types/database";
 
 import GlobalDateHeader from "~/components/global/globalDateHeader.vue";
@@ -31,8 +31,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "eventAdd", event: CalendarEvent): void;
-  (e: "eventUpdate", event: CalendarEvent): void;
-  (e: "eventDelete", eventId: string): void;
+  (e: "eventUpdate", event: CalendarEvent, scope: RecurrenceScope): void;
+  (e: "eventDelete", eventId: string, scope: RecurrenceScope): void;
   (e: "viewChange", view: CalendarView): void;
 }>();
 
@@ -167,9 +167,9 @@ function handleEventCreate(date: Date) {
   isEventDialogOpen.value = true;
 }
 
-function handleEventSave(event: CalendarEvent) {
+function handleEventSave(event: CalendarEvent, scope: RecurrenceScope = "all") {
   if (event.id) {
-    emit("eventUpdate", event);
+    emit("eventUpdate", event, scope);
   }
   else {
     emit("eventAdd", event);
@@ -178,8 +178,8 @@ function handleEventSave(event: CalendarEvent) {
   selectedEvent.value = null;
 }
 
-function handleEventDelete(eventId: string) {
-  emit("eventDelete", eventId);
+function handleEventDelete(payload: { id: string; scope: RecurrenceScope }) {
+  emit("eventDelete", payload.id, payload.scope);
   isEventDialogOpen.value = false;
   selectedEvent.value = null;
 }

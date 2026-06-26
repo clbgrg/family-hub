@@ -26,6 +26,8 @@ describe("gET /api/calendar-events", () => {
     location: null,
     ical_event: null,
     reminders: [],
+    parentId: null,
+    recurrenceId: null,
     users: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -76,6 +78,8 @@ describe("gET /api/calendar-events", () => {
           location: true,
           ical_event: true,
           reminders: true,
+          parentId: true,
+          recurrenceId: true,
           users: {
             include: {
               user: {
@@ -145,6 +149,64 @@ describe("gET /api/calendar-events", () => {
 
       expect(Array.isArray(response)).toBe(true);
       expect(response.length).toBeGreaterThan(1);
+    });
+
+    it("skips EXDATE'd occurrences when expanding", async () => {
+      const recurring = createBaseEvent({
+        id: "event-recurring",
+        title: "Daily",
+        start: new Date("2025-01-15T10:00:00Z"),
+        end: new Date("2025-01-15T11:00:00Z"),
+        ical_event: {
+          rrule: { freq: "DAILY", interval: 1 },
+          exdate: ["20250116T100000Z"],
+        } as ICalEvent,
+      });
+
+      prisma.calendarEvent.findMany.mockResolvedValue([recurring]);
+
+      const response = await handler(createMockH3Event({
+        query: { start: "2025-01-15T00:00:00Z", end: "2025-01-18T23:59:59Z" },
+      }));
+
+      // 15th, 17th, 18th — the 16th is excluded.
+      expect(response).toHaveLength(3);
+      expect(response.some(e => new Date(e.start).getTime() === Date.UTC(2025, 0, 16, 10, 0, 0))).toBe(false);
+    });
+
+    it("substitutes an override instance for its occurrence (emitted once)", async () => {
+      const base = createBaseEvent({
+        id: "event-recurring",
+        title: "Daily",
+        start: new Date("2025-01-15T10:00:00Z"),
+        end: new Date("2025-01-15T11:00:00Z"),
+        ical_event: { rrule: { freq: "DAILY", interval: 1 } } as ICalEvent,
+      });
+      const override = createBaseEvent({
+        id: "override-1",
+        parentId: "event-recurring",
+        recurrenceId: new Date("2025-01-16T10:00:00Z"),
+        title: "Overridden",
+        start: new Date("2025-01-16T14:00:00Z"),
+        end: new Date("2025-01-16T15:00:00Z"),
+        ical_event: null,
+      });
+
+      prisma.calendarEvent.findMany.mockResolvedValue([base, override]);
+
+      const response = await handler(createMockH3Event({
+        query: { start: "2025-01-15T00:00:00Z", end: "2025-01-18T23:59:59Z" },
+      }));
+
+      // 15th, 17th, 18th from the base + the override for the 16th = 4 total.
+      expect(response).toHaveLength(4);
+      const overridden = response.filter(e => e.title === "Overridden");
+      expect(overridden).toHaveLength(1);
+      expect(new Date(overridden[0]!.start).getTime()).toBe(Date.UTC(2025, 0, 16, 14, 0, 0));
+      // The base occurrence at the original 16th slot is suppressed.
+      expect(response.some(e => e.title === "Daily" && new Date(e.start).getTime() === Date.UTC(2025, 0, 16, 10, 0, 0))).toBe(false);
+      // The override carries an occurrence id derived from the parent series.
+      expect(overridden[0]!.id.startsWith("event-recurring-")).toBe(true);
     });
 
     it("returns no occurrences when recurring event is entirely after date range", async () => {
