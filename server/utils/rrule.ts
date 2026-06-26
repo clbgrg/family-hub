@@ -3,6 +3,8 @@ import ical from "ical.js";
 
 import type { ICalEvent } from "../integrations/iCal/types";
 
+import { makeOccurrenceId } from "./recurrence";
+
 export function parseRRuleString(rruleString: string): ICalEvent["rrule"] | undefined {
   if (!rruleString) {
     return undefined;
@@ -130,7 +132,7 @@ export function expandRecurringEvents<T extends {
 
           expandedEvents.push({
             ...event,
-            id: `${event.id}-${currentTime.toICALString()}`,
+            id: makeOccurrenceId(event.id, currentTime),
             start: currentDate,
             end: newEnd,
             ical_event: {

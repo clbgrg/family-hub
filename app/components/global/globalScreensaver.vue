@@ -9,6 +9,9 @@ type Photo = {
 const { preferences } = useClientPreferences();
 const route = useRoute();
 const { loggedIn, clear: clearSession } = useUserSession();
+// Live timer state — shown over the screensaver so an active "read for 15 min"
+// stays visible (and ticking) while the screen is idle.
+const { active: timerActive, displayTitle: timerTitle, clock: timerClock } = useTaskTimer();
 
 const enabled = computed(() => preferences.value?.screensaverEnabled !== false);
 // useIdle's timeout isn't reactive; read once at setup (changing it takes a reload).
@@ -25,6 +28,12 @@ const photoIdx = ref(0);
 const now = ref(new Date());
 let clockTimer: ReturnType<typeof setInterval> | null = null;
 let photoTimer: ReturnType<typeof setInterval> | null = null;
+
+// Configurable photo rotation cadence; 0 / unset → 30s, null → never rotate.
+const rotationMs = computed(() => {
+  const secs = preferences.value?.screensaverRotationSeconds ?? 30;
+  return secs > 0 ? secs * 1000 : null;
+});
 
 const showSaver = computed(() => enabled.value && !onAuthScreen.value && idle.value);
 
@@ -46,6 +55,27 @@ const dateStr = computed(() =>
   now.value.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }),
 );
 
+function stopPhotoTimer() {
+  if (photoTimer) {
+    clearInterval(photoTimer);
+    photoTimer = null;
+  }
+}
+function startPhotoTimer() {
+  stopPhotoTimer();
+  const ms = rotationMs.value;
+  if (ms == null)
+    return; // "Never auto-rotate"
+  photoTimer = setInterval(() => {
+    if (photos.value.length > 1) {
+      photoIdx.value = (photoIdx.value + 1) % photos.value.length;
+    }
+  }, ms);
+}
+
+// Honor interval changes live (no reload needed).
+watch(rotationMs, () => startPhotoTimer());
+
 onMounted(async () => {
   try {
     photos.value = await $fetch<Photo[]>("/api/photos");
@@ -56,18 +86,13 @@ onMounted(async () => {
   clockTimer = setInterval(() => {
     now.value = new Date();
   }, 1000);
-  photoTimer = setInterval(() => {
-    if (photos.value.length > 1) {
-      photoIdx.value = (photoIdx.value + 1) % photos.value.length;
-    }
-  }, 8000);
+  startPhotoTimer();
 });
 
 onBeforeUnmount(() => {
   if (clockTimer)
     clearInterval(clockTimer);
-  if (photoTimer)
-    clearInterval(photoTimer);
+  stopPhotoTimer();
 });
 </script>
 
@@ -87,12 +112,25 @@ onBeforeUnmount(() => {
       >
       <div class="absolute inset-0 bg-black/30" />
       <div class="relative z-10 text-center drop-shadow-2xl">
-        <p class="text-8xl font-bold tabular-nums sm:text-9xl">
-          {{ clock }}
-        </p>
-        <p class="mt-2 text-2xl sm:text-3xl">
-          {{ dateStr }}
-        </p>
+        <template v-if="timerActive">
+          <p class="text-2xl font-medium sm:text-3xl">
+            {{ timerTitle }}
+          </p>
+          <p class="mt-1 text-8xl font-bold tabular-nums sm:text-9xl">
+            {{ timerClock }}
+          </p>
+          <p class="mt-3 text-xl text-white/80">
+            {{ clock }} · {{ dateStr }}
+          </p>
+        </template>
+        <template v-else>
+          <p class="text-8xl font-bold tabular-nums sm:text-9xl">
+            {{ clock }}
+          </p>
+          <p class="mt-2 text-2xl sm:text-3xl">
+            {{ dateStr }}
+          </p>
+        </template>
       </div>
     </div>
   </Transition>

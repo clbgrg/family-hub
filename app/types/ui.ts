@@ -171,6 +171,8 @@ export type ClientPreferences = {
   // per-device client preferences (not a shared server setting).
   screensaverEnabled?: boolean;
   screensaverIdleMinutes?: number;
+  // Seconds between screensaver photo changes; 0 = never auto-rotate.
+  screensaverRotationSeconds?: number;
   // School page: hide the parents' (admin) rows/columns — kids are the students.
   schoolStudentsOnly?: boolean;
   // Site-wide visual theme for this device.
@@ -178,6 +180,18 @@ export type ClientPreferences = {
   // Ambient per-theme decorations (snow, balloons, …) on this device. On by default.
   themeDecorEnabled?: boolean;
 };
+
+// Screensaver photo rotation cadence (seconds); 0 = never auto-rotate.
+export const SCREENSAVER_ROTATION_OPTIONS: { value: number; label: string }[] = [
+  { value: 30, label: "30 seconds" },
+  { value: 60, label: "1 minute" },
+  { value: 120, label: "2 minutes" },
+  { value: 300, label: "5 minutes" },
+  { value: 600, label: "10 minutes" },
+  { value: 900, label: "15 minutes" },
+  { value: 1800, label: "30 minutes" },
+  { value: 0, label: "Never auto-rotate" },
+];
 
 export const MAIN_VIEW_OPTIONS: { path: string; label: string }[] = [
   { path: "/calendar", label: "Calendar" },
@@ -195,6 +209,7 @@ export const defaultClientPreferences: ClientPreferences = {
   calendarView: "week",
   screensaverEnabled: true,
   screensaverIdleMinutes: 5,
+  screensaverRotationSeconds: 30,
   schoolStudentsOnly: true,
   theme: "default",
   themeDecorEnabled: true,

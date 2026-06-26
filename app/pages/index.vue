@@ -24,6 +24,7 @@ const requestFetch = useRequestFetch();
 const today = isoToday();
 const { count: unreadNotes } = useUnreadMessages();
 const { startTimerFor } = useTaskTimer();
+const timerMenuOpen = ref(false);
 
 // Quick theme switcher in the dashboard header (full control also in Settings → Appearance).
 const { preferences, updatePreferences } = useClientPreferences();
@@ -38,6 +39,22 @@ const { chores, statsByUser, setDone } = useChores();
 const weekStart = ref(weekStartMonday(today));
 const { itemsByUser: schoolItemsByUser, setDone: setSchoolDone } = useSchoolItems(weekStart);
 const toast = useToast();
+
+// Global dashboard timer: a free countdown by default, with the option to
+// attach today's incomplete chores so finishing also checks them off.
+const timerChoices = computed(() =>
+  (chores.value ?? []).filter(c => c.dueToday && !c.done && c.assignee),
+);
+function startFreeTimer() {
+  startTimerFor({ kind: "free" });
+  timerMenuOpen.value = false;
+}
+function startChoreTimer(c: ChoreBoardItem) {
+  if (!c.assignee)
+    return;
+  startTimerFor({ kind: "chore", id: c.id, userId: c.assignee.id, title: c.title, assigneeName: c.assignee.name });
+  timerMenuOpen.value = false;
+}
 
 const { data: meals } = await useAsyncData(
   "dash-meals",
@@ -207,13 +224,51 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
           {{ longDate }}
         </p>
       </div>
+      <UPopover v-model:open="timerMenuOpen" class="ml-auto shrink-0">
+        <UButton
+          icon="i-lucide-timer"
+          color="neutral"
+          variant="soft"
+          size="sm"
+          label="Timer"
+          aria-label="Start a timer"
+        />
+        <template #content>
+          <div class="max-h-96 w-64 overflow-y-auto p-2">
+            <button
+              type="button"
+              class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-elevated"
+              @click="startFreeTimer"
+            >
+              <UIcon name="i-lucide-timer" class="size-4 shrink-0 text-primary" />
+              Just a timer
+            </button>
+            <template v-if="timerChoices.length">
+              <p class="px-2 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-muted">
+                Time a chore
+              </p>
+              <button
+                v-for="c in timerChoices"
+                :key="c.id"
+                type="button"
+                class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-elevated"
+                @click="startChoreTimer(c)"
+              >
+                <UIcon name="i-lucide-list-checks" class="size-4 shrink-0 text-success" />
+                <span class="min-w-0 flex-1 truncate">{{ c.title }}</span>
+                <span class="shrink-0 text-xs text-muted">{{ c.assignee?.name }}</span>
+              </button>
+            </template>
+          </div>
+        </template>
+      </UPopover>
       <USelect
         v-model="selectedTheme"
         :items="THEME_OPTIONS"
         value-attribute="value"
         option-attribute="label"
         size="sm"
-        class="ml-auto w-40 shrink-0"
+        class="w-40 shrink-0"
         :ui="{ content: 'min-w-fit' }"
         aria-label="Quick theme switch"
       />
@@ -362,15 +417,6 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
                   +{{ chore.boost }}
                 </UBadge>
                 <span class="shrink-0 text-xs text-muted" :class="{ 'ml-auto': !chore.boost }">+{{ chore.points }}</span>
-                <UButton
-                  v-if="!chore.done && canToggleChore(chore)"
-                  icon="i-lucide-timer"
-                  size="xs"
-                  variant="ghost"
-                  color="neutral"
-                  aria-label="Start a timer for this chore"
-                  @click="startTimerFor({ kind: 'chore', id: chore.id, userId: col.user.id, title: chore.title, assigneeName: col.user.name })"
-                />
               </div>
             </template>
 
@@ -394,15 +440,6 @@ const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
               >
                 {{ schoolDueLabel(item) }}<template v-if="item.points > 0"> · +{{ item.points }}</template>
               </span>
-              <UButton
-                v-if="!item.done && canToggle(item.userId)"
-                icon="i-lucide-timer"
-                size="xs"
-                variant="ghost"
-                color="neutral"
-                aria-label="Start a timer for this assignment"
-                @click="startTimerFor({ kind: 'school', id: item.id, title: item.title })"
-              />
             </div>
 
             <!-- Free-text school note -->

@@ -26,6 +26,8 @@ describe("pUT /api/calendar-events/[id]", () => {
     location: null,
     ical_event: null,
     reminders: [],
+    parentId: null,
+    recurrenceId: null,
     users: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -216,6 +218,7 @@ describe("pUT /api/calendar-events/[id]", () => {
           })) || [],
         };
 
+        prisma.calendarEvent.findUnique.mockResolvedValue(mockCurrentEvent);
         prisma.calendarEvent.update.mockResolvedValue(mockResponse);
 
         const event = createMockH3Event({
@@ -302,6 +305,8 @@ describe("pUT /api/calendar-events/[id]", () => {
         location: null,
         ical_event: null,
         reminders: [],
+        parentId: null,
+        recurrenceId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -317,12 +322,91 @@ describe("pUT /api/calendar-events/[id]", () => {
         location: null,
         ical_event: null,
         reminders: [],
+        parentId: null,
+        recurrenceId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
       const result = await handler(event);
       expect(result.title).toBe("Updated Event");
+    });
+  });
+
+  describe("recurring scopes", () => {
+    const BASE = "clx7h1q0f000108l4k8z8";
+    const TOKEN = "20250115T100000Z";
+    const OCC = `${BASE}-${TOKEN}`;
+    const SPLIT = new Date(Date.UTC(2025, 0, 15, 10, 0, 0));
+    const recurring = () =>
+      createBaseEvent({ id: BASE, ical_event: { rrule: { freq: "DAILY", interval: 1 } } });
+    const scopeBody = (scope: string) => ({
+      title: "Edited Occurrence",
+      description: null,
+      start: "2025-01-15T10:00:00Z",
+      end: "2025-01-15T11:00:00Z",
+      allDay: false,
+      scope,
+    });
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it("scope=this creates an override child when none exists", async () => {
+      prisma.calendarEvent.findUnique.mockResolvedValue(recurring());
+      prisma.calendarEvent.findFirst.mockResolvedValue(null);
+      prisma.calendarEvent.create.mockResolvedValue(createBaseEvent({ id: "override-1" }));
+
+      await handler(createMockH3Event({ params: { id: OCC }, body: scopeBody("this") }));
+
+      expect(prisma.calendarEvent.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ parentId: BASE, recurrenceId: SPLIT }),
+        }),
+      );
+      // No existing EXDATE for this token, so the base series isn't updated.
+      expect(prisma.calendarEvent.update).not.toHaveBeenCalled();
+    });
+
+    it("scope=this updates an existing override", async () => {
+      prisma.calendarEvent.findUnique.mockResolvedValue(recurring());
+      prisma.calendarEvent.findFirst.mockResolvedValue(createBaseEvent({ id: "override-1", parentId: BASE }));
+      prisma.calendarEvent.update.mockResolvedValue(createBaseEvent({ id: "override-1" }));
+
+      await handler(createMockH3Event({ params: { id: OCC }, body: scopeBody("this") }));
+
+      expect(prisma.calendarEvent.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "override-1" } }),
+      );
+      expect(prisma.calendarEvent.create).not.toHaveBeenCalled();
+    });
+
+    it("scope=thisAndFollowing truncates the base and creates a new series", async () => {
+      prisma.calendarEvent.findUnique.mockResolvedValue(recurring());
+      prisma.calendarEvent.update.mockResolvedValue(recurring());
+      prisma.calendarEvent.create.mockResolvedValue(createBaseEvent({ id: "series-2" }));
+      prisma.calendarEvent.updateMany.mockResolvedValue({ count: 0 });
+
+      await handler(createMockH3Event({ params: { id: OCC }, body: scopeBody("thisAndFollowing") }));
+
+      // Original series truncated with UNTIL one second before the split.
+      expect(prisma.calendarEvent.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: BASE },
+          data: expect.objectContaining({
+            ical_event: expect.objectContaining({
+              rrule: expect.objectContaining({ until: "20250115T095959Z" }),
+            }),
+          }),
+        }),
+      );
+      expect(prisma.calendarEvent.create).toHaveBeenCalled();
+      expect(prisma.calendarEvent.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { parentId: BASE, recurrenceId: { gte: SPLIT } },
+        }),
+      );
     });
   });
 });

@@ -27,6 +27,12 @@ export type ICalEvent = {
     count?: number;
     until?: string;
   };
+  /**
+   * Excluded occurrence tokens (ical Time.toICALString()) for a recurring
+   * series — the EXDATE mechanism behind "delete this occurrence" and the tail
+   * of a "this and following" truncation.
+   */
+  exdate?: string[];
 };
 
 export type ICalAttendee = {

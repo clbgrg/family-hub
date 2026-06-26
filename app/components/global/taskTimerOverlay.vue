@@ -4,73 +4,34 @@ import type { SchoolCompleteResult } from "~/composables/useSchoolItems";
 
 import CelebrationOverlay from "~/components/chores/celebrationOverlay.vue";
 
-const { task, closeTimer } = useTaskTimer();
+// Live countdown state + actions now live in the composable so the screensaver
+// can read them and the ticker survives the overlay being hidden. The overlay
+// keeps only completion/celebration concerns.
+const { task, phase, minutes, remainingMs, clock, displayTitle, start, resume, pause, stopTick, closeTimer } = useTaskTimer();
 const toast = useToast();
 
 const PRESETS = [5, 10, 15, 20, 30];
 
-type Phase = "pick" | "running" | "paused" | "finishing";
-const phase = ref<Phase>("pick");
-const minutes = ref(15);
-const endsAt = ref(0);
-const remainingMs = ref(0);
 const completing = ref(false);
 const celebration = ref<{ name: string; pointsToday: number; streak: number; newBadges: NewBadge[] } | null>(null);
 
-let tick: ReturnType<typeof setInterval> | null = null;
-
+// Reset transient local state whenever a new timer is launched.
 watch(task, () => {
-  stopTick();
-  phase.value = "pick";
-  minutes.value = 15;
   celebration.value = null;
   completing.value = false;
 });
 
-function stopTick() {
-  if (tick) {
-    clearInterval(tick);
-    tick = null;
+// The composable's ticker flips phase to "finishing" at zero — run completion.
+watch(phase, (p) => {
+  if (p === "finishing") {
+    complete();
   }
-}
-
-function start() {
-  const mins = Math.min(180, Math.max(1, Math.round(Number(minutes.value) || 1)));
-  minutes.value = mins;
-  remainingMs.value = mins * 60_000;
-  resume();
-}
-
-function resume() {
-  endsAt.value = Date.now() + remainingMs.value;
-  phase.value = "running";
-  stopTick();
-  tick = setInterval(() => {
-    remainingMs.value = Math.max(0, endsAt.value - Date.now());
-    if (remainingMs.value <= 0) {
-      stopTick();
-      complete();
-    }
-  }, 250);
-}
-
-function pause() {
-  remainingMs.value = Math.max(0, endsAt.value - Date.now());
-  stopTick();
-  phase.value = "paused";
-}
+});
 
 function cancel() {
-  stopTick();
   closeTimer();
 }
 
-const clock = computed(() => {
-  const total = Math.ceil(remainingMs.value / 1000);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-});
 const progress = computed(() => {
   const total = minutes.value * 60_000;
   return total > 0 ? 1 - remainingMs.value / total : 1;
@@ -81,8 +42,20 @@ async function complete() {
   if (!t || completing.value)
     return;
   completing.value = true;
-  phase.value = "finishing";
   stopTick();
+  // A free timer isn't tied to anything to complete — just celebrate the win.
+  if (t.kind === "free") {
+    try {
+      const confetti = (await import("canvas-confetti")).default;
+      confetti({ particleCount: 90, spread: 80, origin: { y: 0.7 } });
+    }
+    catch {
+      // best-effort
+    }
+    toast.add({ title: "Time's up! ⏰", color: "success" });
+    closeTimer();
+    return;
+  }
   try {
     const localDate = isoToday();
     if (t.kind === "chore") {
@@ -154,10 +127,10 @@ onBeforeUnmount(stopTick);
       <div class="flex w-full items-start justify-between gap-2">
         <div class="min-w-0 text-left">
           <p class="text-xs uppercase tracking-wide text-muted">
-            Task timer
+            {{ task.kind === "free" ? "Timer" : "Task timer" }}
           </p>
           <h3 class="truncate text-lg font-semibold">
-            {{ task.title }}
+            {{ displayTitle }}
           </h3>
         </div>
         <UButton

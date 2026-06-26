@@ -10,7 +10,7 @@ import { consola } from "consola";
 import { isBefore } from "date-fns";
 import ical from "ical.js";
 
-import type { CalendarEvent, SourceCalendar } from "~/types/calendar";
+import type { CalendarEvent, RecurrenceScope, SourceCalendar } from "~/types/calendar";
 import type { Integration } from "~/types/database";
 import type { CalendarConfig } from "~/types/integrations";
 import type { RecurrenceState } from "~/types/recurrence";
@@ -39,8 +39,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "save", event: CalendarEvent): void;
-  (e: "delete", eventId: string): void;
+  (e: "save", event: CalendarEvent, scope: RecurrenceScope): void;
+  (e: "delete", payload: { id: string; scope: RecurrenceScope }): void;
 }>();
 
 const { users, fetchUsers } = useUsers();
@@ -1484,13 +1484,11 @@ function buildEventData(start: Date, end: Date): CalendarEvent {
   const icalEvent = generateICalEvent(start, end);
   const sourceCalendars = getSelectedSourceCalendars();
 
-  const isExpandedEvent = props.event?.id?.includes("-");
-  const eventId = isExpandedEvent
-    ? props.event?.id.split("-")[0]
-    : props.event?.id || "";
-
+  // Keep the FULL id (occurrence id for recurring events) so the server can
+  // resolve the base series + the specific occurrence; the recurrence scope is
+  // emitted alongside.
   return {
-    id: eventId || "",
+    id: props.event?.id || "",
     title: eventTitle,
     description: description.value,
     start,
@@ -1515,6 +1513,28 @@ function buildEventData(start: Date, end: Date): CalendarEvent {
     ...(props.event?.calendarId && { calendarId: props.event.calendarId }),
     ...(sourceCalendars && sourceCalendars.length > 0 && { sourceCalendars }),
   };
+}
+
+// A local recurring event (has an rrule, or an occurrence id like `${base}-${token}`)
+// gets the This / This and following / All scope picker. Integration events go
+// through their own path and ignore scope.
+const isRecurringEvent = computed(() =>
+  (!!props.event?.ical_event?.rrule || (props.event?.id?.includes("-") ?? false))
+  && !props.event?.integrationId,
+);
+const scopeModalOpen = ref(false);
+const scopeMode = ref<"save" | "delete">("save");
+const pendingSaveData = ref<CalendarEvent | null>(null);
+
+function applyScope(scope: RecurrenceScope) {
+  scopeModalOpen.value = false;
+  if (scopeMode.value === "save" && pendingSaveData.value) {
+    emit("save", pendingSaveData.value, scope);
+    pendingSaveData.value = null;
+  }
+  else if (scopeMode.value === "delete" && props.event?.id) {
+    emit("delete", { id: props.event.id, scope });
+  }
 }
 
 function handleSave() {
@@ -1548,7 +1568,14 @@ function handleSave() {
   const adjustedDates = adjustRecurrenceDates(dates.start, dates.end);
   const eventData = buildEventData(adjustedDates.start, adjustedDates.end);
 
-  emit("save", eventData);
+  if (isRecurringEvent.value) {
+    pendingSaveData.value = eventData;
+    scopeMode.value = "save";
+    scopeModalOpen.value = true;
+    return;
+  }
+
+  emit("save", eventData, "all");
 }
 
 function handleDelete() {
@@ -1576,17 +1603,13 @@ function handleDelete() {
     return;
   }
 
-  const isExpandedEvent = props.event.id.includes("-");
-  const eventId = isExpandedEvent
-    ? props.event.id.split("-")[0]
-    : props.event.id;
-
-  if (!eventId) {
-    error.value = "Invalid event ID";
+  if (isRecurringEvent.value) {
+    scopeMode.value = "delete";
+    scopeModalOpen.value = true;
     return;
   }
 
-  emit("delete", eventId);
+  emit("delete", { id: props.event.id, scope: "all" });
 }
 </script>
 
@@ -2106,6 +2129,56 @@ function handleDelete() {
             Save
           </UButton>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recurring-event scope picker (This / This and following / All) -->
+  <div
+    v-if="scopeModalOpen"
+    class="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4"
+    @click="scopeModalOpen = false"
+  >
+    <div class="w-full max-w-sm rounded-lg border border-default bg-default p-5 shadow-xl" @click.stop>
+      <h3 class="mb-1 text-base font-semibold text-highlighted">
+        {{ scopeMode === "delete" ? "Delete recurring event" : "Edit recurring event" }}
+      </h3>
+      <p class="mb-4 text-sm text-muted">
+        This is a repeating event. Apply to:
+      </p>
+      <div class="flex flex-col gap-2">
+        <UButton
+          block
+          color="neutral"
+          variant="soft"
+          @click="applyScope('this')"
+        >
+          This event
+        </UButton>
+        <UButton
+          block
+          color="neutral"
+          variant="soft"
+          @click="applyScope('thisAndFollowing')"
+        >
+          This and following events
+        </UButton>
+        <UButton
+          block
+          :color="scopeMode === 'delete' ? 'error' : 'primary'"
+          @click="applyScope('all')"
+        >
+          All events
+        </UButton>
+      </div>
+      <div class="mt-3 flex justify-end">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          @click="scopeModalOpen = false"
+        >
+          Cancel
+        </UButton>
       </div>
     </div>
   </div>

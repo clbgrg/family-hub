@@ -1,18 +1,24 @@
 import prisma from "~/lib/prisma";
 
+import { parseOccurrenceId } from "../../utils/recurrence";
+
 export default defineEventHandler(async (event) => {
   try {
-    const id = getRouterParam(event, "id");
+    const rawId = getRouterParam(event, "id");
 
-    if (!id) {
+    if (!rawId) {
       throw createError({
         statusCode: 400,
         message: "Calendar event ID is required",
       });
     }
 
+    // An occurrence id (`${baseId}-${token}`) resolves to its base series row;
+    // the dialog overlays the specific occurrence's start/end itself.
+    const { baseId } = parseOccurrenceId(rawId);
+
     const calendarEvent = await prisma.calendarEvent.findUnique({
-      where: { id },
+      where: { id: baseId },
       select: {
         id: true,
         title: true,
@@ -59,6 +65,10 @@ export default defineEventHandler(async (event) => {
     };
   }
   catch (error) {
+    // Preserve intended H3 errors (e.g. 404/400) instead of masking as 500.
+    if (error && typeof error === "object" && "statusCode" in error) {
+      throw error;
+    }
     throw createError({
       statusCode: 500,
       message: `Failed to fetch calendar event: ${error}`,

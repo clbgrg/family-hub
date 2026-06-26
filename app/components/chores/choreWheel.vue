@@ -44,8 +44,16 @@ const slices = computed(() =>
     const d = n.value === 1
       ? "M 100 5 A 95 95 0 1 1 99.99 5 Z"
       : `M 100 100 L ${x0.toFixed(2)} ${y0.toFixed(2)} A 95 95 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`;
-    const [lx, ly] = polar(60, a0 + seg.value / 2);
-    return { i, title, color: PALETTE[i % PALETTE.length]!, d, lx, ly };
+    const mid = a0 + seg.value / 2;
+    const [lx, ly] = polar(60, mid);
+    // Run the label along its slice's radius. `mid` is clockwise from the top,
+    // so the outward radial direction in SVG rotation terms is `mid - 90`.
+    // Flip labels on the left half so none read upside-down.
+    let rot = (((mid - 90) % 360) + 360) % 360;
+    if (rot > 90 && rot < 270) {
+      rot += 180;
+    }
+    return { i, title, color: PALETTE[i % PALETTE.length]!, d, lx, ly, rot };
   }),
 );
 
@@ -329,10 +337,14 @@ watch(() => props.open, (o) => {
                 :key="`t${s.i}`"
                 :x="s.lx"
                 :y="s.ly"
+                :transform="`rotate(${s.rot} ${s.lx} ${s.ly})`"
                 text-anchor="middle"
                 dominant-baseline="middle"
-                class="fill-white text-[7px] font-semibold"
-              >{{ s.title.length > 12 ? `${s.title.slice(0, 11)}…` : s.title }}</text>
+                class="fill-white text-[9px] font-bold"
+                stroke="rgba(0,0,0,0.55)"
+                stroke-width="0.6"
+                style="paint-order: stroke"
+              >{{ s.title.length > 14 ? `${s.title.slice(0, 13)}…` : s.title }}</text>
               <circle
                 cx="100"
                 cy="100"

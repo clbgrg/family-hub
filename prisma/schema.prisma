@@ -139,11 +139,23 @@ model CalendarEvent {
   // Per-event reminder offsets in minutes-before-start (0 = at start time).
   // Delivered as in-app alerts; empty = no reminders.
   reminders   Int[]    @default([])
+
+  // Per-occurrence overrides of a recurring series (RECURRENCE-ID semantics):
+  // an override is a child CalendarEvent (no rrule of its own) that replaces a
+  // single generated occurrence of its parent series. recurrenceId is the
+  // ORIGINAL occurrence start it stands in for. EXDATE exclusions live in the
+  // parent's ical_event JSON; deleting the parent cascades to its overrides.
+  parentId     String?
+  recurrenceId DateTime?
+  parent       CalendarEvent?  @relation("EventOverrides", fields: [parentId], references: [id], onDelete: Cascade)
+  overrides    CalendarEvent[] @relation("EventOverrides")
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   users CalendarEventUser[]
 
+  @@index([parentId])
   @@map("calendar_events")
 }
 

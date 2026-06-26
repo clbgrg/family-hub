@@ -20,7 +20,7 @@ import {
   createIntegrationService,
   integrationRegistry,
 } from "~/types/integrations";
-import { FONT_OPTIONS, getFontStack, MAIN_VIEW_OPTIONS, THEME_OPTIONS } from "~/types/ui";
+import { FONT_OPTIONS, getFontStack, MAIN_VIEW_OPTIONS, SCREENSAVER_ROTATION_OPTIONS, THEME_OPTIONS } from "~/types/ui";
 
 const { users, loading, error, createUser, deleteUser, updateUser, reorderUser }
   = useUsers();
@@ -120,6 +120,13 @@ const screensaverIdleMinutes = computed({
   get: () => preferences.value?.screensaverIdleMinutes ?? 5,
   set(value: number) {
     updatePreferences({ screensaverIdleMinutes: Math.max(1, Number(value) || 5) });
+  },
+});
+
+const screensaverRotationSeconds = computed({
+  get: () => preferences.value?.screensaverRotationSeconds ?? 30,
+  set(value: number) {
+    updatePreferences({ screensaverRotationSeconds: Math.max(0, Number(value) || 0) });
   },
 });
 
@@ -1220,6 +1227,23 @@ onMounted(async () => {
                 type="number"
                 :min="1"
                 class="w-24"
+              />
+            </div>
+            <div v-if="screensaverEnabled" class="flex items-center justify-between">
+              <div>
+                <p class="font-medium text-highlighted">
+                  Background rotation
+                </p>
+                <p class="text-sm text-muted">
+                  How often the slideshow photo changes
+                </p>
+              </div>
+              <USelect
+                v-model="screensaverRotationSeconds"
+                :items="SCREENSAVER_ROTATION_OPTIONS"
+                value-attribute="value"
+                option-attribute="label"
+                class="w-44"
               />
             </div>
             <div v-if="isAdmin && screensaverEnabled" class="border-t border-default pt-4">
