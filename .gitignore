@@ -35,3 +35,7 @@ backups/
 
 # Committed-by-upstream coverage artifact — regenerated per run
 coverage/
+
+# Python
+__pycache__/
+*.pyc
