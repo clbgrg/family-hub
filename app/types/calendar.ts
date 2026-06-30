@@ -1,6 +1,6 @@
 import type { ICalEvent } from "../../server/integrations/iCal/types";
 
-export type CalendarView = "month" | "week" | "day" | "agenda";
+export type CalendarView = "month" | "week" | "day" | "agenda" | "timeline";
 
 /** Scope of a recurring-event edit/delete (Google-Calendar semantics). */
 export type RecurrenceScope = "this" | "thisAndFollowing" | "all";
