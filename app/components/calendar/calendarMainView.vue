@@ -73,6 +73,10 @@ onMounted(() => {
         view.value = "agenda";
         emit("viewChange", view.value);
         break;
+      case "t":
+        view.value = "timeline";
+        emit("viewChange", view.value);
+        break;
     }
   };
 
@@ -95,6 +99,9 @@ function handlePrevious() {
   else if (view.value === "agenda") {
     currentDate.value = addDays(currentDate.value, -30);
   }
+  else if (view.value === "timeline") {
+    currentDate.value = addDays(currentDate.value, -5);
+  }
 }
 
 function handleNext() {
@@ -109,6 +116,9 @@ function handleNext() {
   }
   else if (view.value === "agenda") {
     currentDate.value = addDays(currentDate.value, 30);
+  }
+  else if (view.value === "timeline") {
+    currentDate.value = addDays(currentDate.value, 5);
   }
 }
 
@@ -233,6 +243,12 @@ const filteredEvents = computed(() => {
       events = getEventsForDateRange(start, end);
       break;
     }
+    case "timeline": {
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      end = addDays(start, 5);
+      events = getEventsForDateRange(start, end);
+      break;
+    }
     default:
       events = props.events;
       start = new Date();
@@ -299,6 +315,12 @@ function getDaysForAgenda(date: Date) {
       <GlobalAgendaView
         v-if="view === 'agenda'"
         :days="getDaysForAgenda(currentDate)"
+        :events="filteredEvents"
+        @event-click="handleEventSelect"
+      />
+      <CalendarFiveDayTimeline
+        v-if="view === 'timeline'"
+        :start-date="currentDate"
         :events="filteredEvents"
         @event-click="handleEventSelect"
       />

@@ -72,6 +72,16 @@ const viewTitle = computed(() => {
       return "agenda-different-months";
     }
   }
+  else if (view.value === "timeline") {
+    const start = currentDate.value;
+    const end = addDays(currentDate.value, 5 - 1);
+    if (isSameMonth(start, end)) {
+      return "timeline-same-month";
+    }
+    else {
+      return "timeline-different-months";
+    }
+  }
   return "month";
 });
 
@@ -99,6 +109,11 @@ const items: DropdownMenuItem[][] = [
       label: "Agenda",
       icon: "i-lucide-list",
       onSelect: () => emit("viewChange", "agenda"),
+    },
+    {
+      label: "5-Day",
+      icon: "i-lucide-calendar-clock",
+      onSelect: () => emit("viewChange", "timeline"),
     },
   ],
 ];
@@ -200,6 +215,31 @@ function handleToday() {
             year="numeric"
           />
         </span>
+        <span v-else-if="viewTitle === 'timeline-same-month'">
+          <NuxtTime
+            :datetime="currentDate"
+            month="short"
+            day="numeric"
+          /> -
+          <NuxtTime
+            :datetime="addDays(currentDate, 5 - 1)"
+            day="numeric"
+            year="numeric"
+          />
+        </span>
+        <span v-else-if="viewTitle === 'timeline-different-months'">
+          <NuxtTime
+            :datetime="currentDate"
+            month="short"
+            day="numeric"
+          /> -
+          <NuxtTime
+            :datetime="addDays(currentDate, 5 - 1)"
+            month="short"
+            day="numeric"
+            year="numeric"
+          />
+        </span>
         <NuxtTime
           v-else
           :datetime="currentDate"
@@ -254,7 +294,7 @@ function handleToday() {
             size="xl"
             trailing-icon="i-lucide-chevron-down"
           >
-            <span class="capitalize">{{ view }}</span>
+            <span class="capitalize">{{ view === "timeline" ? "5-Day" : view }}</span>
           </UButton>
         </UDropdownMenu>
       </div>
