@@ -42,3 +42,12 @@ docker-compose*.yaml
 
 # Dev container configs
 .devcontainer
+
+# Claude Code session data (can be huge; never app content)
+.claude
+
+# Runtime data, backups, and test artifacts (sensitive or regenerated)
+backups
+photos
+files
+coverage

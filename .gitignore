@@ -39,3 +39,6 @@ coverage/
 # Python
 __pycache__/
 *.pyc
+
+# Claude Code session data (can be huge; never commit)
+.claude/
