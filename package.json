@@ -25,7 +25,7 @@
     "@headlessui/vue": "^1.7.19",
     "@heroicons/vue": "^2.1.1",
     "@nuxt/fonts": "^0.14.0",
-    "@nuxt/ui": "^3.1.2",
+    "@nuxt/ui": "^4.8.1",
     "@prisma/client": "^6.9.0",
     "@vueuse/core": "^10.9.0",
     "canvas-confetti": "^1.9.4",
